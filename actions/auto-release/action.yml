@@ -14,10 +14,6 @@ inputs:
     description: 'Branches to release from (JSON array format)'
     required: false
     default: '["main", "master"]'
-  npm-token:
-    description: 'NPM token for publishing packages (optional)'
-    required: false
-    default: ''
   dry-run:
     description: 'Whether to run in dry-run mode'
     required: false
@@ -76,7 +72,8 @@ runs:
             npm install
           fi
         else
-          echo "⚠️ No package.json found - this should not happen after previous step"
+          echo "⚠️ No package.json found"
+          exit 1
         fi
 
     - name: Run semantic-release
@@ -85,7 +82,6 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
-        NPM_TOKEN: ${{ inputs.npm-token }}
         GIT_AUTHOR_NAME: github-actions[bot]
         GIT_AUTHOR_EMAIL: github-actions[bot]@users.noreply.github.com
         GIT_COMMITTER_NAME: github-actions[bot]
