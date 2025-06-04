@@ -74,6 +74,7 @@
 ### 2. 워크플로우 파일 생성
 
 `.github/workflows/release.yml` 파일을 생성하고 다음 내용을 추가하세요:
+참고: [examples/auto-release-workflow.yml](../examples/auto-release-workflow.yml)
 
 ```yaml
 name: Auto Release
