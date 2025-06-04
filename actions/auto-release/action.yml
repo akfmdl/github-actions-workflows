@@ -59,36 +59,6 @@ runs:
       with:
         node-version: ${{ inputs.node-version }}
 
-    # - name: Create semantic-release configuration (if not exists)
-    #   shell: bash
-    #   working-directory: ${{ inputs.working-directory }}
-    #   run: |
-    #     # package.json이 없으면 파일 생성
-    #     if [ ! -f "package.json" ]; then
-    #       echo "⚠️ No package.json found. Creating minimal package.json..."
-    #       cat > package.json << 'EOF'
-    #     {
-    #       "name": "auto-release-project",
-    #       "version": "0.0.0",
-    #       "private": true,
-    #       "devDependencies": {
-    #         "@semantic-release/changelog": "^6.0.3",
-    #         "@semantic-release/git": "^10.0.1"
-    #       },
-    #       "release": {
-    #         "plugins": [
-    #           "@semantic-release/commit-analyzer",
-    #           "@semantic-release/release-notes-generator",
-    #           "@semantic-release/changelog",
-    #           "@semantic-release/github",
-    #           "@semantic-release/git"
-    #         ]
-    #       }
-    #     }
-    #     EOF
-    #     fi
-    #     fi
-
     - name: Install local dependencies (if package.json exists)
       shell: bash
       working-directory: ${{ inputs.working-directory }}
@@ -121,12 +91,17 @@ runs:
         GIT_COMMITTER_NAME: github-actions[bot]
         GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
       run: |
+        # JSON 배열을 공백으로 구분된 문자열로 변환
+        BRANCHES=$(echo '${{ inputs.release-branches }}' | jq -r '.[]' | paste -sd ' ')
+        
         if [ "${{ inputs.dry-run }}" = "true" ]; then
           echo "🚀 Running semantic-release@${{ inputs.semantic-release-version }} in dry-run mode..."
-          npx semantic-release@${{ inputs.semantic-release-version }} --dry-run
+          echo "📋 Release branches: $BRANCHES"
+          npx semantic-release@${{ inputs.semantic-release-version }} --dry-run --branches $BRANCHES
         else
           echo "🚀 Running semantic-release@${{ inputs.semantic-release-version }}..."
-          npx semantic-release@${{ inputs.semantic-release-version }}
+          echo "📋 Release branches: $BRANCHES"
+          npx semantic-release@${{ inputs.semantic-release-version }} --branches $BRANCHES
         fi
 
 branding:
