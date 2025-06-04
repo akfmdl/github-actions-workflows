@@ -101,6 +101,14 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           node-version: '18'
           release-branches: '["main", "master"]'
+
+      - name: Post-release notification
+        if: steps.release.outputs.new-release-published == 'true'
+        run: |
+          echo "🎉 새로운 릴리즈가 생성되었습니다!"
+          echo "버전: ${{ steps.release.outputs.new-release-version }}"
+          echo "태그: ${{ steps.release.outputs.new-release-git-tag }}"
+          echo "SHA: ${{ steps.release.outputs.new-release-git-head }}" 
 ```
 
 ### 3. 입력 매개변수
