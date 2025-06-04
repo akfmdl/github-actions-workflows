@@ -26,6 +26,10 @@ inputs:
     description: 'Working directory for the action'
     required: false
     default: '.'
+  semantic-release-version:
+    description: 'Semantic Release version to use'
+    required: false
+    default: '22'
 
 outputs:
   new-release-published:
@@ -56,70 +60,61 @@ runs:
         node-version: ${{ inputs.node-version }}
         cache: 'npm'
 
-    - name: Install dependencies
+    - name: Install local dependencies (if package.json exists)
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
-        if [ -f "package-lock.json" ]; then
-          npm ci
-        elif [ -f "yarn.lock" ]; then
-          yarn install --frozen-lockfile
-        elif [ -f "pnpm-lock.yaml" ]; then
-          npm install -g pnpm
-          pnpm install --frozen-lockfile
+        if [ -f "package.json" ]; then
+          echo "📦 Installing project dependencies..."
+          if [ -f "package-lock.json" ]; then
+            npm ci
+          elif [ -f "yarn.lock" ]; then
+            yarn install --frozen-lockfile
+          elif [ -f "pnpm-lock.yaml" ]; then
+            npm install -g pnpm
+            pnpm install --frozen-lockfile
+          else
+            npm install
+          fi
         else
-          npm install
-        fi
-
-    - name: Create semantic-release configuration
-      shell: bash
-      working-directory: ${{ inputs.working-directory }}
-      run: |
-        # .releaserc.js 파일이 없으면 기본 설정을 생성
-        if [ ! -f ".releaserc.js" ] && [ ! -f ".releaserc.json" ] && [ ! -f "release.config.js" ]; then
-          cat > .releaserc.js << 'EOF'
-        module.exports = {
-          branches: ${{ inputs.release-branches }},
-          plugins: [
-            '@semantic-release/commit-analyzer',
-            '@semantic-release/release-notes-generator',
-            '@semantic-release/changelog',
-            [
-              '@semantic-release/npm',
-              {
-                npmPublish: false
-              }
-            ],
-            [
-              '@semantic-release/github',
-              {
-                assets: ['CHANGELOG.md']
-              }
-            ],
-            [
-              '@semantic-release/git',
-              {
-                assets: ['CHANGELOG.md', 'package.json', 'package-lock.json'],
-                message: 'chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}'
-              }
-            ]
-          ]
+          echo "⚠️ No package.json found. Creating minimal package.json..."
+          cat > package.json << 'EOF'
+        {
+          "name": "auto-release-project",
+          "version": "0.0.0",
+          "private": true
         }
         EOF
         fi
 
-    - name: Install semantic-release and plugins
+    - name: Create semantic-release configuration (if not exists)
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
-        npm install --save-dev \
-          semantic-release \
-          @semantic-release/changelog \
-          @semantic-release/commit-analyzer \
-          @semantic-release/git \
-          @semantic-release/github \
-          @semantic-release/npm \
-          @semantic-release/release-notes-generator
+        # package.json에 release 설정이 있는지 확인
+        if [ -f "package.json" ] && grep -q '"release"' package.json; then
+          echo "✅ Using semantic-release configuration from package.json"
+        elif [ -f ".releaserc.js" ] || [ -f ".releaserc.json" ] || [ -f "release.config.js" ]; then
+          echo "✅ Using existing semantic-release configuration file"
+        else
+          echo "🔧 Creating default semantic-release configuration..."
+          cat > .releaserc.json << EOF
+        {
+          "branches": ${{ inputs.release-branches }},
+          "plugins": [
+            "@semantic-release/commit-analyzer",
+            "@semantic-release/release-notes-generator",
+            "@semantic-release/changelog",
+            ["@semantic-release/npm", {"npmPublish": false}],
+            ["@semantic-release/github", {"assets": ["CHANGELOG.md"]}],
+            ["@semantic-release/git", {
+              "assets": ["CHANGELOG.md", "package.json", "package-lock.json"],
+              "message": "chore(release): \${nextRelease.version} [skip ci]\n\n\${nextRelease.notes}"
+            }]
+          ]
+        }
+        EOF
+        fi
 
     - name: Run semantic-release
       id: semantic-release
@@ -134,11 +129,11 @@ runs:
         GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
       run: |
         if [ "${{ inputs.dry-run }}" = "true" ]; then
-          echo "🚀 Running semantic-release in dry-run mode..."
-          npx semantic-release --dry-run
+          echo "🚀 Running semantic-release@${{ inputs.semantic-release-version }} in dry-run mode..."
+          npx semantic-release@${{ inputs.semantic-release-version }} --dry-run
         else
-          echo "🚀 Running semantic-release..."
-          npx semantic-release
+          echo "🚀 Running semantic-release@${{ inputs.semantic-release-version }}..."
+          npx semantic-release@${{ inputs.semantic-release-version }}
         fi
 
 branding:
