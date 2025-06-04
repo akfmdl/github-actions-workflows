@@ -1,4 +1,4 @@
-# GitHub Actions Tutorial
+# GitHub Actions Workflows
 
 다양한 github action들을 다른 레포에서 재사용할 수 있도록 정리한 레포입니다.
 
