@@ -30,23 +30,36 @@
     "name": "your-project-name",
     "version": "0.0.0",
     "private": true,
-    // 추가 설치 필요한 패키지 정의
     "devDependencies": {
-        "@semantic-release/changelog": "^6.0.3",  // changelog 생성
-        "@semantic-release/git": "^10.0.1"        // git 커밋 및 태그 생성
+        "@semantic-release/changelog": "^6.0.3",
+        "@semantic-release/git": "^10.0.1"
     },
-    // semantic-release 에서 기본으로 제공하는 플러그인 정의
-    // 더 많은 플러그인은 https://github.com/semantic-release 참고
     "release": {
         "plugins": [
             "@semantic-release/commit-analyzer",
             "@semantic-release/release-notes-generator",
             "@semantic-release/changelog",
+            [
+                "@semantic-release/npm",
+                {
+                    "npmPublish": false
+                }
+            ],
             "@semantic-release/github",
-            "@semantic-release/git"
+            [
+                "@semantic-release/git",
+                {
+                    "assets": [
+                        "CHANGELOG.md",
+                        "package.json"
+                    ],
+                    "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+                }
+            ]
         ]
     }
 }
+
 ```
 
 [semantic-release 설정 문서](https://semantic-release.gitbook.io/semantic-release/usage/configuration)에 따라 `package.json`에 더 다양한 설정을 포함할 수도 있습니다.
