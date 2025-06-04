@@ -30,10 +30,13 @@
     "name": "your-project-name",
     "version": "0.0.0",
     "private": true,
+    // 추가로 필요한 의존성 목록
     "devDependencies": {
         "@semantic-release/changelog": "^6.0.3",
         "@semantic-release/git": "^10.0.1"
     },
+    // semantic-release 에서 기본으로 제공하는 플러그인 목록
+    // 더 많은 플러그인은 https://github.com/semantic-release/semantic-release/blob/master/docs/extending/plugins-list.md 에서 확인할 수 있습니다.
     "release": {
         "plugins": [
             "@semantic-release/commit-analyzer",
