@@ -59,46 +59,35 @@ runs:
       with:
         node-version: ${{ inputs.node-version }}
 
-    - name: Create semantic-release configuration (if not exists)
-      shell: bash
-      working-directory: ${{ inputs.working-directory }}
-      run: |
-        # package.json이 없으면 최소 파일 생성
-        if [ ! -f "package.json" ]; then
-          echo "⚠️ No package.json found. Creating minimal package.json..."
-          cat > package.json << 'EOF'
-        {
-          "name": "auto-release-project",
-          "version": "0.0.0",
-          "private": true
-        }
-        EOF
-        fi
-
-        # package.json에 release 설정이 있는지 확인
-        if grep -q '"release"' package.json; then
-          echo "✅ Using semantic-release configuration from package.json"
-        elif [ -f ".releaserc.js" ] || [ -f ".releaserc.json" ] || [ -f "release.config.js" ]; then
-          echo "✅ Using existing semantic-release configuration file"
-        else
-          echo "🔧 Creating default semantic-release configuration..."
-          cat > .releaserc.json << EOF
-        {
-          "branches": ${{ inputs.release-branches }},
-          "plugins": [
-            "@semantic-release/commit-analyzer",
-            "@semantic-release/release-notes-generator",
-            "@semantic-release/changelog",
-            ["@semantic-release/npm", {"npmPublish": false}],
-            ["@semantic-release/github", {"assets": ["CHANGELOG.md"]}],
-            ["@semantic-release/git", {
-              "assets": ["CHANGELOG.md", "package.json", "package-lock.json"],
-              "message": "chore(release): \${nextRelease.version} [skip ci]\n\n\${nextRelease.notes}"
-            }]
-          ]
-        }
-        EOF
-        fi
+    # - name: Create semantic-release configuration (if not exists)
+    #   shell: bash
+    #   working-directory: ${{ inputs.working-directory }}
+    #   run: |
+    #     # package.json이 없으면 파일 생성
+    #     if [ ! -f "package.json" ]; then
+    #       echo "⚠️ No package.json found. Creating minimal package.json..."
+    #       cat > package.json << 'EOF'
+    #     {
+    #       "name": "auto-release-project",
+    #       "version": "0.0.0",
+    #       "private": true,
+    #       "devDependencies": {
+    #         "@semantic-release/changelog": "^6.0.3",
+    #         "@semantic-release/git": "^10.0.1"
+    #       },
+    #       "release": {
+    #         "plugins": [
+    #           "@semantic-release/commit-analyzer",
+    #           "@semantic-release/release-notes-generator",
+    #           "@semantic-release/changelog",
+    #           "@semantic-release/github",
+    #           "@semantic-release/git"
+    #         ]
+    #       }
+    #     }
+    #     EOF
+    #     fi
+    #     fi
 
     - name: Install local dependencies (if package.json exists)
       shell: bash

@@ -11,6 +11,9 @@
 - **GitHub 릴리즈** 자동 생성
 - **NPM 패키지** 배포 지원 (선택사항)
 - **Dry-run** 모드 지원
+- **버전 고정**: 특정 semantic-release 버전 사용 가능
+- **자동 감지**: package.json 설정 또는 설정 파일 자동 감지
+- **유연한 설치**: npx를 통한 효율적인 의존성 관리
 
 ## 📋 필수 조건
 
@@ -20,9 +23,118 @@
    - `fix:` - 버그 수정 (patch 버전 증가)
    - `BREAKING CHANGE:` - 호환성을 깨는 변경 (major 버전 증가)
 
+### 📝 package.json 파일 생성
+
+repository에 `package.json` 파일이 없다면 다음과 같이 생성하세요:
+
+```json
+{
+  "name": "your-project-name",
+  "version": "0.0.0",
+  "description": "Your project description",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/your-repo.git"
+  },
+  "author": "Your Name",
+  "license": "MIT"
+}
+```
+
+> **중요**: `version`을 `"0.0.0"`으로 설정하면 첫 번째 릴리즈부터 시작됩니다.
+
+### 🔧 고급 package.json 설정 (권장)
+
+[semantic-release 설정 문서](https://semantic-release.gitbook.io/semantic-release/usage/configuration)에 따라 `package.json`에 직접 설정을 포함할 수도 있습니다:
+
+```json
+{
+  "name": "your-project-name",
+  "version": "0.0.0",
+  "description": "Your project description",
+  "private": true,
+  "scripts": {
+    "semantic-release": "semantic-release",
+    "semantic-release:dry-run": "semantic-release --dry-run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/your-repo.git"
+  },
+  "keywords": ["semantic-release", "github-actions", "automation"],
+  "author": "Your Name",
+  "license": "MIT",
+  "release": {
+    "branches": [
+      "+([0-9])?(.{+([0-9]),x}).x",
+      "master",
+      "main", 
+      "next",
+      "next-major",
+      {"name": "beta", "prerelease": true},
+      {"name": "alpha", "prerelease": true}
+    ],
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator", 
+      "@semantic-release/changelog",
+      ["@semantic-release/npm", {"npmPublish": false}],
+      ["@semantic-release/github", {"assets": ["CHANGELOG.md"]}],
+      ["@semantic-release/git", {
+        "assets": ["CHANGELOG.md", "package.json", "package-lock.json"],
+        "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+      }]
+    ]
+  },
+  "devDependencies": {
+    "semantic-release": "^22.0.0",
+    "@semantic-release/changelog": "^6.0.0",
+    "@semantic-release/commit-analyzer": "^11.0.0",
+    "@semantic-release/git": "^10.0.0", 
+    "@semantic-release/github": "^9.0.0",
+    "@semantic-release/npm": "^11.0.0",
+    "@semantic-release/release-notes-generator": "^12.0.0"
+  }
+}
+```
+
+#### 🎯 고급 설정의 장점:
+- **로컬 테스트**: `npm run semantic-release:dry-run`으로 로컬에서 테스트 가능
+- **유지보수 브랜치**: `1.x.x`, `2.x.x` 등 자동 지원
+- **Pre-release**: `beta`, `alpha` 브랜치에서 사전 릴리즈 생성
+- **CHANGELOG**: 자동 생성 및 Git 커밋에 포함
+- **버전 관리**: 프로젝트별 설정으로 일관성 보장
+
 ## 🔧 사용법
 
-### 1. 워크플로우 파일 생성
+### 1. package.json 파일 확인/생성 (필수)
+
+먼저 repository 루트에 `package.json` 파일이 있는지 확인하세요. 없다면 생성해야 합니다:
+
+```bash
+# 터미널에서 실행 (기본값으로 생성)
+npm init -y
+
+# 또는 수동으로 파일 생성
+```
+
+**최소 구성 예시**:
+```json
+{
+  "name": "your-project-name",
+  "version": "0.0.0",
+  "private": true,
+  "repository": {
+    "type": "git", 
+    "url": "https://github.com/your-username/your-repo.git"
+  }
+}
+```
+
+> 💡 **팁**: `version`을 `"0.0.0"`으로 설정하면 첫 번째 릴리즈부터 시작됩니다.
+
+### 2. 워크플로우 파일 생성
 
 `.github/workflows/release.yml` 파일을 생성하고 다음 내용을 추가하세요:
 
@@ -53,18 +165,21 @@ jobs:
           release-branches: '["main", "master"]'
 ```
 
-### 2. 입력 매개변수
+### 3. 입력 매개변수
 
 | 매개변수 | 필수 | 기본값 | 설명 |
 |---------|------|-------|------|
 | `github-token` | ✅ | - | GitHub 토큰 (보통 `${{ secrets.GITHUB_TOKEN }}`) |
 | `node-version` | ❌ | `'18'` | 사용할 Node.js 버전 |
 | `release-branches` | ❌ | `'["main", "master"]'` | 릴리즈할 브랜치 목록 (JSON 배열) |
+| `semantic-release-version` | ❌ | `'22'` | 사용할 semantic-release 버전 |
 | `npm-token` | ❌ | `''` | NPM 패키지 배포용 토큰 |
 | `dry-run` | ❌ | `'false'` | 테스트 모드 실행 여부 |
 | `working-directory` | ❌ | `'.'` | 작업 디렉토리 |
 
-### 3. 출력 값
+> 💡 **새로운 기능**: [semantic-release 설치 문서](https://semantic-release.gitbook.io/semantic-release/usage/installation#installation)에 따라 `npx`를 직접 사용하여 더 안정적이고 빠른 설치가 가능합니다.
+
+### 4. 출력 값
 
 | 출력 | 설명 |
 |------|------|

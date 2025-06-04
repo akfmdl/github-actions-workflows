@@ -20,11 +20,13 @@ jobs:
 
     steps:
       - name: Auto Release
+        id: release
         uses: ./actions/auto-release
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           node-version: '18'
           release-branches: '["main", "master", "next", "beta", "alpha"]'
+          semantic-release-version: '22'  # 특정 버전 고정 (선택사항)
           # npm-token: ${{ secrets.NPM_TOKEN }}  # NPM 패키지 배포시 필요
           dry-run: false
 
