@@ -60,23 +60,12 @@ runs:
         node-version: ${{ inputs.node-version }}
         cache: 'npm'
 
-    - name: Install local dependencies (if package.json exists)
+    - name: Create semantic-release configuration (if not exists)
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
-        if [ -f "package.json" ]; then
-          echo "📦 Installing project dependencies..."
-          if [ -f "package-lock.json" ]; then
-            npm ci
-          elif [ -f "yarn.lock" ]; then
-            yarn install --frozen-lockfile
-          elif [ -f "pnpm-lock.yaml" ]; then
-            npm install -g pnpm
-            pnpm install --frozen-lockfile
-          else
-            npm install
-          fi
-        else
+        # package.json이 없으면 최소 파일 생성
+        if [ ! -f "package.json" ]; then
           echo "⚠️ No package.json found. Creating minimal package.json..."
           cat > package.json << 'EOF'
         {
@@ -87,12 +76,8 @@ runs:
         EOF
         fi
 
-    - name: Create semantic-release configuration (if not exists)
-      shell: bash
-      working-directory: ${{ inputs.working-directory }}
-      run: |
         # package.json에 release 설정이 있는지 확인
-        if [ -f "package.json" ] && grep -q '"release"' package.json; then
+        if grep -q '"release"' package.json; then
           echo "✅ Using semantic-release configuration from package.json"
         elif [ -f ".releaserc.js" ] || [ -f ".releaserc.json" ] || [ -f "release.config.js" ]; then
           echo "✅ Using existing semantic-release configuration file"
@@ -114,6 +99,26 @@ runs:
           ]
         }
         EOF
+        fi
+
+    - name: Install local dependencies (if package.json exists)
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        if [ -f "package.json" ]; then
+          echo "📦 Installing project dependencies..."
+          if [ -f "package-lock.json" ]; then
+            npm ci
+          elif [ -f "yarn.lock" ]; then
+            yarn install --frozen-lockfile
+          elif [ -f "pnpm-lock.yaml" ]; then
+            npm install -g pnpm
+            pnpm install --frozen-lockfile
+          else
+            npm install
+          fi
+        else
+          echo "⚠️ No package.json found - this should not happen after previous step"
         fi
 
     - name: Run semantic-release
