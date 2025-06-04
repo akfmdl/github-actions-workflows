@@ -1,0 +1,37 @@
+name: Auto Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - next
+      - beta
+      - alpha
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+
+    steps:
+      - name: Auto Release
+        uses: ./actions/auto-release
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          node-version: '18'
+          release-branches: '["main", "master", "next", "beta", "alpha"]'
+          # npm-token: ${{ secrets.NPM_TOKEN }}  # NPM 패키지 배포시 필요
+          dry-run: false
+
+      - name: Post-release notification
+        if: steps.release.outputs.new-release-published == 'true'
+        run: |
+          echo "🎉 새로운 릴리즈가 생성되었습니다!"
+          echo "버전: ${{ steps.release.outputs.new-release-version }}"
+          echo "태그: ${{ steps.release.outputs.new-release-git-tag }}"
+          echo "SHA: ${{ steps.release.outputs.new-release-git-head }}" 
