@@ -117,8 +117,9 @@ module.exports = {
 }
 ```
 
+더 많은 Plugin 옵션은 [semantic-release 공식 문서](https://semantic-release.gitbook.io/semantic-release/extending/plugins-list)를 참고하세요.
+
 ## 📚 참고 자료
 
 - [Semantic Release 공식 문서](https://semantic-release.gitbook.io/semantic-release)
 - [Conventional Commits](https://www.conventionalcommits.org/)
-- [GitHub Actions 복합 액션](https://docs.github.com/en/actions/creating-actions/creating-a-composite-action)

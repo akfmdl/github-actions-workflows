@@ -3,7 +3,7 @@ name: Auto Release
 on:
   push:
     branches:
-      - main
+      - <target branch>
 
 jobs:
   release:
@@ -19,7 +19,7 @@ jobs:
         uses: akfmdl/github-actions-workflows/actions/auto-release-by-commit@main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          release-branches: '["main"]'
+          release-branches: '["<target branch>"]'
           dry-run: true
 
       - name: Post-release notification
