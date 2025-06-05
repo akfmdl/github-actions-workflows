@@ -1,11 +1,12 @@
-# Auto Release with Semantic Release by Commit
+# Auto Release with Semantic Release
 
-특정 브랜치에 push할 때 Commit 메세지 규칙에 따라 자동으로 GitHub 릴리즈를 생성하는 GitHub Action입니다.
+특정 브랜치에 push할 때 Commit 메세지 규칙 혹은 Pull Request 라벨 규칙에 따라 자동으로 GitHub 릴리즈를 생성하는 GitHub Action입니다.
 
 ## 🚀 특징
 
 - **Semantic Release** 버전 관리 자동화
 - **Conventional Commits** 커밋 메세지 규칙 기반 릴리즈 노트 자동 생성
+- **Pull Request 라벨** 규칙 기반 릴리즈 노트 자동 생성
 - **다중 브랜치** 지원 (main, master, next, beta, alpha 등)
 - **CHANGELOG.md** 자동 생성 및 업데이트
 - **GitHub 릴리즈** 자동 생성
@@ -16,10 +17,32 @@
 ## 📋 필수 조건
 
 1. **Node.js 프로젝트**여야 합니다 (`package.json` 필요)
-2. **Conventional Commits** 규칙을 따라야 합니다:
+2. **Commit Conventional Commits** Commit 메세지 기반으로 버전 관리 및 릴리즈 노트를 생성하는 경우, 다음과 같은 규칙을 따라야 합니다:
    - `feat:` - 새로운 기능 (minor 버전 증가)
    - `fix:` - 버그 수정 (patch 버전 증가)
    - `BREAKING CHANGE:` - 호환성을 깨는 변경 (major 버전 증가)
+3. **Pull Request 라벨** Pull Request 라벨 기반으로 버전 관리 및 릴리즈 노트를 생성하는 경우, package.json 파일의 `release` > `plugins` > `@bobvanderlinden/semantic-release-pull-request-analyzer` > `labels` 에 라벨을 추가해야 합니다.
+라벨은 GitHub에서 등록한 라벨 이름을 사용해야 합니다.
+
+[예시]
+```json
+"release": {
+  "plugins": [
+    "@bobvanderlinden/semantic-release-pull-request-analyzer",
+    {
+      "labels": {
+        // "등록된 라벨 이름": "버전 증가 단위"
+        "breaking": "major",
+        "feature": "minor",
+        "enhancement": "minor",
+        "bug": "patch",
+        "bugfix": "patch",
+        "fix": "patch"
+      }
+    }
+  ]
+}
+```
 
 ## 🔧 사용법
 
@@ -34,7 +57,12 @@
 ### 2. 워크플로우 파일 생성
 
 `.github/workflows` 에 `release.yml` 파일을 추가하세요:
-참고: [.github/workflows/release.yml](../../.github/workflows/auto-release-by-commit.yml)
+
+#### Commit 메세지 규칙 기반 릴리즈 노트 자동 생성
+참고: [.github/workflows/auto-release-by-commit.yml](../../.github/workflows/auto-release-by-commit.yml)
+
+#### Pull Request 라벨 규칙 기반 릴리즈 노트 자동 생성
+참고: [.github/workflows/auto-release-by-pull-request.yml](../../.github/workflows/auto-release-by-pull-request.yml)
 
 target branch를 원하는 브랜치로 변경하세요. 여러 브랜치 지원 가능합니다.
 
