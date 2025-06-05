@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Auto Release
-        uses: akfmdl/github-actions-workflows/actions/auto-release@main
+        uses: akfmdl/github-actions-workflows/actions/auto-release-by-commit@main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           release-branches: '["main"]'

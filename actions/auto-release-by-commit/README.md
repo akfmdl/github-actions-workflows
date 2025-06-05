@@ -1,6 +1,6 @@
-# Auto Release with Semantic Release
+# Auto Release with Semantic Release by Commit
 
-특정 브랜치에 push할 때 자동으로 GitHub 릴리즈를 생성하는 GitHub Action입니다.
+특정 브랜치에 push할 때 Commit 메세지 규칙에 따라 자동으로 GitHub 릴리즈를 생성하는 GitHub Action입니다.
 
 ## 🚀 특징
 
