@@ -51,8 +51,17 @@ on:
           release-branches: '["<target branch>"]'
 ```
 
+### 3. (옵션) 버전 관리 파일 생성
 
-### 3. 입력 매개변수
+`version.py` 파일을 생성하세요.
+
+참고: [version.py](../../version.py)
+
+```python
+__VERSION__ = "0.0.0"
+```
+
+### 4. 입력 매개변수
 
 | 매개변수 | 필수 | 기본값 | 설명 |
 |---------|------|-------|------|
@@ -63,7 +72,7 @@ on:
 | `working-directory` | ❌ | `'.'` | 작업 디렉토리 |
 | `semantic-release-version` | ❌ | `'22'` | 사용할 semantic-release 버전 |
 
-### 4. 출력 값
+### 5. 출력 값
 
 | 출력 | 설명 |
 |------|------|
