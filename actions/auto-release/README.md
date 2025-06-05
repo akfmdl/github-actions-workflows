@@ -21,98 +21,36 @@
    - `fix:` - 버그 수정 (patch 버전 증가)
    - `BREAKING CHANGE:` - 호환성을 깨는 변경 (major 버전 증가)
 
-### 📝 package.json 파일 생성
-
-[auto-release-workflow](actions/auto-release) 액션을 사용하면 repository에 `package.json` 파일이 없다면 다음과 같이 생성하세요:
-
-```json
-{
-    "name": "your-project-name",
-    "version": "0.0.0",
-    "private": true,
-    // 추가로 필요한 의존성 목록
-    "devDependencies": {
-        "@semantic-release/changelog": "^6.0.3",
-        "@semantic-release/git": "^10.0.1"
-    },
-    // semantic-release 에서 기본으로 제공하는 플러그인 목록
-    // 더 많은 플러그인은 https://github.com/semantic-release/semantic-release/blob/master/docs/extending/plugins-list.md 에서 확인할 수 있습니다.
-    "release": {
-        "plugins": [
-            "@semantic-release/commit-analyzer",
-            "@semantic-release/release-notes-generator",
-            "@semantic-release/changelog",
-            [
-                "@semantic-release/npm",
-                {
-                    "npmPublish": false
-                }
-            ],
-            "@semantic-release/github",
-            [
-                "@semantic-release/git",
-                {
-                    "assets": [
-                        "CHANGELOG.md",
-                        "package.json"
-                    ],
-                    "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
-                }
-            ]
-        ]
-    }
-}
-
-```
-
-[semantic-release 설정 문서](https://semantic-release.gitbook.io/semantic-release/usage/configuration)에 따라 `package.json`에 더 다양한 설정을 포함할 수도 있습니다.
-
-
 ## 🔧 사용법
 
 ### 1. package.json 파일 확인/생성 (필수)
 
 먼저 repository 루트에 `package.json` 파일이 있는지 확인하세요. 없다면 생성해야 합니다.
 
+참고: [package.json](../../package.json)
+
+[semantic-release 설정 문서](https://semantic-release.gitbook.io/semantic-release/usage/configuration)에 따라 `package.json`에 더 다양한 설정을 포함할 수도 있습니다.
+
 ### 2. 워크플로우 파일 생성
 
-`.github/workflows/release.yml` 파일을 생성하고 다음 내용을 추가하세요:
-참고: [examples/auto-release-workflow.yml](../examples/auto-release-workflow.yml)
+`.github/workflows` 에 `release.yml` 파일을 추가하세요:
+참고: [.github/workflows/release.yml](../../.github/workflows/release.yml)
+
+target branch를 원하는 브랜치로 변경하세요. 여러 브랜치 지원 가능합니다.
 
 ```yaml
-name: Auto Release
 
 on:
   push:
     branches:
-      - main
-      - master
-
-jobs:
-  release:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      issues: write
-      pull-requests: write
-      id-token: write
+      - <target branch>
 
     steps:
       - name: Auto Release
-        uses: akfmdl/github-actions-release-tutorial/actions/auto-release@main
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          node-version: '18'
-          release-branches: '["main", "master"]'
-
-      - name: Post-release notification
-        if: steps.release.outputs.new-release-published == 'true'
-        run: |
-          echo "🎉 새로운 릴리즈가 생성되었습니다!"
-          echo "버전: ${{ steps.release.outputs.new-release-version }}"
-          echo "태그: ${{ steps.release.outputs.new-release-git-tag }}"
-          echo "SHA: ${{ steps.release.outputs.new-release-git-head }}" 
+          ...
+          release-branches: '["<target branch>"]'
 ```
+
 
 ### 3. 입력 매개변수
 
@@ -121,7 +59,6 @@ jobs:
 | `github-token` | ✅ | - | GitHub 토큰 (보통 `${{ secrets.GITHUB_TOKEN }}`) |
 | `node-version` | ❌ | `'18'` | 사용할 Node.js 버전 |
 | `release-branches` | ❌ | `'["main", "master"]'` | 릴리즈할 브랜치 목록 (JSON 배열) |
-| `semantic-release-version` | ❌ | `'22'` | 사용할 semantic-release 버전 |
 | `dry-run` | ❌ | `'false'` | 테스트 모드 실행 여부 |
 | `working-directory` | ❌ | `'.'` | 작업 디렉토리 |
 | `semantic-release-version` | ❌ | `'22'` | 사용할 semantic-release 버전 |
