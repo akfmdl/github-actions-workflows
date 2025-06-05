@@ -1,59 +1,105 @@
-name: 'Auto Release by Pull Request'
-description: 'Pull Request 라벨을 기반으로 자동 릴리즈를 수행하는 액션'
-author: 'GitHub Actions Workflows'
+name: 'Auto Release with Semantic Release'
+description: 'Automatically create GitHub releases using semantic-release when pushing to specified branches'
+author: 'GitHub Actions Tutorial'
 
 inputs:
-  token:
-    description: 'GitHub 토큰 (GITHUB_TOKEN 또는 PAT)'
+  github-token:
+    description: 'GitHub token for authentication'
     required: true
-  npm_token:
-    description: 'NPM 토큰 (NPM 패키지 발행시 필요)'
+  node-version:
+    description: 'Node.js version to use'
     required: false
-  working_directory:
-    description: '작업 디렉토리'
+    default: '18'
+  release-branches:
+    description: 'Branches to release from (JSON array format)'
     required: false
-    default: '.'
-  dry_run:
-    description: '드라이런 모드 (실제 릴리즈하지 않음)'
+    default: '["main", "master"]'
+  dry-run:
+    description: 'Whether to run in dry-run mode'
     required: false
     default: 'false'
+  working-directory:
+    description: 'Working directory for the action'
+    required: false
+    default: '.'
+  semantic-release-version:
+    description: 'Semantic Release version to use'
+    required: false
+    default: '22'
+
+outputs:
+  new-release-published:
+    description: 'Whether a new release was published'
+    value: ${{ steps.semantic-release.outputs.new-release-published }}
+  new-release-version:
+    description: 'Version of the new release'
+    value: ${{ steps.semantic-release.outputs.new-release-version }}
+  new-release-git-tag:
+    description: 'Git tag of the new release'
+    value: ${{ steps.semantic-release.outputs.new-release-git-tag }}
+  new-release-git-head:
+    description: 'Git SHA of the new release'
+    value: ${{ steps.semantic-release.outputs.new-release-git-head }}
 
 runs:
   using: 'composite'
   steps:
-    - name: Checkout 코드
+    - name: Checkout code
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        token: ${{ inputs.token }}
+        token: ${{ inputs.github-token }}
 
-    - name: Node.js 설정
+    - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
-        cache: 'npm'
-        cache-dependency-path: ${{ inputs.working_directory }}/package-lock.json
+        node-version: ${{ inputs.node-version }}
 
-    - name: 의존성 설치
+    - name: Install local dependencies (if package.json exists)
       shell: bash
-      working-directory: ${{ inputs.working_directory }}
-      run: npm ci
-
-    - name: Semantic Release 실행
-      shell: bash
-      working-directory: ${{ inputs.working_directory }}
-      env:
-        GITHUB_TOKEN: ${{ inputs.token }}
-        NPM_TOKEN: ${{ inputs.npm_token }}
+      working-directory: ${{ inputs.working-directory }}
       run: |
-        if [ "${{ inputs.dry_run }}" = "true" ]; then
-          echo "🔍 드라이런 모드로 실행 중..."
-          npx semantic-release --dry-run
+        if [ -f "package.json" ]; then
+          echo "📦 Installing project dependencies..."
+          if [ -f "package-lock.json" ]; then
+            npm ci
+          elif [ -f "yarn.lock" ]; then
+            yarn install --frozen-lockfile
+          elif [ -f "pnpm-lock.yaml" ]; then
+            npm install -g pnpm
+            pnpm install --frozen-lockfile
+          else
+            npm install
+          fi
         else
-          echo "🚀 릴리즈 실행 중..."
-          npx semantic-release
+          echo "⚠️ No package.json found"
+          exit 1
+        fi
+
+    - name: Run semantic-release
+      id: semantic-release
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        GIT_AUTHOR_NAME: github-actions[bot]
+        GIT_AUTHOR_EMAIL: github-actions[bot]@users.noreply.github.com
+        GIT_COMMITTER_NAME: github-actions[bot]
+        GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
+      run: |
+        # JSON 배열을 공백으로 구분된 문자열로 변환
+        BRANCHES=$(echo '${{ inputs.release-branches }}' | jq -r '.[]' | paste -sd ' ')
+        
+        if [ "${{ inputs.dry-run }}" = "true" ]; then
+          echo "🚀 Running semantic-release@${{ inputs.semantic-release-version }} in dry-run mode..."
+          echo "📋 Release branches: $BRANCHES"
+          npx semantic-release@${{ inputs.semantic-release-version }} --dry-run --branches $BRANCHES
+        else
+          echo "🚀 Running semantic-release@${{ inputs.semantic-release-version }}..."
+          echo "📋 Release branches: $BRANCHES"
+          npx semantic-release@${{ inputs.semantic-release-version }} --branches $BRANCHES
         fi
 
 branding:
-  icon: 'package'
-  color: 'blue' 
+  icon: 'tag'
+  color: 'blue'

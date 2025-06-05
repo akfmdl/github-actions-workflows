@@ -1,23 +1,31 @@
 {
     "name": "github-actions-workflows",
-    "version": "1.0.0",
+    "version": "0.0.0",
     "private": true,
     "devDependencies": {
         "@semantic-release/changelog": "^6.0.3",
         "@semantic-release/git": "^10.0.1",
-        "@semantic-release/exec": "^6.0.3"
+        "@bobvanderlinden/semantic-release-pull-request-analyzer": "^1.0.4"
     },
     "release": {
         "plugins": [
-            "@semantic-release/commit-analyzer",
-            "@semantic-release/release-notes-generator",
-            "@semantic-release/changelog",
             [
-                "@semantic-release/exec",
+                "@bobvanderlinden/semantic-release-pull-request-analyzer",
                 {
-                    "prepareCmd": "sed -i.bak 's/__VERSION__ = \".*\"/__VERSION__ = \"${nextRelease.version}\"/' version.py && rm version.py.bak"
+                    "labels": {
+                        "breaking": "major",
+                        "feature": "minor",
+                        "enhancement": "minor",
+                        "bug": "patch",
+                        "bugfix": "patch",
+                        "fix": "patch",
+                        "documentation": "patch",
+                        "docs": "patch",
+                        "chore": "patch"
+                    }
                 }
             ],
+            "@semantic-release/changelog",
             [
                 "@semantic-release/npm",
                 {

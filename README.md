@@ -4,4 +4,4 @@
 
 ## 종류
 
-- [auto-release-workflow](actions/auto-release/README.md): 커밋 메세지 규칙 기반 릴리즈 노트 자동 생성
+- [auto-release-workflow](actions/auto-release-by-commit/README.md): 커밋 메세지 규칙 기반 릴리즈 노트 자동 생성

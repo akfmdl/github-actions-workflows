@@ -3,7 +3,7 @@ name: Auto Release
 on:
   push:
     branches:
-      - test
+      - main
 
 jobs:
   release:
@@ -16,10 +16,10 @@ jobs:
 
     steps:
       - name: Auto Release
-        uses: akfmdl/github-actions-workflows/actions/auto-release-by-commit@main
+        uses: akfmdl/github-actions-workflows/actions/auto-release-by-commit@test
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          release-branches: '["test"]'
+          release-branches: '["main"]'
 
       - name: Post-release notification
         if: steps.release.outputs.new-release-published == 'true'
