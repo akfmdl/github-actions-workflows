@@ -34,12 +34,11 @@
 ### 2. 워크플로우 파일 생성
 
 `.github/workflows` 에 `release.yml` 파일을 추가하세요:
-참고: [.github/workflows/release.yml](../../.github/workflows/release.yml)
+참고: [.github/workflows/release.yml](../../.github/workflows/auto-release-by-commit.yml)
 
 target branch를 원하는 브랜치로 변경하세요. 여러 브랜치 지원 가능합니다.
 
 ```yaml
-
 on:
   push:
     branches:

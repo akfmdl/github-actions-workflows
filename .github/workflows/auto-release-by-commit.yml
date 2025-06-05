@@ -3,7 +3,7 @@ name: Auto Release
 on:
   push:
     branches:
-      - <target branch>
+      - test
 
 jobs:
   release:
@@ -19,8 +19,7 @@ jobs:
         uses: akfmdl/github-actions-workflows/actions/auto-release-by-commit@main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          release-branches: '["<target branch>"]'
-          dry-run: true
+          release-branches: '["test"]'
 
       - name: Post-release notification
         if: steps.release.outputs.new-release-published == 'true'
