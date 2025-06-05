@@ -13,6 +13,18 @@
 - **버전 고정**: 특정 semantic-release 버전 사용 가능
 - **유연한 설치**: npx를 통한 효율적인 의존성 관리
 
+## Semantic Versioning 이란?
+
+[Semantic Versioning 공식 문서](https://semver.org/)에 따라 버전 관리를 합니다. 버전 관리 규칙은 다음과 같습니다:
+
+```
+[Major].[Minor].[Patch]
+
+- Major: 중대한 변경 (예: 새로운 기능, 중요한 버그 수정)
+- Minor: 중간 규모의 변경 (예: 새로운 기능, 중요하지 않은 버그 수정)
+- Patch: 소규모의 변경 (예: 버그 수정)
+```
+
 ## 📋 필수 조건
 
 1. **Node.js 프로젝트**여야 합니다 (`package.json` 필요)
