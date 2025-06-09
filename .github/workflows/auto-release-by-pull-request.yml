@@ -3,7 +3,7 @@ name: Auto Release by Pull Request
 on:
   push:
     branches:
-      - <TARGET_BRANCH>
+      - test
 
 jobs:
   release:
@@ -16,10 +16,10 @@ jobs:
 
     steps:
       - name: Auto Release
-        uses: akfmdl/github-actions-workflows/actions/auto-release-custom-versioning@main
+        uses: akfmdl/github-actions-workflows/actions/auto-release-custom-versioning@test
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          release-branches: '["<TARGET_BRANCH>"]'
+          release-branches: '["test"]'
 
       - name: Post-release notification
         if: steps.release.outputs.new-release-published == 'true'
