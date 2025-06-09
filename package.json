@@ -3,18 +3,23 @@
     "version": "1.0.2",
     "private": true,
     "devDependencies": {
-        "@semantic-release/changelog": "^6.0.3",
         "@semantic-release/git": "^10.0.1",
-        "@bobvanderlinden/semantic-release-pull-request-analyzer": "^1.0.4",
-        "@semantic-release/exec": "^6.0.3"
+        "@semantic-release/exec": "^6.0.3",
+        // Commit 메세지 기반 릴리즈 노트 자동 생성시 필요
+        // "@semantic-release/commit-analyzer": "^13.0.1",
+        // Pull Request 라벨 기반 릴리즈 노트 자동 생성시 필요
+        "@bobvanderlinden/semantic-release-pull-request-analyzer": "^1.0.4"
     },
     "release": {
         "plugins": [
+            // Commit 메세지 기반 릴리즈 노트 자동 생성시 필요
+            // "@semantic-release/commit-analyzer",
+            // Pull Request 라벨 기반 릴리즈 노트 자동 생성시 필요
             [
                 "@bobvanderlinden/semantic-release-pull-request-analyzer",
                 {
                     "labels": {
-                        "breaking": "major",
+                        "breaking": "minor",
                         "feature": "minor",
                         "enhancement": "minor",
                         "bug": "patch",
@@ -26,11 +31,10 @@
                     }
                 }
             ],
-            "@semantic-release/changelog",
             [
                 "@semantic-release/exec",
                 {
-                    "prepareCmd": "sed -i.bak 's/__VERSION__ = \".*\"/__VERSION__ = \"${nextRelease.version}\"/' version.py && rm version.py.bak"
+                    "prepareCmd": "node scripts/generate-version.js ${nextRelease.type}"
                 }
             ],
             [
@@ -39,14 +43,7 @@
                     "npmPublish": false
                 }
             ],
-            [
-                "@semantic-release/github",
-                {
-                    "releasedLabels": false,
-                    "successComment": false,
-                    "failComment": false
-                }
-            ],
+            "@semantic-release/github",
             [
                 "@semantic-release/git",
                 {
