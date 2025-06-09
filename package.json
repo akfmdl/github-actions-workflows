@@ -2,6 +2,7 @@
     "name": "github-actions-workflows",
     "version": "1.1.0",
     "private": true,
+    "type": "module",
     "devDependencies": {
         "@semantic-release/git": "^10.0.1",
         "@semantic-release/exec": "^6.0.3",
@@ -25,7 +26,7 @@
                     }
                 }
             ],
-            "./scripts/calendar-version-plugin.js",
+            "file://./scripts/calendar-version-plugin.js",
             [
                 "@semantic-release/exec",
                 {

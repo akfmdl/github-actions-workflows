@@ -1,4 +1,4 @@
-const { execSync } = require('child_process');
+import { execSync } from 'child_process';
 
 function getLastVersion() {
     try {
@@ -52,7 +52,7 @@ function generateCalendarVersion(releaseType) {
     return newVersion;
 }
 
-module.exports = (pluginConfig, context) => {
+export default (pluginConfig, context) => {
     return {
         generateNotes: (pluginConfig, context) => {
             const { nextRelease, logger } = context;
