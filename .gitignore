@@ -195,3 +195,6 @@ cython_debug/
 
 # VSCode
 .vscode/
+
+# Calendar version wrapper 생성 파일
+RELEASE_NOTES.md

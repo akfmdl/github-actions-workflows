@@ -5,7 +5,7 @@ const fs = require('fs');
 
 // GitHub API를 사용하기 위한 설정
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const GITHUB_REPOSITORY = process.env.GITHUB_REPOSITORY || '';
+const GITHUB_REPOSITORY = process.env.GITHUB_REPOSITORY || 'akfmdl/github-actions-workflows';
 const GITHUB_API_URL = process.env.GITHUB_API_URL || 'https://api.github.com';
 
 // 라벨과 릴리즈 타입 매핑 (package.json 설정에서 가져옴)
@@ -120,24 +120,34 @@ function extractPullRequestNumber(commitMessage) {
     return null;
 }
 
-async function getPullRequestLabels(prNumber) {
+async function getPullRequestInfo(prNumber) {
     if (!GITHUB_TOKEN || !GITHUB_REPOSITORY) {
-        console.log('⚠️ GitHub 토큰 또는 리포지토리 정보가 없어서 PR 라벨을 확인할 수 없습니다.');
-        return [];
+        console.log('⚠️ GitHub 토큰 또는 리포지토리 정보가 없어서 PR 정보를 확인할 수 없습니다.');
+        return null;
     }
 
     try {
         const url = `${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${prNumber}`;
-        console.log(`🔍 PR #${prNumber} 라벨 확인 중...`);
+        console.log(`🔍 PR #${prNumber} 정보 확인 중...`);
 
         const prData = await fetchWithAuth(url);
         const labels = prData.labels.map(label => label.name);
 
+        const prInfo = {
+            number: prNumber,
+            title: prData.title,
+            author: prData.user.login,
+            labels: labels,
+            url: prData.html_url
+        };
+
+        console.log(`📄 PR #${prNumber}: "${prInfo.title}" by @${prInfo.author}`);
         console.log(`🏷️ PR #${prNumber} 라벨: [${labels.join(', ')}]`);
-        return labels;
+
+        return prInfo;
     } catch (error) {
-        console.log(`⚠️ PR #${prNumber} 라벨 확인 실패: ${error.message}`);
-        return [];
+        console.log(`⚠️ PR #${prNumber} 정보 확인 실패: ${error.message}`);
+        return null;
     }
 }
 
@@ -165,6 +175,90 @@ function determineReleaseTypeFromLabels(labels, labelMappings = DEFAULT_LABEL_MA
     return highestReleaseType;
 }
 
+function generateReleaseNotes(prInfos, version) {
+    if (!prInfos || prInfos.length === 0) {
+        return `# Release ${version}\n\nNo pull requests found for this release.`;
+    }
+
+    // 라벨별로 PR 분류
+    const features = [];
+    const bugfixes = [];
+    const docs = [];
+    const others = [];
+
+    for (const pr of prInfos) {
+        const hasFeatureLabel = pr.labels.some(label =>
+            ['feature', 'enhancement', 'breaking'].includes(label.toLowerCase())
+        );
+        const hasBugLabel = pr.labels.some(label =>
+            ['bug', 'bugfix', 'fix'].includes(label.toLowerCase())
+        );
+        const hasDocsLabel = pr.labels.some(label =>
+            ['documentation', 'docs'].includes(label.toLowerCase())
+        );
+
+        if (hasFeatureLabel) {
+            features.push(pr);
+        } else if (hasBugLabel) {
+            bugfixes.push(pr);
+        } else if (hasDocsLabel) {
+            docs.push(pr);
+        } else {
+            others.push(pr);
+        }
+    }
+
+    let releaseNotes = `# Release ${version}\n\n`;
+
+    // Features 섹션
+    if (features.length > 0) {
+        releaseNotes += `## 🚀 Features\n\n`;
+        for (const pr of features) {
+            releaseNotes += `- ${pr.title} (#${pr.number}) @${pr.author}\n`;
+        }
+        releaseNotes += '\n';
+    }
+
+    // Bug Fixes 섹션
+    if (bugfixes.length > 0) {
+        releaseNotes += `## 🐛 Bug Fixes\n\n`;
+        for (const pr of bugfixes) {
+            releaseNotes += `- ${pr.title} (#${pr.number}) @${pr.author}\n`;
+        }
+        releaseNotes += '\n';
+    }
+
+    // Documentation 섹션
+    if (docs.length > 0) {
+        releaseNotes += `## 📚 Documentation\n\n`;
+        for (const pr of docs) {
+            releaseNotes += `- ${pr.title} (#${pr.number}) @${pr.author}\n`;
+        }
+        releaseNotes += '\n';
+    }
+
+    // Other Changes 섹션
+    if (others.length > 0) {
+        releaseNotes += `## 🔧 Other Changes\n\n`;
+        for (const pr of others) {
+            releaseNotes += `- ${pr.title} (#${pr.number}) @${pr.author}\n`;
+        }
+        releaseNotes += '\n';
+    }
+
+    // 기여자 목록
+    const contributors = [...new Set(prInfos.map(pr => pr.author))];
+    if (contributors.length > 0) {
+        releaseNotes += `## 👥 Contributors\n\n`;
+        releaseNotes += `Thank you to all contributors: ${contributors.map(c => `@${c}`).join(', ')}\n\n`;
+    }
+
+    // 전체 변경사항 링크
+    releaseNotes += `---\n\n**Full Changelog**: https://github.com/${GITHUB_REPOSITORY}/compare/v${getLastVersion()}...v${version}`;
+
+    return releaseNotes;
+}
+
 async function analyzeCommitsForReleaseType() {
     console.log('🔍 커밋들을 분석하여 릴리즈 타입을 결정합니다...');
 
@@ -173,12 +267,13 @@ async function analyzeCommitsForReleaseType() {
 
     if (commits.length === 0) {
         console.log('📭 새로운 커밋이 없습니다.');
-        return null;
+        return { releaseType: null, prInfos: [] };
     }
 
     let globalReleaseType = null;
     let globalPriority = -1;
-    let foundPRCommits = false; // PR 번호를 찾은 커밋이 있는지 체크
+    let foundPRCommits = false;
+    const prInfos = [];
     const releaseTypes = ['major', 'minor', 'patch'];
 
     for (const commit of commits) {
@@ -186,20 +281,24 @@ async function analyzeCommitsForReleaseType() {
 
         const prNumber = extractPullRequestNumber(commit.message);
         if (prNumber) {
-            foundPRCommits = true; // PR 번호를 찾은 커밋이 있음
-            const labels = await getPullRequestLabels(prNumber);
-            const releaseType = determineReleaseTypeFromLabels(labels);
+            foundPRCommits = true;
+            const prInfo = await getPullRequestInfo(prNumber);
 
-            if (releaseType) {
-                console.log(`✅ PR #${prNumber}: ${releaseType} 릴리즈`);
+            if (prInfo) {
+                prInfos.push(prInfo);
+                const releaseType = determineReleaseTypeFromLabels(prInfo.labels);
 
-                const priority = releaseTypes.indexOf(releaseType);
-                if (priority > globalPriority) {
-                    globalPriority = priority;
-                    globalReleaseType = releaseType;
+                if (releaseType) {
+                    console.log(`✅ PR #${prNumber}: ${releaseType} 릴리즈`);
+
+                    const priority = releaseTypes.indexOf(releaseType);
+                    if (priority > globalPriority) {
+                        globalPriority = priority;
+                        globalReleaseType = releaseType;
+                    }
+                } else {
+                    console.log(`⚪ PR #${prNumber}: 릴리즈와 관련된 라벨 없음`);
                 }
-            } else {
-                console.log(`⚪ PR #${prNumber}: 릴리즈와 관련된 라벨 없음`);
             }
         } else {
             console.log('⚪ PR 번호를 찾을 수 없는 커밋');
@@ -209,7 +308,7 @@ async function analyzeCommitsForReleaseType() {
     // PR 번호를 찾을 수 있는 커밋이 하나도 없으면 릴리즈 하지 않음
     if (!foundPRCommits) {
         console.log('🚫 PR 번호를 찾을 수 있는 커밋이 없어서 릴리즈를 건너뜁니다.');
-        return null;
+        return { releaseType: null, prInfos: [] };
     }
 
     if (globalReleaseType) {
@@ -220,7 +319,7 @@ async function analyzeCommitsForReleaseType() {
         console.log(`🔧 기본값으로 ${globalReleaseType} 릴리즈 사용`);
     }
 
-    return globalReleaseType;
+    return { releaseType: globalReleaseType, prInfos };
 }
 
 function generateCalendarVersion(releaseType) {
@@ -261,11 +360,14 @@ function generateCalendarVersion(releaseType) {
 // semantic-release가 생성한 버전을 calendar 버전으로 변환
 async function overrideSemanticVersion() {
     let releaseType = process.env.SEMANTIC_RELEASE_TYPE;
+    let prInfos = [];
 
     // 환경변수가 없으면 PR 라벨을 분석해서 릴리즈 타입 결정
     if (!releaseType) {
         console.log('🔄 PR 라벨 분석을 통해 릴리즈 타입을 결정합니다...');
-        releaseType = await analyzeCommitsForReleaseType();
+        const analysis = await analyzeCommitsForReleaseType();
+        releaseType = analysis.releaseType;
+        prInfos = analysis.prInfos;
     }
 
     // 릴리즈 타입이 null이면 릴리즈를 하지 않음
@@ -279,18 +381,30 @@ async function overrideSemanticVersion() {
     console.log(`📅 Calendar version generated: ${calendarVersion}`);
     console.log(`🏷️ Release type: ${releaseType}`);
 
+    // Release notes 생성
+    const releaseNotes = generateReleaseNotes(prInfos, calendarVersion);
+    console.log(`📝 Release notes generated (${releaseNotes.split('\n').length}`);
+    console.log('📝 Release notes 내용:');
+    console.log('='.repeat(80));
+    console.log(releaseNotes);
+    console.log('='.repeat(80));
+
     // package.json의 버전을 calendar 버전으로 업데이트
     const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
     packageJson.version = calendarVersion;
     fs.writeFileSync('package.json', JSON.stringify(packageJson, null, 2));
 
     // version.py 파일도 업데이트
-    if (fs.existsSync('version.py')) {
-        const content = fs.readFileSync('version.py', 'utf8');
-        const updatedContent = content.replace(/__VERSION__ = ".*"/, `__VERSION__ = "${calendarVersion}"`);
-        fs.writeFileSync('version.py', updatedContent);
-        console.log(`✅ Updated version.py with version: ${calendarVersion}`);
-    }
+    // if (fs.existsSync('version.py')) {
+    //     const content = fs.readFileSync('version.py', 'utf8');
+    //     const updatedContent = content.replace(/__VERSION__ = ".*"/, `__VERSION__ = "${calendarVersion}"`);
+    //     fs.writeFileSync('version.py', updatedContent);
+    //     console.log(`✅ Updated version.py with version: ${calendarVersion}`);
+    // }
+
+    // Release notes를 파일로 저장
+    fs.writeFileSync('RELEASE_NOTES.md', releaseNotes);
+    console.log(`📄 Release notes saved to RELEASE_NOTES.md`);
 
     // 환경 변수로 calendar version 설정 (다른 플러그인에서 사용 가능)
     process.env.CALENDAR_VERSION = calendarVersion;
@@ -300,12 +414,14 @@ async function overrideSemanticVersion() {
     if (process.env.GITHUB_ENV) {
         fs.appendFileSync(process.env.GITHUB_ENV, `CALENDAR_VERSION=${calendarVersion}\n`);
         fs.appendFileSync(process.env.GITHUB_ENV, `SEMANTIC_RELEASE_TYPE=${releaseType}\n`);
+        fs.appendFileSync(process.env.GITHUB_ENV, `RELEASE_NOTES_FILE=RELEASE_NOTES.md\n`);
         console.log(`📝 Set CALENDAR_VERSION environment variable: ${calendarVersion}`);
         console.log(`📝 Set SEMANTIC_RELEASE_TYPE environment variable: ${releaseType}`);
+        console.log(`📝 Set RELEASE_NOTES_FILE environment variable: RELEASE_NOTES.md`);
     }
 
     console.log(`🚀 Calendar version ready for release: ${calendarVersion}`);
-    return calendarVersion;
+    return { calendarVersion, releaseType, prInfos, releaseNotes };
 }
 
 if (require.main === module) {
