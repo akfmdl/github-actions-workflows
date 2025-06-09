@@ -9,8 +9,8 @@ const GITHUB_REPOSITORY = process.env.GITHUB_REPOSITORY || 'akfmdl/github-action
 const GITHUB_API_URL = process.env.GITHUB_API_URL || 'https://api.github.com';
 const JIRA_BASE_URL = process.env.JIRA_BASE_URL || 'https://your-jira-instance.atlassian.net';
 
-// 라벨과 릴리즈 타입 매핑 (package.json 설정에서 가져옴)
 const DEFAULT_LABEL_MAPPINGS = {
+    // PR 라벨: 릴리즈 타입
     "breaking": "minor",
     "feature": "minor",
     "enhancement": "minor",
