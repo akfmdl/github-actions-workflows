@@ -425,10 +425,33 @@ async function overrideSemanticVersion() {
 }
 
 if (require.main === module) {
-    overrideSemanticVersion().catch(error => {
-        console.error('❌ Calendar version wrapper 실행 중 오류:', error);
-        process.exit(1);
-    });
+    // 명령행 인수 확인
+    const args = process.argv.slice(2);
+    const isAnalyzeOnly = args.includes('--analyze-only');
+
+    if (isAnalyzeOnly) {
+        // analyze-only 모드: 릴리즈 타입만 분석하고 출력
+        analyzeCommitsForReleaseType()
+            .then(({ releaseType }) => {
+                if (releaseType) {
+                    console.log(`🎯 Release type determined: ${releaseType}`);
+                    process.exit(0);
+                } else {
+                    console.log('⚪ No release needed');
+                    process.exit(1);
+                }
+            })
+            .catch(error => {
+                console.error('❌ Analysis failed:', error);
+                process.exit(1);
+            });
+    } else {
+        // 일반 모드: 전체 프로세스 실행
+        overrideSemanticVersion().catch(error => {
+            console.error('❌ Calendar version wrapper 실행 중 오류:', error);
+            process.exit(1);
+        });
+    }
 }
 
 module.exports = { generateCalendarVersion, overrideSemanticVersion, analyzeCommitsForReleaseType }; 
