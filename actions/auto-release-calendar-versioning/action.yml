@@ -1,5 +1,5 @@
-name: 'Auto Release with Custom Versioning'
-description: 'Automatically create GitHub releases using semantic-release when pushing to specified branches with custom versioning'
+name: 'Auto Release with Calendar Versioning'
+description: 'Automatically create GitHub releases using semantic-release when pushing to specified branches with calendar versioning'
 author: 'GitHub Actions Workflows'
 
 inputs:
