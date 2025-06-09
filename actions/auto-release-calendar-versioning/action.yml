@@ -108,6 +108,40 @@ runs:
           npx semantic-release@${{ inputs.semantic-release-version }} --branches $BRANCHES
         fi
 
+    - name: Override Git tag with calendar version
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      run: |
+        if [ "${{ inputs.dry_run }}" != "true" ] && [ -n "$CALENDAR_VERSION" ]; then
+          echo "🏷️ Creating calendar version tag: v$CALENDAR_VERSION"
+          
+          # 기존 semantic release 태그 삭제 (로컬)
+          SEMANTIC_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [[ "$SEMANTIC_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "🗑️ Removing semantic version tag: $SEMANTIC_TAG"
+            git tag -d "$SEMANTIC_TAG" || true
+            git push origin ":refs/tags/$SEMANTIC_TAG" || true
+          fi
+          
+          # Calendar version 태그 생성
+          git tag "v$CALENDAR_VERSION"
+          git push origin "v$CALENDAR_VERSION"
+          
+          echo "✅ Calendar version tag created: v$CALENDAR_VERSION"
+          
+          # GitHub release도 calendar version으로 업데이트
+          if command -v gh &> /dev/null; then
+            echo "📝 Updating GitHub release to calendar version..."
+            # 최신 release를 calendar version으로 업데이트
+            LATEST_RELEASE=$(gh release list --limit 1 --json tagName --jq '.[0].tagName')
+            if [ -n "$LATEST_RELEASE" ] && [[ "$LATEST_RELEASE" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              gh release edit "$LATEST_RELEASE" --tag "v$CALENDAR_VERSION" --title "v$CALENDAR_VERSION" || true
+            fi
+          fi
+        fi
+
 branding:
   icon: 'calendar'
   color: 'purple' 

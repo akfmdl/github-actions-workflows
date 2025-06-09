@@ -68,6 +68,16 @@ function overrideSemanticVersion() {
         console.log(`✅ Updated version.py with version: ${calendarVersion}`);
     }
 
+    // 환경 변수로 calendar version 설정 (다른 플러그인에서 사용 가능)
+    process.env.CALENDAR_VERSION = calendarVersion;
+
+    // GitHub Actions의 환경 변수로도 설정
+    if (process.env.GITHUB_ENV) {
+        fs.appendFileSync(process.env.GITHUB_ENV, `CALENDAR_VERSION=${calendarVersion}\n`);
+        console.log(`📝 Set CALENDAR_VERSION environment variable: ${calendarVersion}`);
+    }
+
+    console.log(`🚀 Calendar version ready for release: ${calendarVersion}`);
     return calendarVersion;
 }
 
