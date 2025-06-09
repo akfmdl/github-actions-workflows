@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Auto Release
-        uses: akfmdl/github-actions-workflows/actions/auto-release-by-commit@test
+        uses: akfmdl/github-actions-workflows/actions/auto-release@test
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           release-branches: '["test"]'
