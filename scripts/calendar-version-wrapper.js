@@ -7,6 +7,7 @@ const fs = require('fs');
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_REPOSITORY = process.env.GITHUB_REPOSITORY || 'akfmdl/github-actions-workflows';
 const GITHUB_API_URL = process.env.GITHUB_API_URL || 'https://api.github.com';
+const JIRA_BASE_URL = process.env.JIRA_BASE_URL || 'https://your-jira-instance.atlassian.net';
 
 // 라벨과 릴리즈 타입 매핑 (package.json 설정에서 가져옴)
 const DEFAULT_LABEL_MAPPINGS = {
@@ -120,6 +121,16 @@ function extractPullRequestNumber(commitMessage) {
     return null;
 }
 
+function addJiraLinksToText(text) {
+    // 텍스트에서 Jira 티켓 번호를 찾아서 링크로 변환
+    const jiraPattern = /\[([A-Z]+-\d+)\]/g;
+
+    return text.replace(jiraPattern, (match, ticketNumber) => {
+        const jiraUrl = `${JIRA_BASE_URL}/browse/${ticketNumber}`;
+        return `[[${ticketNumber}](${jiraUrl})]`;
+    });
+}
+
 async function getPullRequestInfo(prNumber) {
     if (!GITHUB_TOKEN || !GITHUB_REPOSITORY) {
         console.log('⚠️ GitHub 토큰 또는 리포지토리 정보가 없어서 PR 정보를 확인할 수 없습니다.');
@@ -214,7 +225,8 @@ function generateReleaseNotes(prInfos, version) {
     if (features.length > 0) {
         releaseNotes += `## 🚀 Features\n\n`;
         for (const pr of features) {
-            releaseNotes += `- ${pr.title} ([#${pr.number}](${pr.url})) [@${pr.author}](https://github.com/${pr.author})\n`;
+            const titleWithJiraLinks = addJiraLinksToText(pr.title);
+            releaseNotes += `- ${titleWithJiraLinks} ([#${pr.number}](${pr.url})) [@${pr.author}](https://github.com/${pr.author})\n`;
         }
         releaseNotes += '\n';
     }
@@ -223,7 +235,8 @@ function generateReleaseNotes(prInfos, version) {
     if (bugfixes.length > 0) {
         releaseNotes += `## 🐛 Bug Fixes\n\n`;
         for (const pr of bugfixes) {
-            releaseNotes += `- ${pr.title} ([#${pr.number}](${pr.url})) [@${pr.author}](https://github.com/${pr.author})\n`;
+            const titleWithJiraLinks = addJiraLinksToText(pr.title);
+            releaseNotes += `- ${titleWithJiraLinks} ([#${pr.number}](${pr.url})) [@${pr.author}](https://github.com/${pr.author})\n`;
         }
         releaseNotes += '\n';
     }
@@ -232,7 +245,8 @@ function generateReleaseNotes(prInfos, version) {
     if (docs.length > 0) {
         releaseNotes += `## 📚 Documentation\n\n`;
         for (const pr of docs) {
-            releaseNotes += `- ${pr.title} ([#${pr.number}](${pr.url})) [@${pr.author}](https://github.com/${pr.author})\n`;
+            const titleWithJiraLinks = addJiraLinksToText(pr.title);
+            releaseNotes += `- ${titleWithJiraLinks} ([#${pr.number}](${pr.url})) [@${pr.author}](https://github.com/${pr.author})\n`;
         }
         releaseNotes += '\n';
     }
@@ -241,7 +255,8 @@ function generateReleaseNotes(prInfos, version) {
     if (others.length > 0) {
         releaseNotes += `## 🔧 Other Changes\n\n`;
         for (const pr of others) {
-            releaseNotes += `- ${pr.title} ([#${pr.number}](${pr.url})) [@${pr.author}](https://github.com/${pr.author})\n`;
+            const titleWithJiraLinks = addJiraLinksToText(pr.title);
+            releaseNotes += `- ${titleWithJiraLinks} ([#${pr.number}](${pr.url})) [@${pr.author}](https://github.com/${pr.author})\n`;
         }
         releaseNotes += '\n';
     }
@@ -407,16 +422,16 @@ async function generateCalendarRelease() {
     fs.writeFileSync('RELEASE_NOTES.md', releaseNotes);
     console.log(`📄 Release notes saved to RELEASE_NOTES.md`);
 
-    // 환경 변수로 calendar version 설정 (다른 플러그인에서 사용 가능)
-    process.env.CALENDAR_VERSION = calendarVersion;
+    // 환경 변수로 calendar version 설정 (다른 플러그인이나 다음 워크플로우에서 사용 가능)
+    process.env.NEW_VERSION = calendarVersion;
     process.env.SEMANTIC_RELEASE_TYPE = releaseType;
 
     // GitHub Actions의 환경 변수로도 설정
     if (process.env.GITHUB_ENV) {
-        fs.appendFileSync(process.env.GITHUB_ENV, `CALENDAR_VERSION=${calendarVersion}\n`);
+        fs.appendFileSync(process.env.GITHUB_ENV, `NEW_VERSION=${calendarVersion}\n`);
         fs.appendFileSync(process.env.GITHUB_ENV, `SEMANTIC_RELEASE_TYPE=${releaseType}\n`);
         fs.appendFileSync(process.env.GITHUB_ENV, `RELEASE_NOTES_FILE=RELEASE_NOTES.md\n`);
-        console.log(`📝 Set CALENDAR_VERSION environment variable: ${calendarVersion}`);
+        console.log(`📝 Set NEW_VERSION environment variable: ${calendarVersion}`);
         console.log(`📝 Set SEMANTIC_RELEASE_TYPE environment variable: ${releaseType}`);
         console.log(`📝 Set RELEASE_NOTES_FILE environment variable: RELEASE_NOTES.md`);
     }

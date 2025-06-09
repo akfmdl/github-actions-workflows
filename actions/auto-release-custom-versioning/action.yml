@@ -18,6 +18,10 @@ inputs:
     description: 'Working directory for the action'
     required: false
     default: '.'
+  jira-base-url:
+    description: 'Jira base URL'
+    required: false
+    default: 'https://your-jira-instance.atlassian.net'
 
 outputs:
   new-release-published:
@@ -75,6 +79,7 @@ runs:
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
         GITHUB_REPOSITORY: ${{ github.repository }}
+        JIRA_BASE_URL: ${{ inputs.jira-base-url }}
       run: |        
         echo "🚀 Running custom versioning..."
         npm run release
