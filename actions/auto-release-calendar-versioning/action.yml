@@ -106,7 +106,7 @@ runs:
           npx semantic-release@${{ inputs.semantic-release-version }} --branches $BRANCHES
         fi
 
-    - name: Override Git tag with calendar version
+    - name: Create calendar version tag and release
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       env:
@@ -116,13 +116,6 @@ runs:
       run: |
         if [ "$DRY_RUN" != "true" ] && [ -n "$CALENDAR_VERSION" ]; then
           echo "Creating calendar version tag: v$CALENDAR_VERSION"
-          
-          SEMANTIC_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          if [[ "$SEMANTIC_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Removing semantic version tag: $SEMANTIC_TAG"
-            git tag -d "$SEMANTIC_TAG" || true
-            git push origin ":refs/tags/$SEMANTIC_TAG" || true
-          fi
           
           git tag "v$CALENDAR_VERSION"
           git push origin "v$CALENDAR_VERSION"
@@ -136,13 +129,9 @@ runs:
             sudo apt install gh -y
           fi
           
-          echo "Updating GitHub release to calendar version..."
+          echo "Creating GitHub release with calendar version..."
           
-          if [[ -n "$SEMANTIC_TAG" ]]; then
-            gh release delete "$SEMANTIC_TAG" --yes || true
-          fi
-          
-          RELEASE_NOTES=$(gh api repos/:owner/:repo/releases/latest --jq '.body' 2>/dev/null || echo "Calendar Versioning Release")
+          RELEASE_NOTES="Calendar Versioning Release v$CALENDAR_VERSION"
           gh release create "v$CALENDAR_VERSION" --title "v$CALENDAR_VERSION" --notes "$RELEASE_NOTES" --latest
           echo "GitHub release created: v$CALENDAR_VERSION"
           

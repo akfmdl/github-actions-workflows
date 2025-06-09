@@ -178,6 +178,7 @@ async function analyzeCommitsForReleaseType() {
 
     let globalReleaseType = null;
     let globalPriority = -1;
+    let foundPRCommits = false; // PR 번호를 찾은 커밋이 있는지 체크
     const releaseTypes = ['major', 'minor', 'patch'];
 
     for (const commit of commits) {
@@ -185,6 +186,7 @@ async function analyzeCommitsForReleaseType() {
 
         const prNumber = extractPullRequestNumber(commit.message);
         if (prNumber) {
+            foundPRCommits = true; // PR 번호를 찾은 커밋이 있음
             const labels = await getPullRequestLabels(prNumber);
             const releaseType = determineReleaseTypeFromLabels(labels);
 
@@ -202,6 +204,12 @@ async function analyzeCommitsForReleaseType() {
         } else {
             console.log('⚪ PR 번호를 찾을 수 없는 커밋');
         }
+    }
+
+    // PR 번호를 찾을 수 있는 커밋이 하나도 없으면 릴리즈 하지 않음
+    if (!foundPRCommits) {
+        console.log('🚫 PR 번호를 찾을 수 있는 커밋이 없어서 릴리즈를 건너뜁니다.');
+        return null;
     }
 
     if (globalReleaseType) {
@@ -260,8 +268,10 @@ async function overrideSemanticVersion() {
         releaseType = await analyzeCommitsForReleaseType();
     }
 
+    // 릴리즈 타입이 null이면 릴리즈를 하지 않음
     if (!releaseType) {
-        releaseType = 'patch'; // 기본값
+        console.log('⏹️ 릴리즈할 변경사항이 없어서 프로세스를 종료합니다.');
+        process.exit(0);
     }
 
     const calendarVersion = generateCalendarVersion(releaseType);
