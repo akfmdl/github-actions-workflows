@@ -1,47 +1,47 @@
 {
-    "name": "github-actions-workflows",
-    "version": "2025.06.0.0",
-    "private": true,
-    "devDependencies": {
-        "@semantic-release/git": "^10.0.1",
-        "@semantic-release/exec": "^6.0.3",
-        "@bobvanderlinden/semantic-release-pull-request-analyzer": "^1.0.4"
-    },
-    "release": {
-        "plugins": [
-            [
-                "@bobvanderlinden/semantic-release-pull-request-analyzer",
-                {
-                    "labels": {
-                        "breaking": "minor",
-                        "feature": "minor",
-                        "enhancement": "minor",
-                        "bug": "patch",
-                        "bugfix": "patch",
-                        "fix": "patch",
-                        "documentation": "patch",
-                        "docs": "patch",
-                        "chore": "patch"
-                    }
-                }
-            ],
-            [
-                "@semantic-release/exec",
-                {
-                    "prepareCmd": "SEMANTIC_RELEASE_TYPE=${nextRelease.type} node scripts/calendar-version-wrapper.js",
-                    "publishCmd": "echo \"📅 Publishing calendar version: $CALENDAR_VERSION\""
-                }
-            ],
-            [
-                "@semantic-release/git",
-                {
-                    "assets": [
-                        "package.json",
-                        "version.py"
-                    ],
-                    "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
-                }
-            ]
-        ]
-    }
+  "name": "github-actions-workflows",
+  "version": "2025.06.0.0",
+  "private": true,
+  "devDependencies": {
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/exec": "^6.0.3",
+    "@bobvanderlinden/semantic-release-pull-request-analyzer": "^1.0.4"
+  },
+  "release": {
+    "plugins": [
+      [
+        "@bobvanderlinden/semantic-release-pull-request-analyzer",
+        {
+          "labels": {
+            "breaking": "minor",
+            "feature": "minor",
+            "enhancement": "minor",
+            "bug": "patch",
+            "bugfix": "patch",
+            "fix": "patch",
+            "documentation": "patch",
+            "docs": "patch",
+            "chore": "patch"
+          }
+        }
+      ],
+      [
+        "@semantic-release/exec",
+        {
+          "prepareCmd": "SEMANTIC_RELEASE_TYPE=${nextRelease.type} node scripts/calendar-version-wrapper.js",
+          "publishCmd": "echo \"📅 Publishing calendar version: $CALENDAR_VERSION\""
+        }
+      ],
+      [
+        "@semantic-release/git",
+        {
+          "assets": [
+            "package.json",
+            "version.py"
+          ],
+          "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+        }
+      ]
+    ]
+  }
 }
