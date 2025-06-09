@@ -92,12 +92,15 @@ runs:
         GIT_COMMITTER_NAME: github-actions[bot]
         GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
       run: |
+        # JSON 배열을 공백으로 구분된 문자열로 변환
+        BRANCHES=$(echo '${{ inputs.release-branches }}' | jq -r '.[]' | paste -sd ' ')
+        
         if [ "${{ inputs.dry_run }}" = "true" ]; then
-          echo "🔍 드라이런 모드로 실행 중..."
+          echo "🚀 Running semantic-release@${{ inputs.semantic-release-version }} in dry-run mode..."
           echo "📅 Calendar Versioning 형식: year.month.minor.fix"
           npx semantic-release@${{ inputs.semantic-release-version }} --dry-run --branches $BRANCHES
         else
-          echo "🚀 릴리즈 실행 중..."
+          echo "🚀 Running semantic-release@${{ inputs.semantic-release-version }}..."
           echo "📅 Calendar Versioning 형식: year.month.minor.fix"
           npx semantic-release@${{ inputs.semantic-release-version }} --branches $BRANCHES
         fi
