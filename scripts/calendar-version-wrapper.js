@@ -214,7 +214,7 @@ function generateReleaseNotes(prInfos, version) {
     if (features.length > 0) {
         releaseNotes += `## 🚀 Features\n\n`;
         for (const pr of features) {
-            releaseNotes += `- ${pr.title} (#${pr.number}) @${pr.author}\n`;
+            releaseNotes += `- ${pr.title} ([#${pr.number}](${pr.url})) [@${pr.author}](https://github.com/${pr.author})\n`;
         }
         releaseNotes += '\n';
     }
@@ -223,7 +223,7 @@ function generateReleaseNotes(prInfos, version) {
     if (bugfixes.length > 0) {
         releaseNotes += `## 🐛 Bug Fixes\n\n`;
         for (const pr of bugfixes) {
-            releaseNotes += `- ${pr.title} (#${pr.number}) @${pr.author}\n`;
+            releaseNotes += `- ${pr.title} ([#${pr.number}](${pr.url})) [@${pr.author}](https://github.com/${pr.author})\n`;
         }
         releaseNotes += '\n';
     }
@@ -232,7 +232,7 @@ function generateReleaseNotes(prInfos, version) {
     if (docs.length > 0) {
         releaseNotes += `## 📚 Documentation\n\n`;
         for (const pr of docs) {
-            releaseNotes += `- ${pr.title} (#${pr.number}) @${pr.author}\n`;
+            releaseNotes += `- ${pr.title} ([#${pr.number}](${pr.url})) [@${pr.author}](https://github.com/${pr.author})\n`;
         }
         releaseNotes += '\n';
     }
@@ -241,7 +241,7 @@ function generateReleaseNotes(prInfos, version) {
     if (others.length > 0) {
         releaseNotes += `## 🔧 Other Changes\n\n`;
         for (const pr of others) {
-            releaseNotes += `- ${pr.title} (#${pr.number}) @${pr.author}\n`;
+            releaseNotes += `- ${pr.title} ([#${pr.number}](${pr.url})) [@${pr.author}](https://github.com/${pr.author})\n`;
         }
         releaseNotes += '\n';
     }
@@ -250,7 +250,7 @@ function generateReleaseNotes(prInfos, version) {
     const contributors = [...new Set(prInfos.map(pr => pr.author))];
     if (contributors.length > 0) {
         releaseNotes += `## 👥 Contributors\n\n`;
-        releaseNotes += `Thank you to all contributors: ${contributors.map(c => `@${c}`).join(', ')}\n\n`;
+        releaseNotes += `Thank you to all contributors: ${contributors.map(c => `[@${c}](https://github.com/${c})`).join(', ')}\n\n`;
     }
 
     // 전체 변경사항 링크
