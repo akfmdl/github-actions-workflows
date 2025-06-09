@@ -25,6 +25,7 @@
                     }
                 }
             ],
+            "./scripts/calendar-version-plugin.js",
             [
                 "@semantic-release/exec",
                 {

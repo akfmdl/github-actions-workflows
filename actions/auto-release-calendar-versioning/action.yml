@@ -79,7 +79,9 @@ runs:
     - name: Set execution permission for scripts
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: chmod +x scripts/generate-version.js
+      run: |
+        chmod +x scripts/generate-version.js
+        chmod +x scripts/calendar-version-plugin.js
 
     - name: Run semantic-release with calendar versioning
       id: semantic-release
