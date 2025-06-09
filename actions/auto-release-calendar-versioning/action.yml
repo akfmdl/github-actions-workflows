@@ -81,7 +81,6 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       run: |
         chmod +x scripts/generate-version.js
-        chmod +x scripts/calendar-version-plugin.js
         chmod +x scripts/calendar-version-wrapper.js
 
     - name: Run semantic-release with calendar versioning
