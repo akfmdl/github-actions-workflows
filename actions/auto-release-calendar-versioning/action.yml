@@ -172,14 +172,16 @@ runs:
               gh api repos/:owner/:repo/issues/comments/$COMMENT_ID -X DELETE || true
               
               # 새 calendar version 코멘트 추가
-              gh pr comment $PR_NUMBER --body "🎉 This PR is included in version $CALENDAR_VERSION 🎉
+              COMMENT_BODY="🎉 This PR is included in version $CALENDAR_VERSION 🎉
 
 The release is available on:
 
-📅 [v$CALENDAR_VERSION](https://github.com/\${{ github.repository }}/releases/tag/v$CALENDAR_VERSION)
+📅 [v$CALENDAR_VERSION](https://github.com/${{ github.repository }}/releases/tag/v$CALENDAR_VERSION)
 📋 GitHub release
 
 Your semantic-release bot 📦🚀 (Calendar Versioning)"
+              
+              gh pr comment $PR_NUMBER --body "$COMMENT_BODY"
               
               echo "✅ Updated PR #$PR_NUMBER comment with calendar version"
               break
