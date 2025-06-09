@@ -1,4 +1,4 @@
-# Auto Release with Semantic Release by Commit
+# Auto Release with Semantic Versioning
 
 특정 브랜치에 push할 때 Commit 메세지 규칙에 따라 자동으로 GitHub 릴리즈를 생성하는 GitHub Action입니다.
 
@@ -6,6 +6,7 @@
 
 - **Semantic Release** 버전 관리 자동화
 - **Conventional Commits** 커밋 메세지 규칙 기반 릴리즈 노트 자동 생성
+- **Pull Request 라벨** 규칙 기반 릴리즈 노트 자동 생성
 - **다중 브랜치** 지원 (main, master, next, beta, alpha 등)
 - **CHANGELOG.md** 자동 생성 및 업데이트
 - **GitHub 릴리즈** 자동 생성
@@ -16,30 +17,46 @@
 ## 📋 필수 조건
 
 1. **Node.js 프로젝트**여야 합니다 (`package.json` 필요)
-2. **Conventional Commits** 규칙을 따라야 합니다:
+2. **Commit Conventional Commits** Commit 메세지 기반으로 버전 관리 및 릴리즈 노트를 생성하는 경우, [Conventional Commits 규칙](https://www.conventionalcommits.org/)을 따라 커밋 메시지를 작성합니다:
    - `feat:` - 새로운 기능 (minor 버전 증가)
    - `fix:` - 버그 수정 (patch 버전 증가)
    - `BREAKING CHANGE:` - 호환성을 깨는 변경 (major 버전 증가)
+
+[예시]
+```bash
+# Patch 릴리즈 (1.0.0 → 1.0.1)
+git commit -m "fix: 로그인 버그 수정"
+
+# Minor 릴리즈 (1.0.0 → 1.1.0)
+git commit -m "feat: 새로운 검색 기능 추가"
+
+# Major 릴리즈 (1.0.0 → 2.0.0): commit message 내에 BREAKING CHANGE: 라는 footer가 포함되어 있으면 적용됨
+git commit -m "feat: API 구조 변경
+
+BREAKING CHANGE: /api/v1 엔드포인트가 /api/v2로 변경됨"
+```
 
 ## 🔧 사용법
 
 ### 1. package.json 파일 확인/생성 (필수)
 
-먼저 repository 루트에 `package.json` 파일이 있는지 확인하세요. 없다면 생성해야 합니다.
-
-참고: [package.json](../../package.json)
+repository 루트에 `package.json` 파일을 추가하세요. 아래 예시 파일을 copy & paste 하세요.
 
 [semantic-release 설정 문서](https://semantic-release.gitbook.io/semantic-release/usage/configuration)에 따라 `package.json`에 더 다양한 설정을 포함할 수도 있습니다.
 
+#### Commit 메세지 규칙 기반 릴리즈 노트 자동 생성
+* [package.json](./package-by-commit-message.json): Commit 메세지 규칙 기반으로 버전 관리 및 릴리즈 노트 자동 생성
+
 ### 2. 워크플로우 파일 생성
 
-`.github/workflows` 에 `release.yml` 파일을 추가하세요:
-참고: [.github/workflows/release.yml](../../.github/workflows/release.yml)
+`.github/workflows` 에 `release.yml` 파일을 추가하세요. 아래 예시 파일을 copy & paste 하세요.
+
+#### Commit 메세지 규칙 기반 릴리즈 노트 자동 생성
+참고: [.github/workflows/auto-release-by-commit.yml](../../.github/workflows/auto-release-by-commit.yml)
 
 target branch를 원하는 브랜치로 변경하세요. 여러 브랜치 지원 가능합니다.
 
 ```yaml
-
 on:
   push:
     branches:
@@ -70,7 +87,7 @@ __VERSION__ = "0.0.0"
 | `release-branches` | ❌ | `'["main", "master"]'` | 릴리즈할 브랜치 목록 (JSON 배열) |
 | `dry-run` | ❌ | `'false'` | 테스트 모드 실행 여부 |
 | `working-directory` | ❌ | `'.'` | 작업 디렉토리 |
-| `semantic-release-version` | ❌ | `'22'` | 사용할 semantic-release 버전 |
+| `semantic-release-version` | ❌ | `'22'` | 특정 semantic-release 버전 사용 여부 |
 
 ### 5. 출력 값
 
@@ -81,45 +98,8 @@ __VERSION__ = "0.0.0"
 | `new-release-git-tag` | 새 릴리즈 Git 태그 |
 | `new-release-git-head` | 새 릴리즈 Git SHA |
 
-## 📝 Conventional Commits 예시
-[Conventional Commits 규칙](https://www.conventionalcommits.org/)을 따라 커밋 메시지를 작성합니다:
-
-```bash
-# Patch 릴리즈 (1.0.0 → 1.0.1)
-git commit -m "fix: 로그인 버그 수정"
-
-# Minor 릴리즈 (1.0.0 → 1.1.0)
-git commit -m "feat: 새로운 검색 기능 추가"
-
-# Major 릴리즈 (1.0.0 → 2.0.0): commit message 내에 BREAKING CHANGE: 라는 footer가 포함되어 있으면 적용됨
-git commit -m "feat: API 구조 변경
-
-BREAKING CHANGE: /api/v1 엔드포인트가 /api/v2로 변경됨"
-```
-
-## 🔧 고급 설정
-
-### 사용자 정의 설정 파일
-
-프로젝트 루트에 `.releaserc.js` 파일을 생성하여 semantic-release 설정을 커스터마이징할 수 있습니다:
-
-```javascript
-module.exports = {
-  branches: ['main', 'next', { name: 'beta', prerelease: true }],
-  plugins: [
-    '@semantic-release/commit-analyzer',
-    '@semantic-release/release-notes-generator',
-    '@semantic-release/changelog',
-    '@semantic-release/npm',
-    '@semantic-release/github',
-    '@semantic-release/git'
-  ]
-}
-```
-
-더 많은 Plugin 옵션은 [semantic-release 공식 문서](https://semantic-release.gitbook.io/semantic-release/extending/plugins-list)를 참고하세요.
-
 ## 📚 참고 자료
 
 - [Semantic Release 공식 문서](https://semantic-release.gitbook.io/semantic-release)
+- [semantic-release 플러그인 목록](https://semantic-release.gitbook.io/semantic-release/extending/plugins-list)
 - [Conventional Commits](https://www.conventionalcommits.org/)

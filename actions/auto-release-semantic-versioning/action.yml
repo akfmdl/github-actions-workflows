@@ -1,6 +1,6 @@
-name: 'Auto Release with Semantic Release'
-description: 'Automatically create GitHub releases using semantic-release when pushing to specified branches'
-author: 'GitHub Actions Tutorial'
+name: 'Auto Release with Semantic Versioning'
+description: 'Automatically create GitHub releases using semantic-release when pushing to specified branches with semantic versioning'
+author: 'GitHub Actions Workflows'
 
 inputs:
   github-token:
@@ -76,7 +76,7 @@ runs:
           exit 1
         fi
 
-    - name: Run semantic-release
+    - name: Run semantic-release with semantic versioning
       id: semantic-release
       shell: bash
       working-directory: ${{ inputs.working-directory }}
@@ -84,8 +84,6 @@ runs:
         GITHUB_TOKEN: ${{ inputs.github-token }}
         GIT_AUTHOR_NAME: github-actions[bot]
         GIT_AUTHOR_EMAIL: github-actions[bot]@users.noreply.github.com
-        GIT_COMMITTER_NAME: github-actions[bot]
-        GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
       run: |
         # JSON 배열을 공백으로 구분된 문자열로 변환
         BRANCHES=$(echo '${{ inputs.release-branches }}' | jq -r '.[]' | paste -sd ' ')

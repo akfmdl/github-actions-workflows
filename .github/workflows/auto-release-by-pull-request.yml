@@ -1,4 +1,4 @@
-name: Auto Release by Commit
+name: Auto Release by Pull Request
 
 on:
   push:
@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Auto Release
-        uses: akfmdl/github-actions-workflows/actions/auto-release-semantic-versioning@main
+        uses: akfmdl/github-actions-workflows/actions/auto-release-custom-versioning@main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           release-branches: '["<TARGET_BRANCH>"]'

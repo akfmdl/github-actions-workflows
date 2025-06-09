@@ -1,0 +1,47 @@
+{
+    "name": "github-actions-workflows",
+    "version": "1.0.0",
+    "private": true,
+    "devDependencies": {
+      "@semantic-release/git": "^10.0.1",
+      "@semantic-release/exec": "^6.0.3",
+      "@semantic-release/commit-analyzer": "^13.0.1"
+    },
+    "release": {
+      "plugins": [
+        "@semantic-release/commit-analyzer",
+        "@semantic-release/release-notes-generator",
+        [
+          "@semantic-release/exec",
+          {
+            "prepareCmd": "sed -i.bak 's/__VERSION__ = \".*\"/__VERSION__ = \"${nextRelease.version}\"/' version.py && rm version.py.bak"
+          }
+        ],
+        [
+          "@semantic-release/npm",
+          {
+            "npmPublish": false
+          }
+        ],
+        [
+          "@semantic-release/github",
+          {
+            "successComment": false,
+            "failComment": false,
+            "releasedLabels": false
+          }
+        ],
+        [
+          "@semantic-release/git",
+          {
+            "assets": [
+              "package.json",
+              "version.py"
+            ],
+            "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+          }
+        ]
+      ]
+    }
+  }
+  
