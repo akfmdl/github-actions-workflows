@@ -208,7 +208,7 @@ function generateReleaseNotes(prInfos, version) {
         }
     }
 
-    let releaseNotes = `# Release ${version}\n\n`;
+    let releaseNotes = ``;
 
     // Features 섹션
     if (features.length > 0) {
