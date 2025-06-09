@@ -1,6 +1,6 @@
-name: 'Auto Release with Semantic Release by Commit message'
-description: 'Automatically create GitHub releases using semantic-release when pushing to specified branches by commit message'
-author: 'GitHub Actions Tutorial'
+name: 'Auto Release with Semantic Versioning'
+description: 'Automatically create GitHub releases using semantic-release when pushing to specified branches with semantic versioning'
+author: 'GitHub Actions Workflows'
 
 inputs:
   github-token:
