@@ -1,6 +1,6 @@
 {
   "name": "github-actions-workflows",
-  "version": "2025.06.0.0",
+  "version": "2025.06.1.0",
   "private": true,
   "devDependencies": {
     "@semantic-release/git": "^10.0.1",
