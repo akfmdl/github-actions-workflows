@@ -17,11 +17,26 @@
 ## 📋 필수 조건
 
 1. **Node.js 프로젝트**여야 합니다 (`package.json` 필요)
-2. **Commit Conventional Commits** Commit 메세지 기반으로 버전 관리 및 릴리즈 노트를 생성하는 경우, 다음과 같은 규칙을 따라야 합니다:
+2. **[방법 1] Commit Conventional Commits** Commit 메세지 기반으로 버전 관리 및 릴리즈 노트를 생성하는 경우, [Conventional Commits 규칙](https://www.conventionalcommits.org/)을 따라 커밋 메시지를 작성합니다:
    - `feat:` - 새로운 기능 (minor 버전 증가)
    - `fix:` - 버그 수정 (patch 버전 증가)
    - `BREAKING CHANGE:` - 호환성을 깨는 변경 (major 버전 증가)
-3. **Pull Request 라벨** Pull Request 라벨 기반으로 버전 관리 및 릴리즈 노트를 생성하는 경우, package.json 파일의 `release` > `plugins` > `@bobvanderlinden/semantic-release-pull-request-analyzer` > `labels` 에 라벨을 추가해야 합니다.
+
+[예시]
+```bash
+# Patch 릴리즈 (1.0.0 → 1.0.1)
+git commit -m "fix: 로그인 버그 수정"
+
+# Minor 릴리즈 (1.0.0 → 1.1.0)
+git commit -m "feat: 새로운 검색 기능 추가"
+
+# Major 릴리즈 (1.0.0 → 2.0.0): commit message 내에 BREAKING CHANGE: 라는 footer가 포함되어 있으면 적용됨
+git commit -m "feat: API 구조 변경
+
+BREAKING CHANGE: /api/v1 엔드포인트가 /api/v2로 변경됨"
+```
+
+3. **[방법 2] Pull Request 라벨** Pull Request 라벨 기반으로 버전 관리 및 릴리즈 노트를 생성하는 경우, package.json 파일의 `release` > `plugins` > `@bobvanderlinden/semantic-release-pull-request-analyzer` > `labels` 에 라벨을 추가해야 합니다.
 라벨은 GitHub에서 등록한 라벨 이름을 사용해야 합니다.
 
 [예시]
@@ -107,22 +122,6 @@ __VERSION__ = "0.0.0"
 | `new-release-version` | 새 릴리즈 버전 |
 | `new-release-git-tag` | 새 릴리즈 Git 태그 |
 | `new-release-git-head` | 새 릴리즈 Git SHA |
-
-## 📝 Conventional Commits 예시
-[Conventional Commits 규칙](https://www.conventionalcommits.org/)을 따라 커밋 메시지를 작성합니다:
-
-```bash
-# Patch 릴리즈 (1.0.0 → 1.0.1)
-git commit -m "fix: 로그인 버그 수정"
-
-# Minor 릴리즈 (1.0.0 → 1.1.0)
-git commit -m "feat: 새로운 검색 기능 추가"
-
-# Major 릴리즈 (1.0.0 → 2.0.0): commit message 내에 BREAKING CHANGE: 라는 footer가 포함되어 있으면 적용됨
-git commit -m "feat: API 구조 변경
-
-BREAKING CHANGE: /api/v1 엔드포인트가 /api/v2로 변경됨"
-```
 
 ## 🔧 고급 설정
 
