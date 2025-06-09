@@ -1,24 +1,11 @@
 {
   "name": "github-actions-workflows",
-  "version": "0.0.0",
+  "version": "2025.06.0.0",
   "private": true,
   "devDependencies": {
     "@semantic-release/exec": "^6.0.3"
   },
-  "release": {
-    "branches": [
-      "test"
-    ],
-    "plugins": [
-      [
-        "@semantic-release/exec",
-        {
-          "analyzeCommitsCmd": "node scripts/calendar-version-wrapper.js --analyze-only && echo 'patch'",
-          "generateNotesCmd": "echo 'Using pre-generated release notes from RELEASE_NOTES.md'",
-          "prepareCmd": "node scripts/calendar-version-wrapper.js",
-          "publishCmd": "echo \"📅 Publishing calendar version: $CALENDAR_VERSION\""
-        }
-      ]
-    ]
+  "scripts": {
+    "release": "node scripts/calendar-version-wrapper.js"
   }
 }

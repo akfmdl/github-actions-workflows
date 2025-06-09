@@ -14,10 +14,6 @@ inputs:
     description: 'Branches to release from (JSON array format)'
     required: false
     default: '["main", "master"]'
-  dry-run:
-    description: 'Whether to run in dry-run mode'
-    required: false
-    default: 'false'
   working-directory:
     description: 'Working directory for the action'
     required: false
@@ -30,16 +26,16 @@ inputs:
 outputs:
   new-release-published:
     description: 'Whether a new release was published'
-    value: ${{ steps.semantic-release.outputs.new-release-published }}
+    value: ${{ steps.calendar-versioning.outputs.new-release-published }}
   new-release-version:
     description: 'Version of the new release'
-    value: ${{ steps.semantic-release.outputs.new-release-version }}
+    value: ${{ steps.calendar-versioning.outputs.new-release-version }}
   new-release-git-tag:
     description: 'Git tag of the new release'
-    value: ${{ steps.semantic-release.outputs.new-release-git-tag }}
+    value: ${{ steps.calendar-versioning.outputs.new-release-git-tag }}
   new-release-git-head:
     description: 'Git SHA of the new release'
-    value: ${{ steps.semantic-release.outputs.new-release-git-head }}
+    value: ${{ steps.calendar-versioning.outputs.new-release-git-head }}
 
 runs:
   using: 'composite'
@@ -82,8 +78,8 @@ runs:
       run: |
         chmod +x scripts/calendar-version-wrapper.js
 
-    - name: Run semantic-release with calendar versioning
-      id: semantic-release
+    - name: Run calendar versioning
+      id: calendar-versioning
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       env:
@@ -93,38 +89,27 @@ runs:
         GIT_AUTHOR_EMAIL: github-actions[bot]@users.noreply.github.com
         GIT_COMMITTER_NAME: github-actions[bot]
         GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
-        DEBUG: semantic-release:*
       run: |
-        # JSON 배열을 공백으로 구분된 문자열로 변환
-        BRANCHES=$(echo '${{ inputs.release-branches }}' | jq -r '.[]' | paste -sd ' ')
-        
         echo "🔍 Debug information:"
         echo "  - Repository: $GITHUB_REPOSITORY"
         echo "  - Current branch: $(git branch --show-current)"
-        echo "  - Release branches: $BRANCHES"
         echo "  - Working directory: $(pwd)"
         echo "  - Last few commits:"
         git log --oneline -3
         echo ""
         
         echo "📅 Calendar Versioning 형식: year.month.minor.fix"
-        if [ "${{ inputs.dry_run }}" = "true" ]; then
-          echo "🚀 Running semantic-release@${{ inputs.semantic-release-version }} in dry-run mode with debug logs..."
-          npx semantic-release@${{ inputs.semantic-release-version }} --dry-run --branches $BRANCHES --debug
-        else
-          echo "🚀 Running semantic-release@${{ inputs.semantic-release-version }} with debug logs..."
-          npx semantic-release@${{ inputs.semantic-release-version }} --branches $BRANCHES --debug
-        fi
+        echo "🚀 Running calendar versioning..."
+        npm run release
 
     - name: Create calendar version tag and release
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
-        DRY_RUN: ${{ inputs.dry_run }}
         GITHUB_REPOSITORY: ${{ github.repository }}
       run: |
-        if [ "$DRY_RUN" != "true" ] && [ -n "$CALENDAR_VERSION" ]; then
+        if [ -n "$CALENDAR_VERSION" ]; then
           echo "Creating calendar version tag: $CALENDAR_VERSION"
           
           git tag "$CALENDAR_VERSION"
