@@ -198,3 +198,6 @@ cython_debug/
 
 # Calendar version wrapper 생성 파일
 RELEASE_NOTES.md
+
+# Node
+node_modules/

@@ -88,22 +88,32 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
         GIT_AUTHOR_NAME: github-actions[bot]
         GIT_AUTHOR_EMAIL: github-actions[bot]@users.noreply.github.com
         GIT_COMMITTER_NAME: github-actions[bot]
         GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
+        DEBUG: semantic-release:*
       run: |
         # JSON 배열을 공백으로 구분된 문자열로 변환
         BRANCHES=$(echo '${{ inputs.release-branches }}' | jq -r '.[]' | paste -sd ' ')
         
+        echo "🔍 Debug information:"
+        echo "  - Repository: $GITHUB_REPOSITORY"
+        echo "  - Current branch: $(git branch --show-current)"
+        echo "  - Release branches: $BRANCHES"
+        echo "  - Working directory: $(pwd)"
+        echo "  - Last few commits:"
+        git log --oneline -3
+        echo ""
+        
+        echo "📅 Calendar Versioning 형식: year.month.minor.fix"
         if [ "${{ inputs.dry_run }}" = "true" ]; then
-          echo "🚀 Running semantic-release@${{ inputs.semantic-release-version }} in dry-run mode..."
-          echo "📅 Calendar Versioning 형식: year.month.minor.fix"
-          npx semantic-release@${{ inputs.semantic-release-version }} --dry-run --branches $BRANCHES
+          echo "🚀 Running semantic-release@${{ inputs.semantic-release-version }} in dry-run mode with debug logs..."
+          npx semantic-release@${{ inputs.semantic-release-version }} --dry-run --branches $BRANCHES --debug
         else
-          echo "🚀 Running semantic-release@${{ inputs.semantic-release-version }}..."
-          echo "📅 Calendar Versioning 형식: year.month.minor.fix"
-          npx semantic-release@${{ inputs.semantic-release-version }} --branches $BRANCHES
+          echo "🚀 Running semantic-release@${{ inputs.semantic-release-version }} with debug logs..."
+          npx semantic-release@${{ inputs.semantic-release-version }} --branches $BRANCHES --debug
         fi
 
     - name: Create calendar version tag and release
@@ -115,11 +125,11 @@ runs:
         GITHUB_REPOSITORY: ${{ github.repository }}
       run: |
         if [ "$DRY_RUN" != "true" ] && [ -n "$CALENDAR_VERSION" ]; then
-          echo "Creating calendar version tag: v$CALENDAR_VERSION"
+          echo "Creating calendar version tag: $CALENDAR_VERSION"
           
-          git tag "v$CALENDAR_VERSION"
-          git push origin "v$CALENDAR_VERSION"
-          echo "Calendar version tag created: v$CALENDAR_VERSION"
+          git tag "$CALENDAR_VERSION"
+          git push origin "$CALENDAR_VERSION"
+          echo "Calendar version tag created: $CALENDAR_VERSION"
           
           if ! command -v gh &> /dev/null; then
             echo "Installing GitHub CLI..."
@@ -134,13 +144,13 @@ runs:
           # Release notes 파일이 있으면 사용, 없으면 기본 메시지 사용
           if [ -f "RELEASE_NOTES.md" ]; then
             echo "Using generated release notes from RELEASE_NOTES.md"
-            gh release create "v$CALENDAR_VERSION" --title "v$CALENDAR_VERSION" --notes-file "RELEASE_NOTES.md" --latest
+            gh release create "$CALENDAR_VERSION" --title "$CALENDAR_VERSION" --notes-file "RELEASE_NOTES.md" --latest
           else
             echo "Using default release notes"
-            RELEASE_NOTES="Calendar Versioning Release v$CALENDAR_VERSION"
-            gh release create "v$CALENDAR_VERSION" --title "v$CALENDAR_VERSION" --notes "$RELEASE_NOTES" --latest
+            RELEASE_NOTES="Calendar Versioning Release $CALENDAR_VERSION"
+            gh release create "$CALENDAR_VERSION" --title "$CALENDAR_VERSION" --notes "$RELEASE_NOTES" --latest
           fi
-          echo "GitHub release created: v$CALENDAR_VERSION"
+          echo "GitHub release created: $CALENDAR_VERSION"
           
           echo "Updating PR comments with calendar version..."
           RECENT_PRS=$(gh pr list --state merged --limit 10 --json number,mergedAt --jq '.[] | select(.mergedAt != null) | .number')
@@ -151,7 +161,7 @@ runs:
             if [ -n "$COMMENT_ID" ]; then
               gh api repos/:owner/:repo/issues/comments/$COMMENT_ID -X DELETE || true
               
-              COMMENT_TEXT="This PR is included in version $CALENDAR_VERSION. The release is available on GitHub: https://github.com/$GITHUB_REPOSITORY/releases/tag/v$CALENDAR_VERSION"
+              COMMENT_TEXT="This PR is included in version $CALENDAR_VERSION. The release is available on GitHub: https://github.com/$GITHUB_REPOSITORY/releases/tag/$CALENDAR_VERSION"
               gh pr comment $PR_NUMBER --body "$COMMENT_TEXT"
               
               echo "Updated PR #$PR_NUMBER comment with calendar version"
