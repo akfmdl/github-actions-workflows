@@ -115,12 +115,12 @@ runs:
         GITHUB_TOKEN: ${{ inputs.github-token }}
       run: |
         if [ "${{ inputs.dry_run }}" != "true" ] && [ -n "$CALENDAR_VERSION" ]; then
-          echo "🏷️ Creating calendar version tag: v$CALENDAR_VERSION"
+          echo "Creating calendar version tag: v$CALENDAR_VERSION"
           
           # 기존 semantic release 태그 삭제 (로컬 및 원격)
           SEMANTIC_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
           if [[ "$SEMANTIC_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "🗑️ Removing semantic version tag: $SEMANTIC_TAG"
+            echo "Removing semantic version tag: $SEMANTIC_TAG"
             git tag -d "$SEMANTIC_TAG" || true
             git push origin ":refs/tags/$SEMANTIC_TAG" || true
           fi
@@ -129,11 +129,11 @@ runs:
           git tag "v$CALENDAR_VERSION"
           git push origin "v$CALENDAR_VERSION"
           
-          echo "✅ Calendar version tag created: v$CALENDAR_VERSION"
+          echo "Calendar version tag created: v$CALENDAR_VERSION"
           
           # GitHub CLI 설치 확인 및 설치
           if ! command -v gh &> /dev/null; then
-            echo "📥 Installing GitHub CLI..."
+            echo "Installing GitHub CLI..."
             curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
             echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
             sudo apt update
@@ -141,7 +141,7 @@ runs:
           fi
           
           # GitHub release 업데이트
-          echo "📝 Updating GitHub release to calendar version..."
+          echo "Updating GitHub release to calendar version..."
           
           # 기존 semantic version release 삭제
           if [[ -n "$SEMANTIC_TAG" ]]; then
@@ -150,44 +150,36 @@ runs:
           
           # Calendar version으로 새 release 생성
           RELEASE_NOTES=$(gh api repos/:owner/:repo/releases/latest --jq '.body' 2>/dev/null || echo "Calendar Versioning Release")
-          gh release create "v$CALENDAR_VERSION" \
-            --title "v$CALENDAR_VERSION" \
-            --notes "$RELEASE_NOTES" \
-            --latest
+          gh release create "v$CALENDAR_VERSION" --title "v$CALENDAR_VERSION" --notes "$RELEASE_NOTES" --latest
           
-          echo "✅ GitHub release created: v$CALENDAR_VERSION"
+          echo "GitHub release created: v$CALENDAR_VERSION"
           
           # PR 코멘트 업데이트 (가장 최근 merged PR 찾기)
-          echo "💬 Updating PR comments with calendar version..."
+          echo "Updating PR comments with calendar version..."
           
           # 최근 merge된 PR들 찾기
           RECENT_PRS=$(gh pr list --state merged --limit 10 --json number,mergedAt --jq '.[] | select(.mergedAt != null) | .number')
           
           for PR_NUMBER in $RECENT_PRS; do
             # semantic version 코멘트 찾기
-            COMMENT_ID=$(gh api repos/:owner/:repo/issues/$PR_NUMBER/comments --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("🎉 This PR is included in version"))) | .id' | head -n1)
+            COMMENT_ID=$(gh api repos/:owner/:repo/issues/$PR_NUMBER/comments --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("This PR is included in version"))) | .id' | head -n1)
             
             if [ -n "$COMMENT_ID" ]; then
               # 기존 코멘트 삭제
               gh api repos/:owner/:repo/issues/comments/$COMMENT_ID -X DELETE || true
               
               # 새 calendar version 코멘트 추가
-              COMMENT_BODY="🎉 This PR is included in version $CALENDAR_VERSION 🎉
+              REPO_NAME="${{ github.repository }}"
+              gh pr comment $PR_NUMBER --body "🎉 This PR is included in version $CALENDAR_VERSION 🎉
 
-The release is available on:
-
-📅 [v$CALENDAR_VERSION](https://github.com/${{ github.repository }}/releases/tag/v$CALENDAR_VERSION)
-📋 GitHub release
+The release is available on GitHub: https://github.com/$REPO_NAME/releases/tag/v$CALENDAR_VERSION
 
 Your semantic-release bot 📦🚀 (Calendar Versioning)"
               
-              gh pr comment $PR_NUMBER --body "$COMMENT_BODY"
-              
-              echo "✅ Updated PR #$PR_NUMBER comment with calendar version"
+              echo "Updated PR #$PR_NUMBER comment with calendar version"
               break
             fi
           done
-          
         fi
 
 branding:
