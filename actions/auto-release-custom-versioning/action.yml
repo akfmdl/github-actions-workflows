@@ -60,7 +60,7 @@ runs:
       with:
         node-version: ${{ inputs.node-version }}
 
-    - name: Install local dependencies (if package.json exists)
+    - name: Install dependencies
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |

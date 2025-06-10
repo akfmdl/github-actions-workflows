@@ -69,12 +69,6 @@ runs:
       with:
         node-version: ${{ inputs.node-version }}
 
-    - name: Install required dependencies
-      shell: bash
-      run: |
-        echo "📦 Installing required dependencies globally..."
-        npm install -g @octokit/rest
-
     - name: Install dependencies
       shell: bash
       working-directory: ${{ inputs.working-directory }}
@@ -91,17 +85,9 @@ runs:
           else
             npm install
           fi
-          
-          # @octokit/rest가 package.json에 없다면 추가로 설치
-          if ! npm list @octokit/rest >/dev/null 2>&1; then
-            echo "📦 Installing @octokit/rest..."
-            npm install @octokit/rest
-          else
-            echo "✅ @octokit/rest already installed"
-          fi
         else
-          echo "📦 No package.json found, installing required dependencies only..."
-          npm install @octokit/rest
+          echo "⚠️ No package.json found"
+          exit 1
         fi
         
     - name: Download update script
@@ -110,6 +96,10 @@ runs:
         echo "📥 Downloading update repository script..."
         curl -fsSL -o /tmp/update-repo.js https://raw.githubusercontent.com/akfmdl/github-actions-workflows/test/scripts/update-repo.js
         chmod +x /tmp/update-repo.js
+        
+        # /tmp 디렉토리에 @octokit/rest 설치
+        echo "📦 Installing @octokit/rest in /tmp directory..."
+        cd /tmp && npm install @octokit/rest
         
     - name: Update repository file and create PR
       id: update-repo
