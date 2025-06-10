@@ -19,11 +19,7 @@ const SOURCE_REPOSITORY = process.env.SOURCE_REPOSITORY || 'Unknown';
 const SOURCE_WORKFLOW = process.env.SOURCE_WORKFLOW || 'Unknown';
 const SOURCE_RUN_ID = process.env.SOURCE_RUN_ID || '';
 
-// ES Module 호환성을 위한 dynamic import
-async function loadOctokit() {
-    const { Octokit } = await import('@octokit/rest');
-    return Octokit;
-}
+// GitHub CLI 기반으로 변경되어 Octokit 불필요
 
 async function updateRepositoryFileSSH() {
     console.log('🔧 Update Repository File Script (SSH) v1.0.0');
@@ -377,75 +373,125 @@ async function updateRepositoryFileSSH() {
         execSync(pushCmd, { stdio: 'pipe' });
         console.log('✅ 변경사항 푸시 완료');
 
-        // 5. Pull Request 생성 (GitHub API 사용)
-        if (GITHUB_TOKEN) {
-            console.log('\n🚀 Pull Request 생성 중...');
+        // 5. Pull Request 생성 (GitHub CLI 사용 - SSH 키 기반)
+        console.log('\n🚀 GitHub CLI로 Pull Request 생성 중...');
 
-            const Octokit = await loadOctokit();
-            const octokit = new Octokit({
-                auth: GITHUB_TOKEN,
+        // GitHub CLI 설치 확인
+        try {
+            const ghVersion = execSync('gh --version', { stdio: 'pipe', timeout: 5000 });
+            console.log('✅ GitHub CLI 확인:', ghVersion.toString().trim().split('\n')[0]);
+        } catch (ghError) {
+            console.error('❌ GitHub CLI를 찾을 수 없습니다. GitHub CLI가 설치되어 있는지 확인하세요.');
+            console.log('⚠️ PR 생성을 건너뛰고 수동으로 생성하세요.');
+            console.log(`📌 수동 PR 생성: ${branchName} -> main`);
+            return;
+        }
+
+        const prTitle = PR_TITLE || `Update ${VARIABLE_NAME} in ${FILE_PATH}`;
+        let prBody = PR_BODY;
+
+        if (!prBody) {
+            prBody = `이 PR은 자동으로 생성되었습니다.
+
+## 📋 변경사항
+- **파일**: \`${FILE_PATH}\`
+- **변수**: \`${VARIABLE_NAME}\`
+- **새 값**: \`${NEW_VALUE}\`
+
+## 🔗 소스 정보
+- **소스 레포지토리**: ${SOURCE_REPOSITORY}
+- **워크플로우**: ${SOURCE_WORKFLOW}`;
+
+            if (SOURCE_RUN_ID) {
+                prBody += `\n- **실행 ID**: [${SOURCE_RUN_ID}](https://github.com/${SOURCE_REPOSITORY}/actions/runs/${SOURCE_RUN_ID})`;
+            }
+        }
+
+        try {
+            // GitHub CLI로 SSH 키 인증 상태 확인
+            console.log('🔐 GitHub CLI 인증 상태 확인 중...');
+            const authStatus = execSync('gh auth status', {
+                stdio: 'pipe',
+                timeout: 10000,
+                env: {
+                    ...process.env,
+                    GIT_SSH_COMMAND: `ssh -i ${sshKeyPath} -o StrictHostKeyChecking=no`
+                }
+            });
+            console.log('✅ GitHub CLI 인증 상태:', authStatus.toString().trim());
+        } catch (authError) {
+            console.log('⚠️ GitHub CLI 인증 설정 중...');
+            try {
+                // SSH 키로 GitHub CLI 인증 설정
+                const authCmd = `echo "github.com" | GIT_SSH_COMMAND="ssh -i ${sshKeyPath} -o StrictHostKeyChecking=no" gh auth login --with-token --git-protocol ssh`;
+                execSync(authCmd, {
+                    stdio: 'pipe',
+                    timeout: 10000,
+                    input: '',
+                    env: {
+                        ...process.env,
+                        GIT_SSH_COMMAND: `ssh -i ${sshKeyPath} -o StrictHostKeyChecking=no`
+                    }
+                });
+                console.log('✅ GitHub CLI SSH 인증 설정 완료');
+            } catch (setupError) {
+                console.error('❌ GitHub CLI 인증 설정 실패:', setupError.message);
+                // GitHub Token이 있으면 fallback으로 사용
+                if (GITHUB_TOKEN) {
+                    console.log('🔄 GitHub Token으로 fallback 시도 중...');
+                    const tokenAuth = execSync(`echo "${GITHUB_TOKEN}" | gh auth login --with-token`, {
+                        stdio: 'pipe',
+                        timeout: 10000
+                    });
+                    console.log('✅ GitHub Token으로 인증 완료');
+                } else {
+                    throw new Error('GitHub CLI 인증 실패 및 GitHub Token 없음');
+                }
+            }
+        }
+
+        // PR 생성
+        console.log('📝 Pull Request 생성 중...');
+        const ghPrCmd = `gh pr create --title "${prTitle}" --body "${prBody}" --head ${branchName}`;
+
+        try {
+            const prResult = execSync(ghPrCmd, {
+                stdio: 'pipe',
+                timeout: 30000,
+                env: {
+                    ...process.env,
+                    GIT_SSH_COMMAND: `ssh -i ${sshKeyPath} -o StrictHostKeyChecking=no`
+                },
+                cwd: workDir
             });
 
-            const prTitle = PR_TITLE || `Update ${VARIABLE_NAME} in ${FILE_PATH}`;
-            let prBody = PR_BODY;
+            const prUrl = prResult.toString().trim();
+            console.log(`✅ Pull Request 생성 완료!`);
+            console.log(`🔗 PR URL: ${prUrl}`);
 
-            if (!prBody) {
-                prBody = `이 PR은 자동으로 생성되었습니다.
+            // PR 번호 추출
+            const prNumber = prUrl.match(/\/pull\/(\d+)$/)?.[1] || 'N/A';
+            console.log(`🔢 PR Number: ${prNumber}`);
 
-                ## 📋 변경사항
-                - **파일**: \`${FILE_PATH}\`
-                - **변수**: \`${VARIABLE_NAME}\`
-                - **새 값**: \`${NEW_VALUE}\`
-
-                ## 🔗 소스 정보
-                - **소스 레포지토리**: ${SOURCE_REPOSITORY}
-                - **워크플로우**: ${SOURCE_WORKFLOW}`;
-
-                if (SOURCE_RUN_ID) {
-                    prBody += `\n- **실행 ID**: [${SOURCE_RUN_ID}](https://github.com/${SOURCE_REPOSITORY}/actions/runs/${SOURCE_RUN_ID})`;
-                }
+            // GitHub Actions 출력 설정
+            if (process.env.GITHUB_OUTPUT) {
+                fs.appendFileSync(process.env.GITHUB_OUTPUT, `pr-url=${prUrl}\n`);
+                fs.appendFileSync(process.env.GITHUB_OUTPUT, `pr-number=${prNumber}\n`);
+                fs.appendFileSync(process.env.GITHUB_OUTPUT, `branch-name=${branchName}\n`);
             }
 
-            try {
-                // 기본 브랜치 확인
-                const { data: repoData } = await octokit.rest.repos.get({
-                    owner,
-                    repo,
-                });
+            // 레거시 출력 방식
+            console.log(`::set-output name=pr-url::${prUrl}`);
+            console.log(`::set-output name=pr-number::${prNumber}`);
+            console.log(`::set-output name=branch-name::${branchName}`);
 
-                const { data: pullRequest } = await octokit.rest.pulls.create({
-                    owner,
-                    repo,
-                    title: prTitle,
-                    head: branchName,
-                    base: repoData.default_branch,
-                    body: prBody,
-                });
-
-                console.log(`✅ Pull Request 생성 완료!`);
-                console.log(`🔗 PR URL: ${pullRequest.html_url}`);
-                console.log(`🔢 PR Number: ${pullRequest.number}`);
-
-                // GitHub Actions 출력 설정
-                if (process.env.GITHUB_OUTPUT) {
-                    fs.appendFileSync(process.env.GITHUB_OUTPUT, `pr-url=${pullRequest.html_url}\n`);
-                    fs.appendFileSync(process.env.GITHUB_OUTPUT, `pr-number=${pullRequest.number}\n`);
-                    fs.appendFileSync(process.env.GITHUB_OUTPUT, `branch-name=${branchName}\n`);
-                }
-
-                // 레거시 출력 방식
-                console.log(`::set-output name=pr-url::${pullRequest.html_url}`);
-                console.log(`::set-output name=pr-number::${pullRequest.number}`);
-                console.log(`::set-output name=branch-name::${branchName}`);
-
-            } catch (prError) {
-                console.error('❌ Pull Request 생성 실패:', prError.message);
-                console.log('⚠️ 파일 수정 및 푸시는 완료되었지만 PR 생성에 실패했습니다.');
-                console.log(`📌 수동으로 PR을 생성하세요: ${branchName} -> main`);
-            }
-        } else {
-            console.log('⚠️ GitHub Token이 제공되지 않아 PR 생성을 건너뜁니다.');
+        } catch (prError) {
+            console.error('❌ Pull Request 생성 실패:', prError.message);
+            console.error('- stdout:', prError.stdout?.toString() || 'N/A');
+            console.error('- stderr:', prError.stderr?.toString() || 'N/A');
+            console.log('⚠️ 파일 수정 및 푸시는 완료되었지만 PR 생성에 실패했습니다.');
             console.log(`📌 수동으로 PR을 생성하세요: ${branchName} -> main`);
+            console.log(`🔗 GitHub에서 직접 생성: https://github.com/${TARGET_REPO}/compare/main...${branchName}`);
         }
 
         console.log('\n🎉 모든 작업이 성공적으로 완료되었습니다!');

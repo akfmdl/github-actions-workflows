@@ -4,12 +4,12 @@ author: 'GitHub Actions Workflows'
 
 inputs:
   github-token:
-    description: 'GitHub token for authentication'
-    required: true
-  target-ssh-key:
-    description: 'SSH key for authentication to access target repository'
+    description: 'GitHub token for authentication (fallback for PR creation if GitHub CLI fails)'
     required: false
     default: ''
+  ssh-key:
+    description: 'SSH key for authentication to access target repository'
+    required: true
   node-version:
     description: 'Node.js version to use'
     required: false
@@ -61,13 +61,29 @@ runs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        ssh-key: ${{ inputs.target-ssh-key }}
+        ssh-key: ${{ inputs.ssh-key }}
         token: ${{ inputs.github-token }}
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node-version }}
+        
+    - name: Setup GitHub CLI
+      shell: bash
+      run: |
+        # GitHub CLI는 GitHub Actions runner에 기본 설치되어 있음
+        echo "🔧 GitHub CLI 확인 중..."
+        if which gh > /dev/null; then
+          echo "✅ GitHub CLI 이미 설치됨: $(gh --version | head -n1)"
+        else
+          echo "📦 GitHub CLI 설치 중..."
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+          sudo apt update
+          sudo apt install gh -y
+          echo "✅ GitHub CLI 설치 완료: $(gh --version | head -n1)"
+        fi
         
     - name: Download update script
       shell: bash
@@ -76,15 +92,17 @@ runs:
         curl -fsSL -o /tmp/update-repo-ssh.js https://raw.githubusercontent.com/akfmdl/github-actions-workflows/test/scripts/update-repo-ssh.js
         chmod +x /tmp/update-repo-ssh.js
         
-        # /tmp 디렉토리에 @octokit/rest 설치
-        echo "📦 Installing @octokit/rest in /tmp directory..."
-        cd /tmp && npm install @octokit/rest
-        
         # SSH 관련 도구 설치 확인
         echo "🔧 시스템 도구 확인..."
         which ssh || echo "⚠️ SSH not found"
         which ssh-keygen || echo "⚠️ SSH-keygen not found" 
         which git || echo "⚠️ Git not found"
+        which gh || echo "⚠️ GitHub CLI not found"
+        
+        # GitHub CLI 버전 확인
+        if which gh > /dev/null; then
+          echo "✅ GitHub CLI 버전: $(gh --version | head -n1)"
+        fi
         
         # SSH 디렉토리 미리 생성
         echo "🔑 SSH 환경 준비..."
@@ -100,7 +118,7 @@ runs:
         VARIABLE_NAME: ${{ inputs.variable-name }}
         NEW_VALUE: ${{ inputs.new-value }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
-        SSH_KEY: ${{ inputs.target-ssh-key }}
+        SSH_KEY: ${{ inputs.ssh-key }}
         COMMIT_MESSAGE: ${{ inputs.commit-message }}
         PR_TITLE: ${{ inputs.pr-title }}
         PR_BODY: ${{ inputs.pr_body }}

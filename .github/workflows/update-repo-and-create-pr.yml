@@ -22,7 +22,7 @@ jobs:
           target-ssh-key: ${{ secrets.MLOPS_LIFECYCLE_DEPLOY_KEY }}
 
       - name: Post-pull-request notification
-        if: steps.update-file-and-create-pr.outputs.pr_url != ''
+        if: steps.update-file-and-create-pr.outputs.pr-url != ''
         run: |
           echo "🎉 Pull Request가 생성되었습니다!"
           echo "Pull Request URL: ${{ steps.update-file-and-create-pr.outputs.pr-url }}"
