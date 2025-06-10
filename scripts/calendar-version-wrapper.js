@@ -3,11 +3,11 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 
-// GitHub API를 사용하기 위한 설정
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_REPOSITORY = process.env.GITHUB_REPOSITORY || 'akfmdl/github-actions-workflows';
 const GITHUB_API_URL = process.env.GITHUB_API_URL || 'https://api.github.com';
 const JIRA_BASE_URL = process.env.JIRA_BASE_URL || 'https://your-jira-instance.atlassian.net';
+const VERSION_PY_PATH = process.env.VERSION_PY_PATH || '';
 
 const DEFAULT_LABEL_MAPPINGS = {
     // PR 라벨: 릴리즈 타입
@@ -410,8 +410,14 @@ async function generateCalendarRelease() {
     fs.writeFileSync('package.json', JSON.stringify(packageJson, null, 2));
     console.log(`✅ Updated package.json with version: ${calendarVersion}`);
 
-    // version.py 파일도 업데이트
-    if (fs.existsSync('version.py')) {
+    // version.py 파일도 업데이트 (경로가 지정된 경우)
+    if (VERSION_PY_PATH && fs.existsSync(VERSION_PY_PATH)) {
+        const content = fs.readFileSync(VERSION_PY_PATH, 'utf8');
+        const updatedContent = content.replace(/__VERSION__ = ".*"/, `__VERSION__ = "${calendarVersion}"`);
+        fs.writeFileSync(VERSION_PY_PATH, updatedContent);
+        console.log(`✅ Updated ${VERSION_PY_PATH} with version: ${calendarVersion}`);
+    } else if (!VERSION_PY_PATH && fs.existsSync('version.py')) {
+        // 기본 경로 체크 (하위 호환성)
         const content = fs.readFileSync('version.py', 'utf8');
         const updatedContent = content.replace(/__VERSION__ = ".*"/, `__VERSION__ = "${calendarVersion}"`);
         fs.writeFileSync('version.py', updatedContent);

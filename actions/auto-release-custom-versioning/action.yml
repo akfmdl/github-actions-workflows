@@ -22,6 +22,10 @@ inputs:
     description: 'Jira base URL'
     required: false
     default: 'https://your-jira-instance.atlassian.net'
+  version-py-path:
+    description: 'Path to version.py file (relative to working directory)'
+    required: false
+    default: ''
 
 outputs:
   new-release-published:
@@ -87,6 +91,7 @@ runs:
         GITHUB_TOKEN: ${{ inputs.github-token }}
         GITHUB_REPOSITORY: ${{ github.repository }}
         JIRA_BASE_URL: ${{ inputs.jira-base-url }}
+        VERSION_PY_PATH: ${{ inputs.version-py-path }}
       run: |        
         echo "🚀 Running custom versioning..."
         node /tmp/calendar-version-wrapper.js
@@ -96,6 +101,7 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
+        VERSION_PY_PATH: ${{ inputs.version-py-path }}
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -105,7 +111,7 @@ runs:
         FILES_TO_COMMIT=""
         
         # 관심있는 파일들만 필터링
-        for file in package.json version.py; do
+        for file in package.json $VERSION_PY_PATH; do
           if [ -f "$file" ] && echo "$CHANGED_FILES" | grep -q "^$file$"; then
             FILES_TO_COMMIT="$FILES_TO_COMMIT $file"
           fi
