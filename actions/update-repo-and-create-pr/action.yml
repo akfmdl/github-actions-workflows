@@ -80,6 +80,17 @@ runs:
         echo "📦 Installing @octokit/rest in /tmp directory..."
         cd /tmp && npm install @octokit/rest
         
+        # SSH 관련 도구 설치 확인
+        echo "🔧 시스템 도구 확인..."
+        which ssh || echo "⚠️ SSH not found"
+        which ssh-keygen || echo "⚠️ SSH-keygen not found" 
+        which git || echo "⚠️ Git not found"
+        
+        # SSH 디렉토리 미리 생성
+        echo "🔑 SSH 환경 준비..."
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+        
     - name: Update repository file and create PR
       id: update-repo
       shell: bash

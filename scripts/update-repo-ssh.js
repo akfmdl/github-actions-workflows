@@ -83,14 +83,62 @@ async function updateRepositoryFileSSH() {
         fs.mkdirSync(workDir, { recursive: true });
 
         const sshUrl = `git@github.com:${TARGET_REPO}.git`;
-        const cloneCmd = `GIT_SSH_COMMAND="ssh -i ${sshKeyPath} -o StrictHostKeyChecking=no" git clone ${sshUrl} ${workDir}`;
+        const cloneCmd = `GIT_SSH_COMMAND="ssh -i ${sshKeyPath} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" git clone ${sshUrl} ${workDir}`;
+
+        console.log('📋 클론 명령어:', cloneCmd);
+        console.log('📁 작업 디렉토리:', workDir);
 
         try {
-            execSync(cloneCmd, { stdio: 'pipe' });
+            const cloneResult = execSync(cloneCmd, {
+                stdio: ['pipe', 'pipe', 'pipe'],
+                timeout: 30000 // 30초 타임아웃
+            });
             console.log('✅ 레포지토리 클론 완료');
+            if (cloneResult.toString()) {
+                console.log('📄 클론 결과:', cloneResult.toString());
+            }
         } catch (cloneError) {
-            console.error('❌ 레포지토리 클론 실패:', cloneError.message);
-            throw new Error(`레포지토리 클론 실패. Deploy Key 권한을 확인하세요: ${cloneError.message}`);
+            console.error('❌ 레포지토리 클론 실패');
+            console.error('📊 에러 상세 정보:');
+            console.error('- 명령어:', cloneCmd);
+            console.error('- 에러 메시지:', cloneError.message);
+            console.error('- stdout:', cloneError.stdout?.toString() || 'N/A');
+            console.error('- stderr:', cloneError.stderr?.toString() || 'N/A');
+            console.error('- 상태 코드:', cloneError.status || 'N/A');
+
+            // SSH 키 파일 존재 확인
+            console.error('🔍 SSH 키 파일 확인:');
+            console.error(`- 파일 존재: ${fs.existsSync(sshKeyPath)}`);
+            if (fs.existsSync(sshKeyPath)) {
+                const stats = fs.statSync(sshKeyPath);
+                console.error(`- 파일 권한: ${stats.mode.toString(8)}`);
+                console.error(`- 파일 크기: ${stats.size} bytes`);
+            }
+
+            // 에러 분석 및 해결 방법 제시
+            const errorMsg = cloneError.stderr?.toString() || cloneError.message || '';
+            let troubleshooting = '📋 문제 해결 방법:\n';
+
+            if (errorMsg.includes('Permission denied (publickey)')) {
+                troubleshooting += '1. Deploy Key가 대상 레포지토리에 올바르게 추가되었는지 확인\n';
+                troubleshooting += '2. Deploy Key에 "Write access" 권한이 활성화되었는지 확인\n';
+                troubleshooting += '3. SSH 키가 올바른 형식(PEM)인지 확인\n';
+            }
+
+            if (errorMsg.includes('error in libcrypto')) {
+                troubleshooting += '1. SSH 키 형식이 올바른지 확인 (ed25519 또는 RSA)\n';
+                troubleshooting += '2. SSH 키에 줄바꿈 문자가 올바르게 포함되었는지 확인\n';
+                troubleshooting += '3. GitHub Secrets에 키를 저장할 때 공백이나 특수문자가 포함되지 않았는지 확인\n';
+            }
+
+            if (errorMsg.includes('Repository not found')) {
+                troubleshooting += '1. 레포지토리 이름이 올바른지 확인 (owner/repo-name)\n';
+                troubleshooting += '2. 레포지토리가 존재하고 접근 가능한지 확인\n';
+            }
+
+            console.error(troubleshooting);
+
+            throw new Error(`레포지토리 클론 실패. Deploy Key 설정을 확인하세요.\n${troubleshooting}`);
         }
 
         // 3. 파일 수정
