@@ -53,6 +53,13 @@ outputs:
 runs:
   using: 'composite'
   steps:
+    - name: Checkout 코드
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        ssh-key: ${{ inputs.ssh-key }}
+        token: ${{ inputs.github-token }}
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
