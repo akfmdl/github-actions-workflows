@@ -1,14 +1,10 @@
 name: 'Update Repository File and Create PR'
-description: 'Update a file in another repository and create a pull request automatically'
+description: 'Update a file in another repository and create a pull request automatically using GitHub Personal Access Token'
 author: 'GitHub Actions Workflows'
 
 inputs:
   github-token:
-    description: 'GitHub token for authentication (fallback for PR creation if GitHub CLI fails)'
-    required: false
-    default: ''
-  target-ssh-key:
-    description: 'SSH key for authentication to access target repository'
+    description: 'GitHub Personal Access Token with repo permissions'
     required: true
   node-version:
     description: 'Node.js version to use'
@@ -57,57 +53,23 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: Checkout 코드
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        ssh-key: ${{ inputs.target-ssh-key }}
-        token: ${{ inputs.github-token }}
-
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node-version }}
-        
-    - name: Setup GitHub CLI
+
+    - name: Install dependencies
       shell: bash
       run: |
-        # GitHub CLI는 GitHub Actions runner에 기본 설치되어 있음
-        echo "🔧 GitHub CLI 확인 중..."
-        if which gh > /dev/null; then
-          echo "✅ GitHub CLI 이미 설치됨: $(gh --version | head -n1)"
-        else
-          echo "📦 GitHub CLI 설치 중..."
-          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
-          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
-          sudo apt update
-          sudo apt install gh -y
-          echo "✅ GitHub CLI 설치 완료: $(gh --version | head -n1)"
-        fi
-        
+        echo "📦 Installing dependencies..."
+        npm install @octokit/rest
+
     - name: Download update script
       shell: bash
       run: |
-        echo "📥 Downloading SSH-based update repository script..."
-        curl -fsSL -o /tmp/update-repo-ssh.js https://raw.githubusercontent.com/akfmdl/github-actions-workflows/test/scripts/update-repo-ssh.js
-        chmod +x /tmp/update-repo-ssh.js
-        
-        # SSH 관련 도구 설치 확인
-        echo "🔧 시스템 도구 확인..."
-        which ssh || echo "⚠️ SSH not found"
-        which ssh-keygen || echo "⚠️ SSH-keygen not found" 
-        which git || echo "⚠️ Git not found"
-        which gh || echo "⚠️ GitHub CLI not found"
-        
-        # GitHub CLI 버전 확인
-        if which gh > /dev/null; then
-          echo "✅ GitHub CLI 버전: $(gh --version | head -n1)"
-        fi
-        
-        # SSH 디렉토리 미리 생성
-        echo "🔑 SSH 환경 준비..."
-        mkdir -p ~/.ssh
-        chmod 700 ~/.ssh
+        echo "📥 Downloading update repository script..."
+        curl -fsSL -o /tmp/update-repo.js https://raw.githubusercontent.com/akfmdl/github-actions-workflows/test/scripts/update-repo-ssh.js
+        chmod +x /tmp/update-repo.js
         
     - name: Update repository file and create PR
       id: update-repo
@@ -118,16 +80,15 @@ runs:
         VARIABLE_NAME: ${{ inputs.variable-name }}
         NEW_VALUE: ${{ inputs.new-value }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
-        SSH_KEY: ${{ inputs.target-ssh-key }}
         COMMIT_MESSAGE: ${{ inputs.commit-message }}
         PR_TITLE: ${{ inputs.pr-title }}
-        PR_BODY: ${{ inputs.pr_body }}
+        PR_BODY: ${{ inputs.pr-body }}
         SOURCE_REPOSITORY: ${{ github.repository }}
         SOURCE_WORKFLOW: ${{ github.workflow }}
         SOURCE_RUN_ID: ${{ github.run_id }}
       run: |
-        echo "🚀 SSH 기반 레포지토리 업데이트 및 PR 생성을 시작합니다..."
-        node /tmp/update-repo-ssh.js
+        echo "🚀 레포지토리 업데이트 및 PR 생성을 시작합니다..."
+        node /tmp/update-repo.js
         
     - name: Summary
       shell: bash
@@ -138,10 +99,10 @@ runs:
         echo "- **변수명:** ${{ inputs.variable-name }}" >> $GITHUB_STEP_SUMMARY
         echo "- **새 값:** ${{ inputs.new-value }}" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        if [ -n "${{ steps.update-repo.outputs.pr-url }}" ]; then
-          echo "✅ **Pull Request가 성공적으로 생성되었습니다!**" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 **PR URL:** ${{ steps.update-repo.outputs.pr-url }}" >> $GITHUB_STEP_SUMMARY
-        fi
+        echo "✅ **파일 수정 및 Pull Request 생성 완료!**" >> $GITHUB_STEP_SUMMARY
+        echo "🔗 **PR URL:** ${{ steps.update-repo.outputs.pr-url }}" >> $GITHUB_STEP_SUMMARY
+        echo "🔢 **PR 번호:** ${{ steps.update-repo.outputs.pr-number }}" >> $GITHUB_STEP_SUMMARY
+        echo "🌿 **브랜치:** ${{ steps.update-repo.outputs.branch-name }}" >> $GITHUB_STEP_SUMMARY
 
 branding:
   icon: 'git-pull-request'

@@ -3,7 +3,7 @@ name: Update Repository File and Create PR
 on:
   push:
     branches:
-      - <TARGET_BRANCH>
+      - test
 
 jobs:
   update-file-and-create-pr:
@@ -18,8 +18,7 @@ jobs:
           file-path: Makefile
           variable-name: DUBBING_VERSION
           new-value: 1.0.0
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          target-ssh-key: ${{ secrets.MLOPS_LIFECYCLE_DEPLOY_KEY }}
+          github-token: ${{ secrets.GIT_TOKEN }}
 
       - name: Post-pull-request notification
         if: steps.update-file-and-create-pr.outputs.pr-url != ''
