@@ -16,6 +16,7 @@ jobs:
 
     steps:
       - name: Auto Release
+        id: release
         uses: akfmdl/github-actions-workflows/actions/auto-release-custom-versioning@main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
