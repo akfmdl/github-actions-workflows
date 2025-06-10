@@ -58,16 +58,12 @@ runs:
       with:
         node-version: ${{ inputs.node-version }}
 
-    - name: Download update script and install dependencies
+    - name: Download update script
       shell: bash
       run: |
         echo "📥 Downloading update repository script..."
         curl -fsSL -o /tmp/update-repo.js https://raw.githubusercontent.com/akfmdl/github-actions-workflows/test/scripts/update-repo-ssh.js
         chmod +x /tmp/update-repo.js
-        
-        echo "📦 Installing dependencies in /tmp..."
-        cd /tmp
-        npm install @octokit/rest
         
     - name: Update repository file and create PR
       id: update-repo

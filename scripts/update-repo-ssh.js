@@ -1,11 +1,6 @@
 #!/usr/bin/env node
 
-// ES Module 호환성을 위한 dynamic import
-async function loadDependencies() {
-    const { Octokit } = await import('@octokit/rest');
-    const fs = await import('fs');
-    return { Octokit, fs: fs.default };
-}
+const fs = require('fs');
 
 // 환경변수에서 입력값들 가져오기
 const TARGET_REPO = process.env.TARGET_REPO || 'akfmdl/mlops-lifecycle';
@@ -20,14 +15,35 @@ const SOURCE_REPOSITORY = process.env.SOURCE_REPOSITORY || 'Unknown';
 const SOURCE_WORKFLOW = process.env.SOURCE_WORKFLOW || 'Unknown';
 const SOURCE_RUN_ID = process.env.SOURCE_RUN_ID || '';
 
-async function updateRepositoryFile() {
-    console.log('🔧 Update Repository File Script v2.0.0 (PAT Token)');
-    console.log('='.repeat(60));
+// GitHub API 호출 헬퍼 함수
+async function githubAPI(endpoint, options = {}) {
+    const url = `https://api.github.com${endpoint}`;
+    const defaultHeaders = {
+        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+        'Accept': 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        'User-Agent': 'GitHub-Actions-Update-Repo'
+    };
 
-    // 의존성 로드
-    console.log('📦 Loading dependencies...');
-    const { Octokit, fs } = await loadDependencies();
-    console.log('✅ Dependencies loaded successfully');
+    const response = await fetch(url, {
+        ...options,
+        headers: {
+            ...defaultHeaders,
+            ...options.headers
+        }
+    });
+
+    if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`GitHub API Error: ${response.status} ${response.statusText}\n${errorData}`);
+    }
+
+    return await response.json();
+}
+
+async function updateRepositoryFile() {
+    console.log('🔧 Update Repository File Script v2.1.0 (Native Fetch API)');
+    console.log('='.repeat(60));
 
     console.log('📋 입력값 확인:');
     console.log(`- Target Repo: ${TARGET_REPO}`);
@@ -54,18 +70,10 @@ async function updateRepositoryFile() {
         throw new Error('❌ 대상 레포지토리 형식이 올바르지 않습니다. (예: owner/repo-name)');
     }
 
-    const octokit = new Octokit({
-        auth: GITHUB_TOKEN,
-    });
-
     try {
         // 1. 원본 파일 내용 가져오기
         console.log('\n📥 파일 내용을 가져오는 중...');
-        const { data: fileData } = await octokit.rest.repos.getContent({
-            owner,
-            repo,
-            path: FILE_PATH,
-        });
+        const fileData = await githubAPI(`/repos/${owner}/${repo}/contents/${FILE_PATH}`);
 
         const originalContent = Buffer.from(fileData.content, 'base64').toString('utf8');
         console.log('✅ 원본 파일 내용을 성공적으로 가져왔습니다.');
@@ -177,9 +185,6 @@ async function updateRepositoryFile() {
         console.log(updatedContent);
         console.log('─'.repeat(40));
 
-        // 파일 저장
-        fs.writeFileSync(filePath, updatedContent, 'utf8');
-
         // 3. 새 브랜치 생성
         const timestamp = Date.now();
         const branchName = `update-${VARIABLE_NAME.replace(/[^a-zA-Z0-9]/g, '-')}-${timestamp}`;
@@ -187,26 +192,23 @@ async function updateRepositoryFile() {
 
         // 기본 브랜치 정보 가져오기
         console.log('📋 기본 브랜치 정보 확인 중...');
-        const { data: repoData } = await octokit.rest.repos.get({
-            owner,
-            repo,
-        });
+        const repoData = await githubAPI(`/repos/${owner}/${repo}`);
         console.log(`📌 기본 브랜치: ${repoData.default_branch}`);
 
-        const { data: defaultBranchData } = await octokit.rest.repos.getBranch({
-            owner,
-            repo,
-            branch: repoData.default_branch,
-        });
+        const defaultBranchData = await githubAPI(`/repos/${owner}/${repo}/branches/${repoData.default_branch}`);
         console.log(`📋 기본 브랜치 SHA: ${defaultBranchData.commit.sha}`);
 
         // 새 브랜치 생성
         console.log(`🚀 브랜치 생성 시도: refs/heads/${branchName}`);
-        await octokit.rest.git.createRef({
-            owner,
-            repo,
-            ref: `refs/heads/${branchName}`,
-            sha: defaultBranchData.commit.sha,
+        await githubAPI(`/repos/${owner}/${repo}/git/refs`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                ref: `refs/heads/${branchName}`,
+                sha: defaultBranchData.commit.sha
+            })
         });
         console.log('✅ 새 브랜치가 성공적으로 생성되었습니다.');
 
@@ -214,14 +216,17 @@ async function updateRepositoryFile() {
         console.log('\n📝 파일을 업데이트하는 중...');
         const commitMessage = COMMIT_MESSAGE || `Update ${VARIABLE_NAME} to ${NEW_VALUE}`;
 
-        await octokit.rest.repos.createOrUpdateFileContents({
-            owner,
-            repo,
-            path: FILE_PATH,
-            message: commitMessage,
-            content: Buffer.from(updatedContent).toString('base64'),
-            sha: fileData.sha,
-            branch: branchName,
+        await githubAPI(`/repos/${owner}/${repo}/contents/${FILE_PATH}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: commitMessage,
+                content: Buffer.from(updatedContent).toString('base64'),
+                sha: fileData.sha,
+                branch: branchName
+            })
         });
 
         console.log('✅ 파일이 성공적으로 업데이트되었습니다.');
@@ -248,13 +253,17 @@ async function updateRepositoryFile() {
             }
         }
 
-        const { data: pullRequest } = await octokit.rest.pulls.create({
-            owner,
-            repo,
-            title: prTitle,
-            head: branchName,
-            base: repoData.default_branch,
-            body: prBody,
+        const pullRequest = await githubAPI(`/repos/${owner}/${repo}/pulls`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                title: prTitle,
+                head: branchName,
+                base: repoData.default_branch,
+                body: prBody
+            })
         });
 
         console.log(`✅ Pull Request가 성공적으로 생성되었습니다!`);
@@ -277,14 +286,6 @@ async function updateRepositoryFile() {
     } catch (error) {
         console.error('\n❌ 오류가 발생했습니다:');
         console.error(error.message);
-
-        // 상세 에러 정보 출력
-        if (error.status) {
-            console.error(`HTTP Status: ${error.status}`);
-        }
-        if (error.response) {
-            console.error('Response data:', JSON.stringify(error.response.data, null, 2));
-        }
 
         process.exit(1);
     }
