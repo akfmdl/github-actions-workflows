@@ -35,7 +35,6 @@ async function updateRepositoryFile() {
     console.log(`- Variable Name: ${VARIABLE_NAME}`);
     console.log(`- New Value: ${NEW_VALUE}`);
     console.log(`- Source Repository: ${SOURCE_REPOSITORY}`);
-    console.log(`- GitHub Token: ${GITHUB_TOKEN ? `${GITHUB_TOKEN.substring(0, 8)}...` : 'NOT PROVIDED'}`);
 
     // 필수 입력값 검증
     if (!TARGET_REPO || !FILE_PATH || !VARIABLE_NAME || !NEW_VALUE || !GITHUB_TOKEN) {
@@ -59,27 +58,7 @@ async function updateRepositoryFile() {
     });
 
     try {
-        // 토큰 권한 확인
-        console.log('\n🔐 토큰 권한 확인 중...');
-        const { data: user } = await octokit.rest.users.getAuthenticated();
-        console.log(`✅ 인증된 사용자: ${user.login}`);
 
-        // 대상 레포지토리 접근 권한 확인
-        console.log('\n🔍 대상 레포지토리 접근 권한 확인 중...');
-        try {
-            const { data: repoInfo } = await octokit.rest.repos.get({
-                owner,
-                repo,
-            });
-            console.log(`✅ 레포지토리 접근 가능: ${repoInfo.full_name}`);
-            console.log(`📊 레포지토리 권한: ${JSON.stringify(repoInfo.permissions || {}, null, 2)}`);
-        } catch (repoError) {
-            console.error(`❌ 레포지토리 접근 실패:`, repoError.message);
-            if (repoError.status === 404) {
-                throw new Error(`레포지토리 '${TARGET_REPO}'를 찾을 수 없거나 접근 권한이 없습니다. 토큰이 해당 레포지토리에 대한 접근 권한이 있는지 확인하세요.`);
-            }
-            throw repoError;
-        }
         // 1. 원본 파일 내용 가져오기
         console.log('\n📥 파일 내용을 가져오는 중...');
         const { data: fileData } = await octokit.rest.repos.getContent({
