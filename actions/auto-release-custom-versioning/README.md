@@ -55,12 +55,24 @@ on:
 
 ### 3. (옵션) 버전 관리 파일 생성
 
-`version.py` 파일을 생성하세요.
+`version.py` 파일을 생성하세요. package.json와 함께 업데이트 해야 할 파일이 있을 경우, 해당 파일을 추가하세요.
+기본 경로는 `<repository root>/version.py` 입니다.
 
 참고: [version.py](../../version.py)
 
 ```python
 __VERSION__ = "0.0.0"
+```
+
+경로가 변경되었다면, 워크플로우 파일에서 경로를 수정하세요.
+
+```yaml
+    steps:
+      - name: Auto Release
+        ...
+        with:
+          ...
+          version-py-path: 'src/version.py'  # 선택사항: version.py 파일 경로
 ```
 
 ### 4. 입력 매개변수
@@ -72,6 +84,10 @@ __VERSION__ = "0.0.0"
 | `release-branches` | ❌ | `'["main", "master"]'` | 릴리즈할 브랜치 목록 (JSON 배열) |
 | `dry-run` | ❌ | `'false'` | 테스트 모드 실행 여부 |
 | `working-directory` | ❌ | `'.'` | 작업 디렉토리 |
+| `jira-base-url` | ❌ | `'https://your-jira-instance.atlassian.net'` | Jira 인스턴스 URL |
+| `version-py-path` | ❌ | `''` | version.py 파일의 경로 (예: `src/version.py`, `app/version.py`)
+  - 지정하지 않으면 루트 디렉토리의 `version.py`를 찾습니다
+  - 파일이 없으면 건너뜁니다
 
 ### 5. 출력 값
 

@@ -70,12 +70,30 @@ on:
 
 ### 3. (옵션) 버전 관리 파일 생성
 
-`version.py` 파일을 생성하세요.
+`version.py` 파일을 생성하세요. package.json와 함께 업데이트 해야 할 파일이 있을 경우, 해당 파일을 추가하세요.
+기본 경로는 `<repository root>/version.py` 입니다.
 
 참고: [version.py](../../version.py)
 
 ```python
 __VERSION__ = "0.0.0"
+```
+
+경로가 변경되었다면, package.json 파일에서 경로를 수정하세요.
+
+```json
+"release": {
+  "plugins": [
+    ...
+    [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "sed -i.bak 's/__VERSION__ = \".*\"/__VERSION__ = \"${nextRelease.version}\"/' src/version.py && rm src/version.py.bak"
+      }
+    ],
+    ...
+  ]
+}
 ```
 
 ### 4. 입력 매개변수
