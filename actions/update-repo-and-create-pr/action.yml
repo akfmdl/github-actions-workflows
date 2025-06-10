@@ -14,6 +14,10 @@ inputs:
     description: 'Node.js version to use'
     required: false
     default: '18'
+  working-directory:
+    description: 'Working directory for the action'
+    required: false
+    default: '.'
   target-repo:
     description: '대상 레포지토리 (예: owner/repo-name)'
     required: true
@@ -65,7 +69,7 @@ runs:
       with:
         node-version: ${{ inputs.node-version }}
 
-    - name: Install local dependencies (if package.json exists)
+    - name: Install dependencies
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
@@ -81,9 +85,17 @@ runs:
           else
             npm install
           fi
+          
+          # @octokit/rest가 package.json에 없다면 추가로 설치
+          if ! npm list @octokit/rest >/dev/null 2>&1; then
+            echo "📦 Installing @octokit/rest..."
+            npm install @octokit/rest
+          else
+            echo "✅ @octokit/rest already installed"
+          fi
         else
-          echo "⚠️ No package.json found"
-          exit 1
+          echo "📦 No package.json found, installing required dependencies only..."
+          npm install @octokit/rest
         fi
         
     - name: Download update script
