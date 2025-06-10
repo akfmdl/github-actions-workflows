@@ -35,6 +35,7 @@ async function updateRepositoryFile() {
     console.log(`- Variable Name: ${VARIABLE_NAME}`);
     console.log(`- New Value: ${NEW_VALUE}`);
     console.log(`- Source Repository: ${SOURCE_REPOSITORY}`);
+    console.log(`- GitHub Token: ${GITHUB_TOKEN ? `${GITHUB_TOKEN.substring(0, 8)}...` : 'NOT PROVIDED'}`);
 
     // 필수 입력값 검증
     if (!TARGET_REPO || !FILE_PATH || !VARIABLE_NAME || !NEW_VALUE || !GITHUB_TOKEN) {
@@ -58,6 +59,27 @@ async function updateRepositoryFile() {
     });
 
     try {
+        // 토큰 권한 확인
+        console.log('\n🔐 토큰 권한 확인 중...');
+        const { data: user } = await octokit.rest.users.getAuthenticated();
+        console.log(`✅ 인증된 사용자: ${user.login}`);
+
+        // 대상 레포지토리 접근 권한 확인
+        console.log('\n🔍 대상 레포지토리 접근 권한 확인 중...');
+        try {
+            const { data: repoInfo } = await octokit.rest.repos.get({
+                owner,
+                repo,
+            });
+            console.log(`✅ 레포지토리 접근 가능: ${repoInfo.full_name}`);
+            console.log(`📊 레포지토리 권한: ${JSON.stringify(repoInfo.permissions || {}, null, 2)}`);
+        } catch (repoError) {
+            console.error(`❌ 레포지토리 접근 실패:`, repoError.message);
+            if (repoError.status === 404) {
+                throw new Error(`레포지토리 '${TARGET_REPO}'를 찾을 수 없거나 접근 권한이 없습니다. 토큰이 해당 레포지토리에 대한 접근 권한이 있는지 확인하세요.`);
+            }
+            throw repoError;
+        }
         // 1. 원본 파일 내용 가져오기
         console.log('\n📥 파일 내용을 가져오는 중...');
         const { data: fileData } = await octokit.rest.repos.getContent({
@@ -171,25 +193,45 @@ async function updateRepositoryFile() {
         const branchName = `update-${VARIABLE_NAME.replace(/[^a-zA-Z0-9]/g, '-')}-${timestamp}`;
         console.log(`\n🌿 새 브랜치 생성: ${branchName}`);
 
-        // 기본 브랜치 정보 가져오기
+        // 기본 브랜치 정보 가져오기 (이미 위에서 가져왔지만 재사용)
+        console.log('📋 기본 브랜치 정보 확인 중...');
         const { data: repoData } = await octokit.rest.repos.get({
             owner,
             repo,
         });
+        console.log(`📌 기본 브랜치: ${repoData.default_branch}`);
 
         const { data: defaultBranchData } = await octokit.rest.repos.getBranch({
             owner,
             repo,
             branch: repoData.default_branch,
         });
+        console.log(`📋 기본 브랜치 SHA: ${defaultBranchData.commit.sha}`);
 
-        // 새 브랜치 생성
-        await octokit.rest.git.createRef({
-            owner,
-            repo,
-            ref: `refs/heads/${branchName}`,
-            sha: defaultBranchData.commit.sha,
-        });
+        // Git refs 생성 권한 확인
+        console.log('🔐 브랜치 생성 권한 확인 중...');
+        try {
+            // 새 브랜치 생성
+            console.log(`🚀 브랜치 생성 시도: refs/heads/${branchName}`);
+            await octokit.rest.git.createRef({
+                owner,
+                repo,
+                ref: `refs/heads/${branchName}`,
+                sha: defaultBranchData.commit.sha,
+            });
+        } catch (branchError) {
+            console.error(`❌ 브랜치 생성 실패:`, branchError.message);
+            console.error(`📊 에러 상태: ${branchError.status}`);
+            console.error(`📊 에러 응답:`, JSON.stringify(branchError.response?.data || {}, null, 2));
+
+            if (branchError.status === 403) {
+                throw new Error(`브랜치 생성 권한이 없습니다. Personal Access Token에 다음 권한이 있는지 확인하세요:
+1. 'repo' 권한 (Full control of private repositories)
+2. 대상 레포지토리가 개인 소유가 아닌 경우 Organization 설정에서 Personal Access Token 사용이 허용되어 있는지 확인
+3. 토큰이 해당 레포지토리에 대한 push 권한이 있는지 확인`);
+            }
+            throw branchError;
+        }
 
         console.log('✅ 새 브랜치가 성공적으로 생성되었습니다.');
 
