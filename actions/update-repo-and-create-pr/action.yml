@@ -7,7 +7,7 @@ inputs:
     description: 'GitHub token for authentication (fallback for PR creation if GitHub CLI fails)'
     required: false
     default: ''
-  ssh-key:
+  target-ssh-key:
     description: 'SSH key for authentication to access target repository'
     required: true
   node-version:
@@ -61,7 +61,7 @@ runs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        ssh-key: ${{ inputs.ssh-key }}
+        ssh-key: ${{ inputs.target-ssh-key }}
         token: ${{ inputs.github-token }}
 
     - name: Setup Node.js
@@ -118,7 +118,7 @@ runs:
         VARIABLE_NAME: ${{ inputs.variable-name }}
         NEW_VALUE: ${{ inputs.new-value }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
-        SSH_KEY: ${{ inputs.ssh-key }}
+        SSH_KEY: ${{ inputs.target-ssh-key }}
         COMMIT_MESSAGE: ${{ inputs.commit-message }}
         PR_TITLE: ${{ inputs.pr-title }}
         PR_BODY: ${{ inputs.pr_body }}
