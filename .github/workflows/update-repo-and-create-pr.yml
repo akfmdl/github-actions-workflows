@@ -19,9 +19,7 @@ jobs:
           variable-name: DUBBING_VERSION
           new-value: 1.0.0
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: Update DUBBING_VERSION to 1.0.0
-          pr-title: Update DUBBING_VERSION to 1.0.0
-          pr-body: Update DUBBING_VERSION to 1.0.0
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
 
       - name: Post-pull-request notification
         if: steps.update-file-and-create-pr.outputs.pr_url != ''
