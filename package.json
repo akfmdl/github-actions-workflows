@@ -1,11 +1,5 @@
 {
     "name": "github-actions-workflows",
     "version": "0.0.0",
-    "private": true,
-    "devDependencies": {
-        "@semantic-release/exec": "^6.0.3"
-    },
-    "scripts": {
-        "release": "node scripts/calendar-version-wrapper.js"
-    }
-}
+    "private": true
+  }

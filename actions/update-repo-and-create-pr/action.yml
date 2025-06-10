@@ -92,11 +92,11 @@ runs:
       env:
         TARGET_REPO: ${{ inputs.target-repo }}
         FILE_PATH: ${{ inputs.file-path }}
-        VARIABLE-NAME: ${{ inputs.variable-name }}
-        NEW-VALUE: ${{ inputs.new-value }}
-        GITHUB-TOKEN: ${{ inputs.github-token }}
-        COMMIT-MESSAGE: ${{ inputs.commit-message }}
-        PR-TITLE: ${{ inputs.pr-title }}
+        VARIABLE_NAME: ${{ inputs.variable-name }}
+        NEW_VALUE: ${{ inputs.new-value }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        COMMIT_MESSAGE: ${{ inputs.commit-message }}
+        PR_TITLE: ${{ inputs.pr-title }}
         PR_BODY: ${{ inputs.pr_body }}
         SOURCE_REPOSITORY: ${{ github.repository }}
         SOURCE_WORKFLOW: ${{ github.workflow }}
