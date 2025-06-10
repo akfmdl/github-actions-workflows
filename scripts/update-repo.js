@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 
-const { Octokit } = require('@octokit/rest');
-const fs = require('fs');
+// ES Module 호환성을 위한 dynamic import
+async function loadDependencies() {
+    const { Octokit } = await import('@octokit/rest');
+    const fs = await import('fs');
+    return { Octokit, fs: fs.default };
+}
 
 // 환경변수에서 입력값들 가져오기
 const TARGET_REPO = process.env.TARGET_REPO;
@@ -19,6 +23,11 @@ const SOURCE_RUN_ID = process.env.SOURCE_RUN_ID || '';
 async function updateRepositoryFile() {
     console.log('🔧 Update Repository File Script v1.0.0');
     console.log('='.repeat(50));
+
+    // 의존성 로드
+    console.log('📦 Loading dependencies...');
+    const { Octokit, fs } = await loadDependencies();
+    console.log('✅ Dependencies loaded successfully');
 
     console.log('📋 입력값 확인:');
     console.log(`- Target Repo: ${TARGET_REPO}`);
@@ -237,15 +246,14 @@ async function updateRepositoryFile() {
 
         // GitHub Actions 출력 설정
         if (process.env.GITHUB_OUTPUT) {
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `pr_url=${pullRequest.html_url}\n`);
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `pr_number=${pullRequest.number}\n`);
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `branch_name=${branchName}\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `pr-url=${pullRequest.html_url}\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `pr-number=${pullRequest.number}\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `branch-name=${branchName}\n`);
         }
 
-        // 레거시 output 방식도 지원
-        console.log(`::set-output name=pr_url::${pullRequest.html_url}`);
-        console.log(`::set-output name=pr_number::${pullRequest.number}`);
-        console.log(`::set-output name=branch_name::${branchName}`);
+        console.log(`::set-output name=pr-url::${pullRequest.html_url}`);
+        console.log(`::set-output name=pr-number::${pullRequest.number}`);
+        console.log(`::set-output name=branch-name::${branchName}`);
 
         console.log('\n🎉 모든 작업이 성공적으로 완료되었습니다!');
 
@@ -268,11 +276,8 @@ function escapeRegExp(string) {
 }
 
 // 스크립트가 직접 실행되는 경우
-if (require.main === module) {
-    updateRepositoryFile().catch(error => {
-        console.error('❌ Update Repository Script 실행 중 오류:', error.message);
-        process.exit(1);
-    });
-}
-
-module.exports = { updateRepositoryFile }; 
+// ES Module에서는 import.meta.main 사용 (Node.js 20.11.0+) 또는 스크립트가 직접 실행될 때는 항상 실행
+updateRepositoryFile().catch(error => {
+    console.error('❌ Update Repository Script 실행 중 오류:', error.message);
+    process.exit(1);
+}); 

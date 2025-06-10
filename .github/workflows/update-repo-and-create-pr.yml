@@ -14,7 +14,7 @@ jobs:
         id: update-file-and-create-pr
         uses: akfmdl/github-actions-workflows/actions/update-repo-and-create-pr@test
         with:
-          target-repo: https://github.com/akfmdl/mlops-lifecycle.git
+          target-repo: akfmdl/mlops-lifecycle
           file-path: Makefile
           variable-name: DUBBING_VERSION
           new-value: 1.0.0
