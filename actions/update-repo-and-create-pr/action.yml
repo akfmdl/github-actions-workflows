@@ -6,8 +6,8 @@ inputs:
   github-token:
     description: 'GitHub token for authentication'
     required: true
-  ssh-key:
-    description: 'SSH key for authentication'
+  target-ssh-key:
+    description: 'SSH key for authentication to access target repository'
     required: false
     default: ''
   node-version:
@@ -61,7 +61,7 @@ runs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        ssh-key: ${{ inputs.ssh-key }}
+        ssh-key: ${{ inputs.target-ssh-key }}
         token: ${{ inputs.github-token }}
 
     - name: Setup Node.js
