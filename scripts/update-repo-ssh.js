@@ -61,7 +61,75 @@ async function updateRepositoryFileSSH() {
     try {
         // 1. SSH 키 설정
         console.log('\n🔐 SSH 키 설정 중...');
-        fs.writeFileSync(sshKeyPath, SSH_KEY.replace(/\\n/g, '\n'), { mode: 0o600 });
+
+        // SSH 키 상세 분석
+        console.log('🔍 원본 SSH 키 분석:');
+        console.log(`- 원본 길이: ${SSH_KEY.length} characters`);
+        console.log(`- 원본 시작 (50자): ${SSH_KEY.substring(0, 50)}...`);
+        console.log(`- \\n 포함 여부: ${SSH_KEY.includes('\\n')}`);
+        console.log(`- 실제 줄바꿈 포함 여부: ${SSH_KEY.includes('\n')}`);
+
+        // SSH 키 정리
+        let cleanedSshKey = SSH_KEY;
+
+        // GitHub Actions secrets에서 \n이 \\n으로 이스케이프될 수 있음
+        if (SSH_KEY.includes('\\n')) {
+            cleanedSshKey = cleanedSshKey.replace(/\\n/g, '\n');
+            console.log('🔄 \\n을 실제 줄바꿈으로 변환했습니다.');
+        }
+
+        // 앞뒤 공백 제거
+        cleanedSshKey = cleanedSshKey.trim();
+
+        // 키가 올바른 형식인지 확인
+        if (!cleanedSshKey.includes('-----BEGIN') || !cleanedSshKey.includes('-----END')) {
+            console.error('❌ SSH 키에 BEGIN/END 헤더가 없습니다.');
+            console.error('현재 키 내용 (처음 200자):', cleanedSshKey.substring(0, 200));
+            throw new Error('❌ SSH 키 형식이 올바르지 않습니다. PEM 형식의 SSH 키가 필요합니다.');
+        }
+
+        // 키 시작과 끝에 줄바꿈 확인
+        if (!cleanedSshKey.endsWith('\n')) {
+            cleanedSshKey += '\n';
+        }
+
+        // 정리된 키 상세 정보
+        console.log('📝 정리된 SSH 키 상세 정보:');
+        console.log(`- 정리된 길이: ${cleanedSshKey.length} characters`);
+        console.log(`- 정리된 시작 (50자): ${cleanedSshKey.substring(0, 50)}...`);
+
+        // 키 타입 확인
+        let keyType = 'Unknown';
+        if (cleanedSshKey.includes('BEGIN OPENSSH PRIVATE KEY')) keyType = 'OpenSSH';
+        else if (cleanedSshKey.includes('BEGIN RSA PRIVATE KEY')) keyType = 'RSA';
+        else if (cleanedSshKey.includes('BEGIN EC PRIVATE KEY')) keyType = 'EC';
+        else if (cleanedSshKey.includes('BEGIN PRIVATE KEY')) keyType = 'PKCS#8';
+
+        console.log(`- 키 타입: ${keyType}`);
+        console.log(`- 총 줄 수: ${cleanedSshKey.split('\n').length}`);
+
+        // 키 저장
+        fs.writeFileSync(sshKeyPath, cleanedSshKey, { mode: 0o600 });
+        console.log(`✅ SSH 키를 ${sshKeyPath}에 저장했습니다.`);
+
+        // 저장된 키 재검증
+        const savedKey = fs.readFileSync(sshKeyPath, 'utf8');
+        console.log('🔄 저장된 키 재검증:');
+        console.log(`- 저장된 키 길이: ${savedKey.length}`);
+        console.log(`- 저장된 키와 원본 일치: ${savedKey === cleanedSshKey}`);
+
+        // ssh-keygen으로 키 유효성 검증
+        console.log('🧪 ssh-keygen으로 키 유효성 검증 중...');
+        try {
+            const keygenResult = execSync(`ssh-keygen -l -f ${sshKeyPath}`, {
+                stdio: 'pipe',
+                timeout: 5000
+            });
+            console.log('✅ SSH 키 검증 성공:', keygenResult.toString().trim());
+        } catch (keygenError) {
+            console.error('❌ SSH 키 검증 실패:', keygenError.stderr?.toString() || keygenError.message);
+            console.error('⚠️ 키 형식에 문제가 있을 수 있습니다. 하지만 진행을 시도합니다...');
+        }
 
         // SSH config 설정
         const sshConfigDir = path.join(os.homedir(), '.ssh');
@@ -70,11 +138,37 @@ async function updateRepositoryFileSSH() {
         }
 
         // known_hosts에 github.com 추가
+        console.log('🔑 GitHub 호스트 키 추가 중...');
         execSync('ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null', { stdio: 'ignore' });
 
         // Git 설정 (전역)
+        console.log('⚙️ Git 설정 중...');
         execSync('git config --global user.name "github-actions[bot]"', { stdio: 'pipe' });
         execSync('git config --global user.email "github-actions[bot]@users.noreply.github.com"', { stdio: 'pipe' });
+
+        // SSH 연결 테스트
+        console.log('🧪 SSH 연결 테스트 중...');
+        try {
+            const testCmd = `GIT_SSH_COMMAND="ssh -i ${sshKeyPath} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -v" ssh -T git@github.com`;
+            const testResult = execSync(testCmd, {
+                stdio: 'pipe',
+                timeout: 10000,
+                encoding: 'utf8'
+            });
+            console.log('✅ SSH 연결 테스트 성공');
+        } catch (testError) {
+            console.log('⚠️ SSH 연결 테스트 결과:');
+            console.log('- stdout:', testError.stdout?.toString() || 'N/A');
+            console.log('- stderr:', testError.stderr?.toString() || 'N/A');
+
+            // GitHub에서는 SSH 테스트 시 "successfully authenticated" 메시지와 함께 exit code 1을 반환하므로 정상
+            const stderr = testError.stderr?.toString() || '';
+            if (stderr.includes('successfully authenticated')) {
+                console.log('✅ SSH 인증 성공 확인됨');
+            } else if (stderr.includes('Permission denied')) {
+                console.error('❌ SSH 인증 실패 - Deploy Key 설정을 확인하세요');
+            }
+        }
 
         console.log('✅ SSH 키 설정 완료');
 
@@ -298,14 +392,14 @@ async function updateRepositoryFileSSH() {
             if (!prBody) {
                 prBody = `이 PR은 자동으로 생성되었습니다.
 
-## 📋 변경사항
-- **파일**: \`${FILE_PATH}\`
-- **변수**: \`${VARIABLE_NAME}\`
-- **새 값**: \`${NEW_VALUE}\`
+                ## 📋 변경사항
+                - **파일**: \`${FILE_PATH}\`
+                - **변수**: \`${VARIABLE_NAME}\`
+                - **새 값**: \`${NEW_VALUE}\`
 
-## 🔗 소스 정보
-- **소스 레포지토리**: ${SOURCE_REPOSITORY}
-- **워크플로우**: ${SOURCE_WORKFLOW}`;
+                ## 🔗 소스 정보
+                - **소스 레포지토리**: ${SOURCE_REPOSITORY}
+                - **워크플로우**: ${SOURCE_WORKFLOW}`;
 
                 if (SOURCE_RUN_ID) {
                     prBody += `\n- **실행 ID**: [${SOURCE_RUN_ID}](https://github.com/${SOURCE_REPOSITORY}/actions/runs/${SOURCE_RUN_ID})`;
