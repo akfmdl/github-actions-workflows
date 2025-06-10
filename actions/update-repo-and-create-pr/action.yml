@@ -72,8 +72,8 @@ runs:
     - name: Install required dependencies
       shell: bash
       run: |
-        echo "📦 Installing required dependencies..."
-        npm install @octokit/rest
+        echo "📦 Installing required dependencies globally..."
+        npm install -g @octokit/rest
 
     - name: Install dependencies
       shell: bash
