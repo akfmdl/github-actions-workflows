@@ -80,6 +80,7 @@ __VERSION__ = "0.0.0"
 | 매개변수 | 필수 | 기본값 | 설명 |
 |---------|------|-------|------|
 | `github-token` | ✅ | - | GitHub 토큰 (보통 `${{ secrets.GITHUB_TOKEN }}`) |
+| `ssh-key` | ❌ | - | SSH 키 (보통 `${{ secrets.DEPLOY_KEY }}`) |
 | `node-version` | ❌ | `'18'` | 사용할 Node.js 버전 |
 | `release-branches` | ❌ | `'["main", "master"]'` | 릴리즈할 브랜치 목록 (JSON 배열) |
 | `dry-run` | ❌ | `'false'` | 테스트 모드 실행 여부 |
