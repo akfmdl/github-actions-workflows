@@ -100,7 +100,7 @@ runs:
         VARIABLE_NAME: ${{ inputs.variable-name }}
         NEW_VALUE: ${{ inputs.new-value }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
-        SSH_KEY: ${{ inputs.ssh-key }}
+        SSH_KEY: ${{ inputs.target-ssh-key }}
         COMMIT_MESSAGE: ${{ inputs.commit-message }}
         PR_TITLE: ${{ inputs.pr-title }}
         PR_BODY: ${{ inputs.pr_body }}
