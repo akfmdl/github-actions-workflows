@@ -1,0 +1,124 @@
+name: 'Update Repository File and Create PR'
+description: 'Update a file in another repository and create a pull request automatically'
+author: 'GitHub Actions Workflows'
+
+inputs:
+  github-token:
+    description: 'GitHub token for authentication'
+    required: true
+  ssh-key:
+    description: 'SSH key for authentication'
+    required: false
+    default: ''
+  node-version:
+    description: 'Node.js version to use'
+    required: false
+    default: '18'
+  target-repo:
+    description: '대상 레포지토리 (예: owner/repo-name)'
+    required: true
+  file-path:
+    description: '수정할 파일 경로'
+    required: true
+  variable-name:
+    description: '수정할 변수명'
+    required: true
+  new-value:
+    description: '새로운 값'
+    required: true
+  commit-message:
+    description: '커밋 메시지 (기본값: Update {variable-name} to {new-value})'
+    required: false
+    default: ''
+  pr-title:
+    description: 'Pull Request 제목 (기본값: Update {variable-name} in {file_path})'
+    required: false
+    default: ''
+  pr-body:
+    description: 'Pull Request 본문 (기본값: 자동 생성)'
+    required: false
+    default: ''
+
+outputs:
+  pr-url:
+    description: '생성된 Pull Request URL'
+    value: ${{ steps.update-repo.outputs.pr-url }}
+  pr-number:
+    description: '생성된 Pull Request 번호'
+    value: ${{ steps.update-repo.outputs.pr-number }}
+  branch-name:
+    description: '생성된 브랜치 이름'
+    value: ${{ steps.update-repo.outputs.branch-name }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Install local dependencies (if package.json exists)
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        if [ -f "package.json" ]; then
+          echo "📦 Installing project dependencies..."
+          if [ -f "package-lock.json" ]; then
+            npm ci
+          elif [ -f "yarn.lock" ]; then
+            yarn install --frozen-lockfile
+          elif [ -f "pnpm-lock.yaml" ]; then
+            npm install -g pnpm
+            pnpm install --frozen-lockfile
+          else
+            npm install
+          fi
+        else
+          echo "⚠️ No package.json found"
+          exit 1
+        fi
+        
+    - name: Download update script
+      shell: bash
+      run: |
+        echo "📥 Downloading update repository script..."
+        curl -fsSL -o /tmp/update-repo.js https://raw.githubusercontent.com/akfmdl/github-actions-workflows/test/scripts/update-repo.js
+        chmod +x /tmp/update-repo.js
+        
+    - name: Update repository file and create PR
+      id: update-repo
+      shell: bash
+      env:
+        TARGET_REPO: ${{ inputs.target-repo }}
+        FILE_PATH: ${{ inputs.file-path }}
+        VARIABLE-NAME: ${{ inputs.variable-name }}
+        NEW-VALUE: ${{ inputs.new-value }}
+        GITHUB-TOKEN: ${{ inputs.github-token }}
+        COMMIT-MESSAGE: ${{ inputs.commit-message }}
+        PR-TITLE: ${{ inputs.pr-title }}
+        PR_BODY: ${{ inputs.pr_body }}
+        SOURCE_REPOSITORY: ${{ github.repository }}
+        SOURCE_WORKFLOW: ${{ github.workflow }}
+        SOURCE_RUN_ID: ${{ github.run_id }}
+      run: |
+        echo "🚀 레포지토리 업데이트 및 PR 생성을 시작합니다..."
+        node /tmp/update-repo.js
+        
+    - name: Summary
+      shell: bash
+      run: |
+        echo "## 🎉 작업 완료!" >> $GITHUB_STEP_SUMMARY
+        echo "- **대상 레포지토리:** ${{ inputs.target-repo }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **수정된 파일:** ${{ inputs.file-path }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **변수명:** ${{ inputs.variable-name }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **새 값:** ${{ inputs.new-value }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        if [ -n "${{ steps.update-repo.outputs.pr-url }}" ]; then
+          echo "✅ **Pull Request가 성공적으로 생성되었습니다!**" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 **PR URL:** ${{ steps.update-repo.outputs.pr-url }}" >> $GITHUB_STEP_SUMMARY
+        fi
+
+branding:
+  icon: 'git-pull-request'
+  color: 'green' 
