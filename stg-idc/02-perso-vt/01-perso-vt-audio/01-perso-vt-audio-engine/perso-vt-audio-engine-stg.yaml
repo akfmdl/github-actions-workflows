@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: perso-vt-audio-engine-stg
+  namespace: perso-vt-audio
+  labels:
+    app: perso-vt-audio-engine-stg
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: perso-vt-audio-engine-stg
+  template:
+    metadata:
+      labels:
+        app: perso-vt-audio-engine-stg
+    spec:
+      imagePullSecrets:
+      - name: acr-auth-persolive
+      containers:
+        - name: perso-vt-audio-engine-stg
+          image: persolive.azurecr.io/audio-engine-server:2025.06.0.2
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          livenessProbe:
+            httpGet:
+              path: /healthcheck/
+              port: 80
+              httpHeaders:
+              - name: Accept
+                value: application/json
+            initialDelaySeconds: 300   # 최초 Probe전의 지연 시간 (서비스 안정화 시간)
+            periodSeconds: 10         # Probe를 체크하는 시간 간격
+            timeoutSeconds: 5         # 일시적인 지연을 허용(결과 대기 시간)
+            failureThreshold: 5       # x번 연속 실패 시, 재시작
+            successThreshold: 1       # x번 연속 성공 시, 정상 간주
+          readinessProbe:
+            httpGet:
+              path: /healthcheck/
+              port: 80
+              httpHeaders:
+              - name: Accept
+                value: application/json
+            initialDelaySeconds: 300   # 최초 Probe전의 지연 시간 (서비스 안정화 시간)
+            periodSeconds: 10         # Probe를 체크하는 시간 간격
+            timeoutSeconds: 5         # 일시적인 지연을 허용(결과 대기 시간)
+            failureThreshold: 5       # x번의 연속 실패 시, 트래픽 차단
+            successThreshold: 3       # x번의 연속 성공 시, 트래픽 허용
+          volumeMounts:
+            - name: shm
+              mountPath: /dev/shm
+            - name: gemini-credentials
+              mountPath: /src/app/credentials
+              readOnly: true                 
+          resources:
+            requests:
+              memory: "50Gi"
+            limits:
+              memory: "100Gi"
+      volumes:
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 128Gi
+        - name: gemini-credentials
+          secret:
+            secretName: gemini-sa-credentials            
+      tolerations:
+        - key: "gpu-type"
+          operator: "Equal"
+          value: "l40s"
+          effect: "NoSchedule"
+      nodeSelector:
+        env: "perso-vt-audio"
+  revisionHistoryLimit: 2
+---
+apiVersion: v1
+kind: Service
+metadata:
+ name: svc-perso-vt-audio-engine-stg
+ namespace: perso-vt-audio
+spec:
+ ports:
+   - name: perso-vt-audio-engine-port
+     port: 80
+     targetPort: 80
+ selector:
+   app: perso-vt-audio-engine-stg
+ type: ClusterIP
