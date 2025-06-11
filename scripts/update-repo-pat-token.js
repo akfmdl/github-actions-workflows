@@ -14,6 +14,7 @@ const PR_BODY = process.env.PR_BODY;
 const SOURCE_REPOSITORY = process.env.SOURCE_REPOSITORY || 'Unknown';
 const SOURCE_WORKFLOW = process.env.SOURCE_WORKFLOW || 'Unknown';
 const SOURCE_RUN_ID = process.env.SOURCE_RUN_ID || '';
+const RELEASE_VERSION = process.env.RELEASE_VERSION;
 
 // GitHub API 호출 헬퍼 함수
 async function githubAPI(endpoint, options = {}) {
@@ -51,6 +52,7 @@ async function updateRepositoryFile() {
     console.log(`- Variable Name: ${VARIABLE_NAME}`);
     console.log(`- New Value: ${NEW_VALUE}`);
     console.log(`- Source Repository: ${SOURCE_REPOSITORY}`);
+    console.log(`- Release Version: ${RELEASE_VERSION || 'NOT PROVIDED'}`);
     console.log(`- GitHub Token: ${GITHUB_TOKEN ? `${GITHUB_TOKEN.substring(0, 8)}...` : 'NOT PROVIDED'}`);
 
     // 필수 입력값 검증
@@ -250,6 +252,10 @@ async function updateRepositoryFile() {
 
             if (SOURCE_RUN_ID) {
                 prBody += `\n- **실행 ID**: [${SOURCE_RUN_ID}](https://github.com/${SOURCE_REPOSITORY}/actions/runs/${SOURCE_RUN_ID})`;
+            }
+
+            if (RELEASE_VERSION) {
+                prBody += `\n- **릴리즈 버전**: [${RELEASE_VERSION}](https://github.com/${SOURCE_REPOSITORY}/releases/tag/${RELEASE_VERSION})`;
             }
         }
 

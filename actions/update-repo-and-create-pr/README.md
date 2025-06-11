@@ -39,6 +39,7 @@ repository 루트에 `package.json` 파일을 추가하세요. 아래 예시 파
 - `pr-body` (선택): Pull Request 본문
 - `node-version` (선택): Node.js 버전
 - `working-directory` (선택): 작업 디렉토리
+- `release-version` (선택): 현재 레포지토리의 릴리즈 버전
 
 #### 출력값
 - `pr-url`: 생성된 Pull Request URL
