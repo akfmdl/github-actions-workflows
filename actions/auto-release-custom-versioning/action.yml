@@ -85,7 +85,7 @@ runs:
       shell: bash
       run: |
         echo "📥 Downloading calendar version wrapper script..."
-        curl -fsSL -o /tmp/calendar-version-wrapper.js https://raw.githubusercontent.com/akfmdl/github-actions-workflows/main/scripts/calendar-version-wrapper.js
+        curl -fsSL -o /tmp/calendar-version-wrapper.js https://raw.githubusercontent.com/akfmdl/github-actions-workflows/test/scripts/calendar-version-wrapper.js
         chmod +x /tmp/calendar-version-wrapper.js
 
     - name: Run custom versioning
