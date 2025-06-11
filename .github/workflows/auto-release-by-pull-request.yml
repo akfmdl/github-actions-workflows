@@ -24,15 +24,8 @@ jobs:
           jira-base-url: ${{ secrets.JIRA_BASE_URL }}
           version-py-path: 'version.py'  # 선택사항: version.py 파일 경로
 
-      - name: Check outputs
-        run: |
-          echo "new-release-published: ${{ steps.release.outputs.new-release-published }}"
-          echo "new-release-version: ${{ steps.release.outputs.new-release-version }}"
-          echo "new-release-git-tag: ${{ steps.release.outputs.new-release-git-tag }}"
-          echo "new-release-git-head: ${{ steps.release.outputs.new-release-git-head }}"
-
       - name: Post-release notification
-        if: steps.release.outputs.new-release-published == 'true'
+        if: steps.release.outputs.new-release-version != ''
         run: |
           echo "🎉 새로운 릴리즈가 생성되었습니다!"
           echo "버전: ${{ steps.release.outputs.new-release-version }}"
