@@ -20,6 +20,7 @@ jobs:
           new-value: <NEW_VALUE>
           github-token: ${{ secrets.GIT_TOKEN }} # Target repo에 대한 PAT 토큰
           release-version: <RELEASE_VERSION>
+          branch-name: <BRANCH_NAME>
 
       - name: Post-pull-request notification
         if: steps.update-file-and-create-pr.outputs.pr-url != ''

@@ -15,6 +15,7 @@ const SOURCE_REPOSITORY = process.env.SOURCE_REPOSITORY || 'Unknown';
 const SOURCE_WORKFLOW = process.env.SOURCE_WORKFLOW || 'Unknown';
 const SOURCE_RUN_ID = process.env.SOURCE_RUN_ID || '';
 const RELEASE_VERSION = process.env.RELEASE_VERSION;
+const BRANCH_NAME = process.env.BRANCH_NAME;
 
 // GitHub API 호출 헬퍼 함수
 async function githubAPI(endpoint, options = {}) {
@@ -53,6 +54,7 @@ async function updateRepositoryFile() {
     console.log(`- New Value: ${NEW_VALUE}`);
     console.log(`- Source Repository: ${SOURCE_REPOSITORY}`);
     console.log(`- Release Version: ${RELEASE_VERSION || 'NOT PROVIDED'}`);
+    console.log(`- Branch Name: ${BRANCH_NAME || 'AUTO GENERATED'}`);
     console.log(`- GitHub Token: ${GITHUB_TOKEN ? `${GITHUB_TOKEN.substring(0, 8)}...` : 'NOT PROVIDED'}`);
 
     // 필수 입력값 검증
@@ -160,6 +162,32 @@ async function updateRepositoryFile() {
                 }
             }
         }
+        // Dockerfile 처리
+        else if (FILE_PATH === 'Dockerfile' || FILE_PATH.endsWith('.dockerfile') || FILE_PATH.includes('Dockerfile')) {
+            const dockerfilePatterns = [
+                // ARG VARIABLE=value 형식
+                new RegExp(`^(ARG\\s+${escapeRegExp(VARIABLE_NAME)}\\s*=).*$`, 'gm'),
+                // ENV VARIABLE=value 형식
+                new RegExp(`^(ENV\\s+${escapeRegExp(VARIABLE_NAME)}\\s*=).*$`, 'gm'),
+                // ENV VARIABLE value 형식 (공백으로 구분)
+                new RegExp(`^(ENV\\s+${escapeRegExp(VARIABLE_NAME)}\\s+)\\S+(.*)$`, 'gm')
+            ];
+
+            for (const pattern of dockerfilePatterns) {
+                if (pattern.test(originalContent)) {
+                    // ARG/ENV VARIABLE value 형식인 경우
+                    if (pattern.source.includes('\\s+)\\S+(.*)$')) {
+                        updatedContent = updatedContent.replace(pattern, `$1${NEW_VALUE}$2`);
+                    } else {
+                        // ARG/ENV VARIABLE=value 형식인 경우
+                        updatedContent = updatedContent.replace(pattern, `$1${NEW_VALUE}`);
+                    }
+                    console.log('✅ Dockerfile 형식으로 변수를 업데이트했습니다.');
+                    updateSuccess = true;
+                    break;
+                }
+            }
+        }
 
         // 일반 텍스트 파일 처리
         if (!updateSuccess) {
@@ -188,9 +216,17 @@ async function updateRepositoryFile() {
         console.log('─'.repeat(40));
 
         // 3. 새 브랜치 생성
-        const timestamp = Date.now();
-        const branchName = `update-${VARIABLE_NAME.replace(/[^a-zA-Z0-9]/g, '-')}-${timestamp}`;
-        console.log(`\n🌿 새 브랜치 생성: ${branchName}`);
+        let branchName;
+        console.log(`🔍 BRANCH_NAME 값 확인: "${BRANCH_NAME}" (타입: ${typeof BRANCH_NAME})`);
+
+        if (BRANCH_NAME && BRANCH_NAME.trim() !== '') {
+            branchName = BRANCH_NAME.trim();
+            console.log(`\n🌿 사용자 정의 브랜치 생성: ${branchName}`);
+        } else {
+            const timestamp = Date.now();
+            branchName = `update-${VARIABLE_NAME.replace(/[^a-zA-Z0-9]/g, '-')}-${timestamp}`;
+            console.log(`\n🌿 자동 생성 브랜치 생성: ${branchName}`);
+        }
 
         // 기본 브랜치 정보 가져오기
         console.log('📋 기본 브랜치 정보 확인 중...');
@@ -199,6 +235,21 @@ async function updateRepositoryFile() {
 
         const defaultBranchData = await githubAPI(`/repos/${owner}/${repo}/branches/${repoData.default_branch}`);
         console.log(`📋 기본 브랜치 SHA: ${defaultBranchData.commit.sha}`);
+
+        // 브랜치 중복 체크 (사용자 정의 브랜치인 경우)
+        if (BRANCH_NAME && BRANCH_NAME.trim() !== '') {
+            console.log('🔍 브랜치 중복 확인 중...');
+            try {
+                await githubAPI(`/repos/${owner}/${repo}/branches/${branchName}`);
+                throw new Error(`❌ 브랜치 '${branchName}'가 이미 존재합니다. 다른 브랜치 이름을 사용하세요.`);
+            } catch (error) {
+                if (error.message.includes('GitHub API Error: 404')) {
+                    console.log('✅ 브랜치 이름 사용 가능');
+                } else {
+                    throw error;
+                }
+            }
+        }
 
         // 새 브랜치 생성
         console.log(`🚀 브랜치 생성 시도: refs/heads/${branchName}`);
