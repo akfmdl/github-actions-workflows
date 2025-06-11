@@ -34,6 +34,7 @@ jobs:
           image-tag: 'v1.0.0'
           target-repo: 'owner/k8s-manifests'
           target-file-path: 'stg-idc/02-perso-vt/01-perso-vt-audio/01-perso-vt-audio-engine/perso-vt-audio-engine-stg.yaml'
+          target-branch: 'develop'  # 옵션: 미지정시 기본 브랜치
           registry-username: ${{ secrets.REGISTRY_USERNAME }}
           registry-password: ${{ secrets.REGISTRY_PASSWORD }}
 ```
@@ -63,6 +64,7 @@ GITHUB_TOKEN=<GitHub Personal Access Token> (자동 제공됨)
 | `image-tag` | Docker 이미지 태그 | ✅ | - |
 | `target-repo` | 대상 레포지토리 (owner/repo) | ✅ | - |
 | `target-file-path` | 업데이트할 파일 경로 | ✅ | - |
+| `target-branch` | 대상 브랜치 (미지정시 기본 브랜치) | ❌ | - |
 | `docker-registry` | Docker 레지스트리 URL | ❌ | `persolive.azurecr.io` |
 | `dockerfile-path` | Dockerfile 경로 | ❌ | `./Dockerfile` |
 | `build-context` | 빌드 컨텍스트 | ❌ | `.` |
@@ -112,6 +114,7 @@ GITHUB_TOKEN=<GitHub Personal Access Token> (자동 제공됨)
     image-tag: '2025.01.15.1430'
     target-repo: 'akfmdl/mlops-lifecycle'
     target-file-path: 'stg-idc/02-perso-vt/01-perso-vt-audio/01-perso-vt-audio-engine/perso-vt-audio-engine-stg.yaml'
+    target-branch: 'main'  # 기본 브랜치에 직접 push
     registry-username: ${{ secrets.REGISTRY_USERNAME }}
     registry-password: ${{ secrets.REGISTRY_PASSWORD }}
 ```
@@ -130,6 +133,7 @@ GITHUB_TOKEN=<GitHub Personal Access Token> (자동 제공됨)
     build-context: './src'
     target-repo: 'myorg/k8s-configs'
     target-file-path: 'apps/my-app/deployment.yaml'
+    target-branch: 'staging'  # staging 브랜치에 배포
     commit-message: '🚀 Deploy my-app with new features'
     registry-username: ${{ secrets.REGISTRY_USERNAME }}
     registry-password: ${{ secrets.REGISTRY_PASSWORD }}

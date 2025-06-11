@@ -34,6 +34,10 @@ inputs:
   target-file-path:
     description: '업데이트할 파일 경로'
     required: true
+  target-branch:
+    description: '대상 브랜치 (미지정시 기본 브랜치 사용)'
+    required: false
+    default: ''
   registry-username:
     description: 'Container Registry 사용자명'
     required: false
@@ -88,6 +92,7 @@ runs:
         BUILD_CONTEXT: ${{ inputs.build-context }}
         TARGET_REPO: ${{ inputs.target-repo }}
         TARGET_FILE_PATH: ${{ inputs.target-file-path }}
+        TARGET_BRANCH: ${{ inputs.target-branch }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
         REGISTRY_USERNAME: ${{ inputs.registry-username }}
         REGISTRY_PASSWORD: ${{ inputs.registry-password }}

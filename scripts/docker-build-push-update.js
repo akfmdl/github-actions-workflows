@@ -11,6 +11,7 @@ const DOCKERFILE_PATH = process.env.DOCKERFILE_PATH;
 const BUILD_CONTEXT = process.env.BUILD_CONTEXT;
 const TARGET_REPO = process.env.TARGET_REPO;
 const TARGET_FILE_PATH = process.env.TARGET_FILE_PATH;
+const TARGET_BRANCH = process.env.TARGET_BRANCH;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const REGISTRY_USERNAME = process.env.REGISTRY_USERNAME;
 const REGISTRY_PASSWORD = process.env.REGISTRY_PASSWORD;
@@ -174,12 +175,18 @@ async function updateTargetRepositoryFile() {
             return;
         }
 
-        // 3. 기본 브랜치 정보 가져오기
-        const repoInfo = await githubAPI(`/repos/${owner}/${repo}`);
-        const defaultBranch = repoInfo.default_branch;
-        console.log(`📍 기본 브랜치: ${defaultBranch}`);
+        // 3. 대상 브랜치 결정
+        let targetBranch;
+        if (TARGET_BRANCH) {
+            targetBranch = TARGET_BRANCH;
+            console.log(`📍 지정된 대상 브랜치: ${targetBranch}`);
+        } else {
+            const repoInfo = await githubAPI(`/repos/${owner}/${repo}`);
+            targetBranch = repoInfo.default_branch;
+            console.log(`📍 기본 브랜치 사용: ${targetBranch}`);
+        }
 
-        // 4. 파일 업데이트 (기본 브랜치에 직접 push)
+        // 4. 파일 업데이트 (지정된 브랜치에 직접 push)
         console.log('💾 파일 업데이트 중...');
         const commitMessage = COMMIT_MESSAGE || `Update ${IMAGE_NAME} image to ${IMAGE_TAG}`;
 
@@ -189,10 +196,10 @@ async function updateTargetRepositoryFile() {
                 message: commitMessage,
                 content: Buffer.from(updatedContent, 'utf8').toString('base64'),
                 sha: fileData.sha,
-                branch: defaultBranch
+                branch: targetBranch
             })
         });
-        console.log('✅ 파일 업데이트 완료 (직접 push)');
+        console.log(`✅ 파일 업데이트 완료 (${targetBranch} 브랜치에 직접 push)`);
 
         return {
             commitMessage,
@@ -217,6 +224,7 @@ async function main() {
     console.log(`- Build Context: ${BUILD_CONTEXT}`);
     console.log(`- Target Repository: ${TARGET_REPO}`);
     console.log(`- Target File Path: ${TARGET_FILE_PATH}`);
+    console.log(`- Target Branch: ${TARGET_BRANCH}`);
     console.log(`- GitHub Token: ${GITHUB_TOKEN ? `${GITHUB_TOKEN.substring(0, 8)}...` : 'NOT PROVIDED'}`);
 
     // 필수 입력값 검증 (실제 변수값 확인)
