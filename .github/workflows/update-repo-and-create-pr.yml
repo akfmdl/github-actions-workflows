@@ -3,7 +3,7 @@ name: Update Repository File and Create PR
 on:
   push:
     branches:
-      - <TARGET_BRANCH>
+      - test
 
 jobs:
   update-file-and-create-pr:
