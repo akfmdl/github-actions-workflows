@@ -3,7 +3,7 @@ name: Update Repository File and Create PR
 on:
   push:
     branches:
-      - test
+      - <TARGET_BRANCH>
 
 jobs:
   update-file-and-create-pr:
@@ -14,11 +14,11 @@ jobs:
         id: update-file-and-create-pr
         uses: akfmdl/github-actions-workflows/actions/update-repo-and-create-pr@test
         with:
-          target-repo: akfmdl/mlops-lifecycle
-          file-path: Makefile
-          variable-name: DUBBING_VERSION
-          new-value: 1.0.0
-          github-token: ${{ secrets.GIT_TOKEN }}
+          target-repo: <TARGET_REPO>
+          file-path: <FILE_PATH>
+          variable-name: <VARIABLE_NAME>
+          new-value: <NEW_VALUE>
+          github-token: ${{ secrets.GIT_TOKEN }} # Target repo에 대한 PAT 토큰
 
       - name: Post-pull-request notification
         if: steps.update-file-and-create-pr.outputs.pr-url != ''
