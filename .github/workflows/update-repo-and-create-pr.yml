@@ -1,0 +1,29 @@
+name: Update Repository File and Create PR
+
+on:
+  push:
+    branches:
+      - test
+
+jobs:
+  update-file-and-create-pr:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Update Repository File and Create PR
+        id: update-file-and-create-pr
+        uses: akfmdl/github-actions-workflows/actions/update-repo-and-create-pr@test
+        with:
+          target-repo: akfmdl/mlops-lifecycle
+          file-path: Makefile
+          variable-name: DUBBING_VERSION
+          new-value: 1.0.0
+          github-token: ${{ secrets.GIT_TOKEN }}
+
+      - name: Post-pull-request notification
+        if: steps.update-file-and-create-pr.outputs.pr-url != ''
+        run: |
+          echo "🎉 Pull Request가 생성되었습니다!"
+          echo "Pull Request URL: ${{ steps.update-file-and-create-pr.outputs.pr-url }}"
+          echo "Pull Request Number: ${{ steps.update-file-and-create-pr.outputs.pr-number }}"
+          echo "Branch Name: ${{ steps.update-file-and-create-pr.outputs.branch-name }}"
