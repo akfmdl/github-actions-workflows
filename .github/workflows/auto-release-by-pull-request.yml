@@ -21,7 +21,6 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           release-branches: '["test"]'
-          jira-base-url: ${{ secrets.JIRA_BASE_URL }}
           version-py-path: 'version.py'  # 선택사항: version.py 파일 경로
 
       - name: Check outputs
