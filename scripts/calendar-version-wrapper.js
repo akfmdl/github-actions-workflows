@@ -388,6 +388,17 @@ async function generateCalendarRelease() {
     // 릴리즈 타입이 null이면 릴리즈를 하지 않음
     if (!releaseType) {
         console.log('⏹️ 릴리즈할 변경사항이 없어서 프로세스를 종료합니다.');
+
+        // GitHub Actions의 output 설정 (릴리즈 없음)
+        if (process.env.GITHUB_OUTPUT) {
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-published=false\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-version=\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-git-tag=\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-git-head=\n`);
+
+            console.log(`📤 Set GitHub Action outputs: new-release-published=false`);
+        }
+
         process.exit(0);
     }
 
@@ -440,6 +451,23 @@ async function generateCalendarRelease() {
         console.log(`📝 Set NEW_VERSION environment variable: ${calendarVersion}`);
         console.log(`📝 Set SEMANTIC_RELEASE_TYPE environment variable: ${releaseType}`);
         console.log(`📝 Set RELEASE_NOTES_FILE environment variable: RELEASE_NOTES.md`);
+    }
+
+    // GitHub Actions의 output 설정
+    if (process.env.GITHUB_OUTPUT) {
+        const gitHash = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
+        const gitTag = `v${calendarVersion}`;
+
+        fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-published=true\n`);
+        fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-version=${calendarVersion}\n`);
+        fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-git-tag=${gitTag}\n`);
+        fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-git-head=${gitHash}\n`);
+
+        console.log(`📤 Set GitHub Action outputs:`);
+        console.log(`   - new-release-published: true`);
+        console.log(`   - new-release-version: ${calendarVersion}`);
+        console.log(`   - new-release-git-tag: ${gitTag}`);
+        console.log(`   - new-release-git-head: ${gitHash}`);
     }
 
     console.log(`🚀 Calendar version ready for release: ${calendarVersion}`);
