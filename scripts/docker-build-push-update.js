@@ -37,6 +37,21 @@ async function githubAPI(endpoint, options = {}) {
 
     if (!response.ok) {
         const errorData = await response.text();
+        console.log(`❌ GitHub API 요청 실패:`);
+        console.log(`   URL: ${url}`);
+        console.log(`   Status: ${response.status} ${response.statusText}`);
+        console.log(`   Error: ${errorData}`);
+
+        if (response.status === 404) {
+            throw new Error(`❌ 파일 또는 리소스를 찾을 수 없습니다:\n` +
+                `   URL: ${url}\n` +
+                `   확인사항:\n` +
+                `   1. 레포지토리가 존재하는지\n` +
+                `   2. 파일 경로가 정확한지\n` +
+                `   3. 지정된 브랜치가 존재하는지\n` +
+                `   4. GitHub 토큰에 접근 권한이 있는지`);
+        }
+
         throw new Error(`GitHub API Error: ${response.status} ${response.statusText}\n${errorData}`);
     }
 
@@ -173,7 +188,12 @@ async function updateTargetRepositoryFile() {
 
         // 2. 원본 파일 내용 가져오기
         console.log(`📥 파일 내용 가져오는 중: ${TARGET_FILE_PATH}`);
-        const fileData = await githubAPI(`/repos/${owner}/${repo}/contents/${TARGET_FILE_PATH}`);
+        console.log(`📍 Repository: ${owner}/${repo}`);
+        console.log(`📍 Branch: ${TARGET_BRANCH || repoCheck.default_branch}`);
+
+        // 브랜치 파라미터 추가 - TARGET_BRANCH가 지정되어 있으면 해당 브랜치에서 파일 가져오기
+        const contentParams = TARGET_BRANCH ? `?ref=${TARGET_BRANCH}` : '';
+        const fileData = await githubAPI(`/repos/${owner}/${repo}/contents/${TARGET_FILE_PATH}${contentParams}`);
 
         const originalContent = Buffer.from(fileData.content, 'base64').toString('utf8');
         console.log('✅ 원본 파일 내용을 성공적으로 가져왔습니다.');
@@ -187,16 +207,9 @@ async function updateTargetRepositoryFile() {
             return;
         }
 
-        // 4. 대상 브랜치 결정
-        let targetBranch;
-        if (TARGET_BRANCH) {
-            targetBranch = TARGET_BRANCH;
-            console.log(`📍 지정된 대상 브랜치: ${targetBranch}`);
-        } else {
-            const repoInfo = await githubAPI(`/repos/${owner}/${repo}`);
-            targetBranch = repoInfo.default_branch;
-            console.log(`📍 기본 브랜치 사용: ${targetBranch}`);
-        }
+        // 4. 대상 브랜치 결정 (파일을 가져온 브랜치와 동일)
+        const targetBranch = TARGET_BRANCH || repoCheck.default_branch;
+        console.log(`📍 업데이트 대상 브랜치: ${targetBranch}`);
 
         // 5. 파일 업데이트 (지정된 브랜치에 직접 push)
         console.log('💾 파일 업데이트 중...');
@@ -236,7 +249,7 @@ async function main() {
     console.log(`- Build Context: ${BUILD_CONTEXT}`);
     console.log(`- Target Repository: ${TARGET_REPO}`);
     console.log(`- Target File Path: ${TARGET_FILE_PATH}`);
-    console.log(`- Target Branch: ${TARGET_BRANCH}`);
+    console.log(`- Target Branch: ${TARGET_BRANCH || 'default branch'}`);
     console.log(`- GitHub Token: ${GITHUB_TOKEN ? `${GITHUB_TOKEN.substring(0, 8)}...` : 'NOT PROVIDED'}`);
 
     // 필수 입력값 검증 (실제 변수값 확인)
