@@ -28,6 +28,7 @@ jobs:
         target-repo: est-infra/persolive-admin-aks-stg
         target-file-path: stg-idc/02-perso-vt/01-perso-vt-audio/01-perso-vt-audio-engine/perso-vt-audio-engine-stg.yaml
         target-branch: test
+        teams-workflow-url: ${{ secrets.TEAMS_WORKFLOWS_URL }}
 
     - name: Post-deployment notification
       if: steps.docker-build-update.outputs.updated-file != ''

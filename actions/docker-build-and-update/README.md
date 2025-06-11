@@ -37,6 +37,7 @@ jobs:
           target-branch: 'develop'  # 옵션: 미지정시 기본 브랜치
           registry-username: ${{ secrets.REGISTRY_USERNAME }}
           registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+          teams-workflow-url: ${{ secrets.TEAMS_WORKFLOWS_URL }}  # 옵션: Teams 알림
 ```
 
 ## 🔐 필수 GitHub Secrets
@@ -47,7 +48,27 @@ jobs:
 REGISTRY_USERNAME=<Container Registry 사용자명>
 REGISTRY_PASSWORD=<Container Registry 패스워드>
 GITHUB_TOKEN=<GitHub Personal Access Token> (자동 제공됨)
+TEAMS_WORKFLOWS_URL=<Microsoft Teams Workflow URL> (선택사항)
 ```
+
+## 📢 Microsoft Teams 알림 설정
+
+Teams 알림을 사용하려면 다음 단계를 따르세요:
+
+1. **Teams 채널에서 Webhook 설정**:
+   - Teams 채널 → 더보기(...) → 커넥터
+   - "Incoming Webhook" 검색 → 구성
+   - 이름 설정 (예: "Stage 배포 알림")
+   - Webhook URL 복사
+
+2. **GitHub Secrets 추가**:
+   - 레포지토리 Settings → Secrets and variables → Actions
+   - `TEAMS_WORKFLOWS_URL`에 복사한 Webhook URL 추가
+
+3. **알림 기능**:
+   - 🚀 **배포 시작**: "Stage 배포 중입니다. @오디오엔진"
+   - ✅ **배포 완료**: "Stage 배포 완료했습니다. @오디오엔진"
+   - ❌ **배포 실패**: "Stage 배포 실패했습니다. @오디오엔진"
 
 **지원하는 Registry 예시:**
 - Azure Container Registry (ACR): `persolive.azurecr.io`
@@ -71,6 +92,7 @@ GITHUB_TOKEN=<GitHub Personal Access Token> (자동 제공됨)
 | `registry-username` | Container Registry 사용자명 | ❌ | - |
 | `registry-password` | Container Registry 패스워드 | ❌ | - |
 | `commit-message` | 커밋 메시지 | ❌ | 자동 생성 |
+| `teams-workflow-url` | Microsoft Teams Workflow URL | ❌ | - |
 
 ## 📤 출력값 (Outputs)
 
