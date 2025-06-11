@@ -55,15 +55,16 @@ TEAMS_WORKFLOWS_URL=<Microsoft Teams Workflow URL> (선택사항)
 
 Teams 알림을 사용하려면 다음 단계를 따르세요:
 
-1. **Teams 채널에서 Webhook 설정**:
-   - Teams 채널 → 더보기(...) → 커넥터
-   - "Incoming Webhook" 검색 → 구성
-   - 이름 설정 (예: "Stage 배포 알림")
-   - Webhook URL 복사
+1. **Power Automate에서 Teams Workflow 생성**:
+   - Power Automate (flow.microsoft.com) 접속
+   - "새로 만들기" → "인스턴트 클라우드 플로우"
+   - 트리거: "HTTP 요청을 받은 경우" 선택
+   - 액션 추가: "Teams에서 메시지 게시" 또는 "적응형 카드 게시"
+   - 플로우 저장 후 HTTP POST URL 복사
 
 2. **GitHub Secrets 추가**:
    - 레포지토리 Settings → Secrets and variables → Actions
-   - `TEAMS_WORKFLOWS_URL`에 복사한 Webhook URL 추가
+   - `TEAMS_WORKFLOWS_URL`에 복사한 Power Automate Workflow URL 추가
 
 3. **알림 기능**:
    - 🚀 **배포 시작**: "Stage 배포 중입니다. @오디오엔진"
