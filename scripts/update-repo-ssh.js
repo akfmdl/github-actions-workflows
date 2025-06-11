@@ -3,14 +3,14 @@
 const fs = require('fs');
 
 // 환경변수에서 입력값들 가져오기
-const TARGET_REPO = process.env.TARGET_REPO || 'akfmdl/mlops-lifecycle';
-const FILE_PATH = process.env.FILE_PATH || 'Makefile';
-const VARIABLE_NAME = process.env.VARIABLE_NAME || 'DUBBING_VERSION';
-const NEW_VALUE = process.env.NEW_VALUE || '1.0.0';
+const TARGET_REPO = process.env.TARGET_REPO;
+const FILE_PATH = process.env.FILE_PATH;
+const VARIABLE_NAME = process.env.VARIABLE_NAME;
+const NEW_VALUE = process.env.NEW_VALUE;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const COMMIT_MESSAGE = process.env.COMMIT_MESSAGE || 'Update DUBBING_VERSION to 1.0.0';
-const PR_TITLE = process.env.PR_TITLE || 'Update DUBBING_VERSION to 1.0.0';
-const PR_BODY = process.env.PR_BODY || 'Update DUBBING_VERSION to 1.0.0';
+const COMMIT_MESSAGE = process.env.COMMIT_MESSAGE;
+const PR_TITLE = process.env.PR_TITLE;
+const PR_BODY = process.env.PR_BODY;
 const SOURCE_REPOSITORY = process.env.SOURCE_REPOSITORY || 'Unknown';
 const SOURCE_WORKFLOW = process.env.SOURCE_WORKFLOW || 'Unknown';
 const SOURCE_RUN_ID = process.env.SOURCE_RUN_ID || '';
@@ -236,7 +236,7 @@ async function updateRepositoryFile() {
         const prTitle = PR_TITLE || `Update ${VARIABLE_NAME} in ${FILE_PATH}`;
 
         let prBody = PR_BODY;
-        if (!prBody) {
+        if (!prBody || prBody.trim() === '') {
             prBody = `이 PR은 자동으로 생성되었습니다.
 
 ## 📋 변경사항
