@@ -12,7 +12,7 @@ jobs:
     steps:
       - name: Update Repository File and Create PR
         id: update-file-and-create-pr
-        uses: akfmdl/github-actions-workflows/actions/update-repo-and-create-pr@test
+        uses: akfmdl/github-actions-workflows/actions/update-repo-and-create-pr@main
         with:
           target-repo: <TARGET_REPO>
           file-path: <FILE_PATH>
