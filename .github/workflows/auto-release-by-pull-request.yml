@@ -3,7 +3,7 @@ name: Auto Release by Pull Request
 on:
   push:
     branches:
-      - test
+      - <TARGET_BRANCH>
 
 jobs:
   release:
@@ -20,7 +20,7 @@ jobs:
         uses: akfmdl/github-actions-workflows/actions/auto-release-custom-versioning@test
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          release-branches: '["test"]'
+          release-branches: '["<TARGET_BRANCH>"]'
           version-py-path: 'version.py'  # 선택사항: version.py 파일 경로
 
       - name: Check outputs
