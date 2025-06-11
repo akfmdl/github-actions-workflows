@@ -241,14 +241,14 @@ async function updateRepositoryFile() {
         if (!prBody || prBody.trim() === '') {
             prBody = `이 PR은 자동으로 생성되었습니다.
 
-## 📋 변경사항
-- **파일**: \`${FILE_PATH}\`
-- **변수**: \`${VARIABLE_NAME}\`
-- **새 값**: \`${NEW_VALUE}\`
+            ## 📋 변경사항
+            - **파일**: \`${FILE_PATH}\`
+            - **변수**: \`${VARIABLE_NAME}\`
+            - **새 값**: \`${NEW_VALUE}\`
 
-## 🔗 소스 정보
-- **소스 레포지토리**: [${SOURCE_REPOSITORY}](https://github.com/${SOURCE_REPOSITORY})
-- **워크플로우**: ${SOURCE_WORKFLOW}`;
+            ## 🔗 소스 정보
+            - **소스 레포지토리**: [${SOURCE_REPOSITORY}](https://github.com/${SOURCE_REPOSITORY})
+            - **워크플로우**: ${SOURCE_WORKFLOW}`;
 
             if (SOURCE_RUN_ID) {
                 prBody += `\n- **실행 ID**: [${SOURCE_RUN_ID}](https://github.com/${SOURCE_REPOSITORY}/actions/runs/${SOURCE_RUN_ID})`;

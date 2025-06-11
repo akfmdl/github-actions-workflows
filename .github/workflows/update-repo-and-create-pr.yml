@@ -17,9 +17,9 @@ jobs:
           target-repo: akfmdl/mlops-lifecycle
           file-path: Makefile
           variable-name: DUBBING_VERSION
-          new-value: 1.0.0
+          new-value: 2025.06.0.0
           github-token: ${{ secrets.GIT_TOKEN }}
-          release-version: 1.0.0
+          release-version: 2025.06.0.0
 
       - name: Post-pull-request notification
         if: steps.update-file-and-create-pr.outputs.pr-url != ''
