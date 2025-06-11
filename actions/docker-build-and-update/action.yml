@@ -79,9 +79,10 @@ runs:
         IMAGE_INFO="${{ inputs.image-name }}:${{ inputs.image-tag }}"
         REPO_INFO="${{ inputs.target-repo }}"
         
-        # Teams Workflow용 메시지 JSON 생성 (스키마 호환)
+        # Teams Workflow용 메시지 JSON 생성 (멘션 지원)
         cat > teams_message_start.json << EOF
         {
+          "type": "message",
           "attachments": [
             {
               "contentType": "application/vnd.microsoft.card.adaptive",
@@ -94,11 +95,6 @@ runs:
                     "text": "🚀 Stage 배포 시작",
                     "size": "Large",
                     "weight": "Bolder"
-                  },
-                  {
-                    "type": "TextBlock",
-                    "text": "Stage 배포 중입니다. @오디오엔진",
-                    "wrap": true
                   },
                   {
                     "type": "FactSet",
@@ -120,7 +116,8 @@ runs:
                 ]
               }
             }
-          ]
+          ],
+          "text": "🚀 Stage 배포 시작\\n\\nStage 배포 중입니다. <at>김고은 Teams Bot Test 채널</at>\\n\\n⏳ 배포 진행 상태를 확인해주세요..."
         }
         EOF
         
@@ -184,18 +181,27 @@ runs:
         if [ "${{ job.status }}" == "success" ]; then
           THEME_COLOR="28A745"
           STATUS_ICON="✅"
-          STATUS_MESSAGE="Stage 배포 완료했습니다. @오디오엔진"
+          STATUS_MESSAGE="Stage 배포 완료했습니다. <at>김고은 Teams Bot Test 채널</at>"
           ACTIVITY_TITLE="✅ Stage 배포 완료"
         else
           THEME_COLOR="DC3545"
           STATUS_ICON="❌"
-          STATUS_MESSAGE="Stage 배포 실패했습니다. @오디오엔진"
+          STATUS_MESSAGE="Stage 배포 실패했습니다. <at>김고은 Teams Bot Test 채널</at>"
           ACTIVITY_TITLE="❌ Stage 배포 실패"
         fi
         
-        # 배포 완료 메시지 JSON 생성
+        # 멘션을 위한 텍스트 메시지 준비
+        if [ "${{ job.status }}" == "success" ]; then
+          MENTION_MESSAGE="${STATUS_ICON} ${STATUS_MESSAGE}\\n\\n📋 상세 정보:\\n• 이미지: ${IMAGE_INFO}\\n• 전체 이미지명: ${FULL_IMAGE}\\n• 대상 레포지토리: ${REPO_INFO}\\n• 업데이트된 파일: ${UPDATED_FILE:-없음}\\n\\n[GitHub Actions 보기](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+        else
+          MENTION_MESSAGE="${STATUS_ICON} ${STATUS_MESSAGE}\\n\\n📋 상세 정보:\\n• 이미지: ${IMAGE_INFO}\\n• 대상 레포지토리: ${REPO_INFO}\\n\\n[GitHub Actions 보기](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+        fi
+      
+        
+        # 배포 완료 메시지 JSON 생성 (멘션 지원)
         cat > teams_message_complete.json << EOF
         {
+          "type": "message",
           "attachments": [
             {
               "contentType": "application/vnd.microsoft.card.adaptive",
@@ -208,11 +214,6 @@ runs:
                     "text": "${ACTIVITY_TITLE}",
                     "size": "Large",
                     "weight": "Bolder"
-                  },
-                  {
-                    "type": "TextBlock",
-                    "text": "${STATUS_MESSAGE}",
-                    "wrap": true
                   },
                   {
                     "type": "FactSet",
@@ -249,7 +250,8 @@ runs:
                 ]
               }
             }
-          ]
+          ],
+          "text": "${MENTION_MESSAGE}"
         }
         EOF
         
