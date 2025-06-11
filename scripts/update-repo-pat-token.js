@@ -160,6 +160,32 @@ async function updateRepositoryFile() {
                 }
             }
         }
+        // Dockerfile 처리
+        else if (FILE_PATH === 'Dockerfile' || FILE_PATH.endsWith('.dockerfile') || FILE_PATH.includes('Dockerfile')) {
+            const dockerfilePatterns = [
+                // ARG VARIABLE=value 형식
+                new RegExp(`^(ARG\\s+${escapeRegExp(VARIABLE_NAME)}\\s*=).*$`, 'gm'),
+                // ENV VARIABLE=value 형식
+                new RegExp(`^(ENV\\s+${escapeRegExp(VARIABLE_NAME)}\\s*=).*$`, 'gm'),
+                // ENV VARIABLE value 형식 (공백으로 구분)
+                new RegExp(`^(ENV\\s+${escapeRegExp(VARIABLE_NAME)}\\s+)\\S+(.*)$`, 'gm')
+            ];
+
+            for (const pattern of dockerfilePatterns) {
+                if (pattern.test(originalContent)) {
+                    // ARG/ENV VARIABLE value 형식인 경우
+                    if (pattern.source.includes('\\s+)\\S+(.*)$')) {
+                        updatedContent = updatedContent.replace(pattern, `$1${NEW_VALUE}$2`);
+                    } else {
+                        // ARG/ENV VARIABLE=value 형식인 경우
+                        updatedContent = updatedContent.replace(pattern, `$1${NEW_VALUE}`);
+                    }
+                    console.log('✅ Dockerfile 형식으로 변수를 업데이트했습니다.');
+                    updateSuccess = true;
+                    break;
+                }
+            }
+        }
 
         // 일반 텍스트 파일 처리
         if (!updateSuccess) {

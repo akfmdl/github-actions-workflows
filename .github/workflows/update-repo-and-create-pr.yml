@@ -15,7 +15,7 @@ jobs:
         uses: akfmdl/github-actions-workflows/actions/update-repo-and-create-pr@test
         with:
           target-repo: akfmdl/mlops-lifecycle
-          file-path: Makefile
+          file-path: Dockerfile
           variable-name: DUBBING_VERSION
           new-value: 2025.06.0.0
           github-token: ${{ secrets.GIT_TOKEN }}
