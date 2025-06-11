@@ -60,7 +60,8 @@ Teams 알림을 사용하려면 다음 단계를 따르세요:
    - "새로 만들기" → "인스턴트 클라우드 플로우"
    - 트리거: "HTTP 요청을 받은 경우" 선택
    - 액션 추가: "적용 대상" (Apply to each) → 입력값: `@triggerOutputs()?['body']?['attachments']`
-   - 액션 내부에 "Teams에서 메시지 게시" 추가 → 메시지: `@item()?['content']`
+   - 액션 내부에 "적응형 카드 게시" (Post adaptive card) 추가
+   - 카드: `@item()?['content']`
    - 플로우 저장 후 HTTP POST URL 복사
 
 2. **GitHub Secrets 추가**:

@@ -79,12 +79,46 @@ runs:
         IMAGE_INFO="${{ inputs.image-name }}:${{ inputs.image-tag }}"
         REPO_INFO="${{ inputs.target-repo }}"
         
-        # Teams Workflow용 메시지 JSON 생성 (attachments 형식)
+        # Teams Workflow용 메시지 JSON 생성 (스키마 호환)
         cat > teams_message_start.json << EOF
         {
           "attachments": [
             {
-              "content": "🚀 Stage 배포 시작\\n\\nStage 배포 중입니다. @오디오엔진\\n\\n이미지: ${IMAGE_INFO}\\n대상 레포지토리: ${REPO_INFO}\\n상태: 진행 중 🔄"
+              "contentType": "application/vnd.microsoft.card.adaptive",
+              "content": {
+                "type": "AdaptiveCard",
+                "version": "1.2",
+                "body": [
+                  {
+                    "type": "TextBlock",
+                    "text": "🚀 Stage 배포 시작",
+                    "size": "Large",
+                    "weight": "Bolder"
+                  },
+                  {
+                    "type": "TextBlock",
+                    "text": "Stage 배포 중입니다. @오디오엔진",
+                    "wrap": true
+                  },
+                  {
+                    "type": "FactSet",
+                    "facts": [
+                      {
+                        "title": "이미지:",
+                        "value": "${IMAGE_INFO}"
+                      },
+                      {
+                        "title": "대상 레포지토리:",
+                        "value": "${REPO_INFO}"
+                      },
+                      {
+                        "title": "상태:",
+                        "value": "진행 중 🔄"
+                      }
+                    ]
+                  }
+                ]
+              }
             }
           ]
         }
@@ -159,12 +193,61 @@ runs:
           ACTIVITY_TITLE="❌ Stage 배포 실패"
         fi
         
-        # Teams Workflow용 메시지 JSON 생성 (attachments 형식)
+        # Teams Workflow용 메시지 JSON 생성 (스키마 호환)
         cat > teams_message_complete.json << EOF
         {
           "attachments": [
             {
-              "content": "${ACTIVITY_TITLE}\\n\\n${STATUS_MESSAGE}\\n\\n이미지: ${IMAGE_INFO}\\n전체 이미지명: ${FULL_IMAGE}\\n대상 레포지토리: ${REPO_INFO}\\n대상 브랜치: ${TARGET_BRANCH:-default}\\n업데이트된 파일: ${UPDATED_FILE:-없음}\\nGitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              "contentType": "application/vnd.microsoft.card.adaptive",
+              "content": {
+                "type": "AdaptiveCard",
+                "version": "1.2",
+                "body": [
+                  {
+                    "type": "TextBlock",
+                    "text": "${ACTIVITY_TITLE}",
+                    "size": "Large",
+                    "weight": "Bolder"
+                  },
+                  {
+                    "type": "TextBlock",
+                    "text": "${STATUS_MESSAGE}",
+                    "wrap": true
+                  },
+                  {
+                    "type": "FactSet",
+                    "facts": [
+                      {
+                        "title": "이미지:",
+                        "value": "${IMAGE_INFO}"
+                      },
+                      {
+                        "title": "전체 이미지명:",
+                        "value": "${FULL_IMAGE}"
+                      },
+                      {
+                        "title": "대상 레포지토리:",
+                        "value": "${REPO_INFO}"
+                      },
+                      {
+                        "title": "대상 브랜치:",
+                        "value": "${TARGET_BRANCH:-default}"
+                      },
+                      {
+                        "title": "업데이트된 파일:",
+                        "value": "${UPDATED_FILE:-없음}"
+                      }
+                    ]
+                  }
+                ],
+                "actions": [
+                  {
+                    "type": "Action.OpenUrl",
+                    "title": "GitHub Actions 보기",
+                    "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  }
+                ]
+              }
             }
           ]
         }
