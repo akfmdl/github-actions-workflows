@@ -217,8 +217,10 @@ async function updateRepositoryFile() {
 
         // 3. 새 브랜치 생성
         let branchName;
-        if (BRANCH_NAME) {
-            branchName = BRANCH_NAME;
+        console.log(`🔍 BRANCH_NAME 값 확인: "${BRANCH_NAME}" (타입: ${typeof BRANCH_NAME})`);
+
+        if (BRANCH_NAME && BRANCH_NAME.trim() !== '') {
+            branchName = BRANCH_NAME.trim();
             console.log(`\n🌿 사용자 정의 브랜치 생성: ${branchName}`);
         } else {
             const timestamp = Date.now();
@@ -235,7 +237,7 @@ async function updateRepositoryFile() {
         console.log(`📋 기본 브랜치 SHA: ${defaultBranchData.commit.sha}`);
 
         // 브랜치 중복 체크 (사용자 정의 브랜치인 경우)
-        if (BRANCH_NAME) {
+        if (BRANCH_NAME && BRANCH_NAME.trim() !== '') {
             console.log('🔍 브랜치 중복 확인 중...');
             try {
                 await githubAPI(`/repos/${owner}/${repo}/branches/${branchName}`);
