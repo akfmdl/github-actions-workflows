@@ -225,7 +225,15 @@ async function updateRepositoryFile() {
                 message: commitMessage,
                 content: Buffer.from(updatedContent).toString('base64'),
                 sha: fileData.sha,
-                branch: branchName
+                branch: branchName,
+                author: {
+                    name: 'github-actions[bot]',
+                    email: '41898282+github-actions[bot]@users.noreply.github.com'
+                },
+                committer: {
+                    name: 'github-actions[bot]',
+                    email: '41898282+github-actions[bot]@users.noreply.github.com'
+                }
             })
         });
 
