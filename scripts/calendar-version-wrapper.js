@@ -469,18 +469,18 @@ async function generateCalendarRelease() {
         fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-git-tag=${gitTag}\n`);
         fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-git-head=${gitHash}\n`);
 
-        // 추가로 set-output 명령도 사용 (하위 호환성)
-        console.log(`::set-output name=new-release-published::true`);
-        console.log(`::set-output name=new-release-version::${calendarVersion}`);
-        console.log(`::set-output name=new-release-git-tag::${gitTag}`);
-        console.log(`::set-output name=new-release-git-head::${gitHash}`);
-
         console.log(`📤 Set GitHub Action outputs:`);
         console.log(`   - new-release-published: true`);
         console.log(`   - new-release-version: ${calendarVersion}`);
         console.log(`   - new-release-git-tag: ${gitTag}`);
         console.log(`   - new-release-git-head: ${gitHash}`);
     }
+
+    // 추가로 set-output 명령도 사용 (하위 호환성)
+    console.log(`::set-output name=new-release-published::true`);
+    console.log(`::set-output name=new-release-version::${calendarVersion}`);
+    console.log(`::set-output name=new-release-git-tag::${gitTag}`);
+    console.log(`::set-output name=new-release-git-head::${gitHash}`);
 
     console.log(`🚀 Calendar version ready for release: ${calendarVersion}`);
     return { calendarVersion, releaseType, prInfos, releaseNotes };
