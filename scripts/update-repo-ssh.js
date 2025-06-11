@@ -245,7 +245,7 @@ async function updateRepositoryFile() {
 - **새 값**: \`${NEW_VALUE}\`
 
 ## 🔗 소스 정보
-- **소스 레포지토리**: ${SOURCE_REPOSITORY}
+- **소스 레포지토리**: [${SOURCE_REPOSITORY}](https://github.com/${SOURCE_REPOSITORY})
 - **워크플로우**: ${SOURCE_WORKFLOW}`;
 
             if (SOURCE_RUN_ID) {
