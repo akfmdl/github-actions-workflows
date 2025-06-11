@@ -3,7 +3,7 @@ name: Auto Release by Pull Request
 on:
   push:
     branches:
-      - <TARGET_BRANCH>
+      - test
 
 jobs:
   release:
@@ -20,7 +20,7 @@ jobs:
         uses: akfmdl/github-actions-workflows/actions/auto-release-custom-versioning@main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          release-branches: '["<TARGET_BRANCH>"]'
+          release-branches: '["test"]'
           jira-base-url: ${{ secrets.JIRA_BASE_URL }}
           version-py-path: 'version.py'  # 선택사항: version.py 파일 경로
 
@@ -31,3 +31,23 @@ jobs:
           echo "버전: ${{ steps.release.outputs.new-release-version }}"
           echo "태그: ${{ steps.release.outputs.new-release-git-tag }}"
           echo "SHA: ${{ steps.release.outputs.new-release-git-head }}" 
+      
+      - name: Update Repository File and Create PR
+        id: update-file-and-create-pr
+        uses: akfmdl/github-actions-workflows/actions/update-repo-and-create-pr@test
+        with:
+          target-repo: akfmdl/mlops-lifecycle
+          file-path: Dockerfile
+          variable-name: DUBBING_VERSION
+          new-value: ${{ steps.release.outputs.new-release-version }}
+          github-token: ${{ secrets.GIT_TOKEN }}
+          release-version: ${{ steps.release.outputs.new-release-version }}
+          branch-name: release/dubbing-${{ steps.release.outputs.new-release-version }}
+
+      - name: Post-pull-request notification
+        if: steps.update-file-and-create-pr.outputs.pr-url != ''
+        run: |
+          echo "🎉 Pull Request가 생성되었습니다!"
+          echo "Pull Request URL: ${{ steps.update-file-and-create-pr.outputs.pr-url }}"
+          echo "Pull Request Number: ${{ steps.update-file-and-create-pr.outputs.pr-number }}"
+          echo "Branch Name: ${{ steps.update-file-and-create-pr.outputs.branch-name }}"
