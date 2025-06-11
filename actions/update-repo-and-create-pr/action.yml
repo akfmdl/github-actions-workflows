@@ -42,6 +42,10 @@ inputs:
     description: '현재 레포지토리의 릴리즈 버전 (선택사항)'
     required: false
     default: ''
+  branch-name:
+    description: '생성할 브랜치 이름 (선택사항, 미입력시 자동 생성)'
+    required: false
+    default: ''
 
 outputs:
   pr-url:
@@ -85,6 +89,7 @@ runs:
         SOURCE_WORKFLOW: ${{ github.workflow }}
         SOURCE_RUN_ID: ${{ github.run_id }}
         RELEASE_VERSION: ${{ inputs.release-version }}
+        BRANCH_NAME: ${{ inputs.branch-name }}
       run: |
         echo "🚀 레포지토리 업데이트 및 PR 생성을 시작합니다..."
         node /tmp/update-repo-pat-token.js
