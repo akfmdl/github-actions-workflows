@@ -252,7 +252,6 @@ async function main() {
 
             // GitHub Actions outputs 설정
             if (process.env.GITHUB_OUTPUT) {
-                const fs = require('fs');
                 fs.appendFileSync(process.env.GITHUB_OUTPUT, `image-tag=${IMAGE_TAG}\n`);
                 fs.appendFileSync(process.env.GITHUB_OUTPUT, `full-image-name=${fullImageName}\n`);
                 fs.appendFileSync(process.env.GITHUB_OUTPUT, `updated-file=${updateResult.updatedFile}\n`);
@@ -263,7 +262,6 @@ async function main() {
 
             // GitHub Actions outputs 설정 (업데이트 없는 경우)
             if (process.env.GITHUB_OUTPUT) {
-                const fs = require('fs');
                 fs.appendFileSync(process.env.GITHUB_OUTPUT, `image-tag=${IMAGE_TAG}\n`);
                 fs.appendFileSync(process.env.GITHUB_OUTPUT, `full-image-name=${fullImageName}\n`);
                 fs.appendFileSync(process.env.GITHUB_OUTPUT, `updated-file=\n`);
