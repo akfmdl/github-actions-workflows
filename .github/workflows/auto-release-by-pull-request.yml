@@ -3,7 +3,7 @@ name: Auto Release by Pull Request
 on:
   push:
     branches:
-      - <TARGET_BRANCH>
+      - test
 
 jobs:
   release:
@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Auto Release
-        id: release
+        id: auto-release
         uses: akfmdl/github-actions-workflows/actions/auto-release-custom-versioning@test
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -25,15 +25,15 @@ jobs:
 
       - name: Check outputs
         run: |
-          echo "new-release-published: ${{ steps.release.outputs.new-release-published }}"
-          echo "new-release-version: ${{ steps.release.outputs.new-release-version }}"
-          echo "new-release-git-tag: ${{ steps.release.outputs.new-release-git-tag }}"
-          echo "new-release-git-head: ${{ steps.release.outputs.new-release-git-head }}"
+          echo "new-release-published: ${{ steps.auto-release.outputs.new-release-published }}"
+          echo "new-release-version: ${{ steps.auto-release.outputs.new-release-version }}"
+          echo "new-release-git-tag: ${{ steps.auto-release.outputs.new-release-git-tag }}"
+          echo "new-release-git-head: ${{ steps.auto-release.outputs.new-release-git-head }}"
 
       - name: Post-release notification
-        if: steps.release.outputs.new-release-version != ''
+        if: steps.auto-release.outputs.new-release-version != ''
         run: |
           echo "🎉 새로운 릴리즈가 생성되었습니다!"
-          echo "버전: ${{ steps.release.outputs.new-release-version }}"
-          echo "태그: ${{ steps.release.outputs.new-release-git-tag }}"
-          echo "SHA: ${{ steps.release.outputs.new-release-git-head }}"
+          echo "버전: ${{ steps.auto-release.outputs.new-release-version }}"
+          echo "태그: ${{ steps.auto-release.outputs.new-release-git-tag }}"
+          echo "SHA: ${{ steps.auto-release.outputs.new-release-git-head }}"
