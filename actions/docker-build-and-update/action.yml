@@ -79,10 +79,14 @@ runs:
         IMAGE_INFO="${{ inputs.image-name }}:${{ inputs.image-tag }}"
         REPO_INFO="${{ inputs.target-repo }}"
         
-        # Teams Workflow용 단순 메시지 JSON 생성
+        # Teams Workflow용 메시지 JSON 생성 (attachments 형식)
         cat > teams_message_start.json << EOF
         {
-          "text": "🚀 Stage 배포 시작\\n\\nStage 배포 중입니다. @오디오엔진\\n\\n이미지: ${IMAGE_INFO}\\n대상 레포지토리: ${REPO_INFO}\\n상태: 진행 중 🔄"
+          "attachments": [
+            {
+              "content": "🚀 Stage 배포 시작\\n\\nStage 배포 중입니다. @오디오엔진\\n\\n이미지: ${IMAGE_INFO}\\n대상 레포지토리: ${REPO_INFO}\\n상태: 진행 중 🔄"
+            }
+          ]
         }
         EOF
         
@@ -155,10 +159,14 @@ runs:
           ACTIVITY_TITLE="❌ Stage 배포 실패"
         fi
         
-        # Teams Workflow용 단순 메시지 JSON 생성
+        # Teams Workflow용 메시지 JSON 생성 (attachments 형식)
         cat > teams_message_complete.json << EOF
         {
-          "text": "${ACTIVITY_TITLE}\\n\\n${STATUS_MESSAGE}\\n\\n이미지: ${IMAGE_INFO}\\n전체 이미지명: ${FULL_IMAGE}\\n대상 레포지토리: ${REPO_INFO}\\n대상 브랜치: ${TARGET_BRANCH:-default}\\n업데이트된 파일: ${UPDATED_FILE:-없음}\\nGitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          "attachments": [
+            {
+              "content": "${ACTIVITY_TITLE}\\n\\n${STATUS_MESSAGE}\\n\\n이미지: ${IMAGE_INFO}\\n전체 이미지명: ${FULL_IMAGE}\\n대상 레포지토리: ${REPO_INFO}\\n대상 브랜치: ${TARGET_BRANCH:-default}\\n업데이트된 파일: ${UPDATED_FILE:-없음}\\nGitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+          ]
         }
         EOF
         
