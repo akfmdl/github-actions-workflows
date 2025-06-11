@@ -334,10 +334,6 @@ async function updateRepositoryFile() {
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `branch-name=${branchName}\n`);
         }
 
-        console.log(`::set-output name=pr-url::${pullRequest.html_url}`);
-        console.log(`::set-output name=pr-number::${pullRequest.number}`);
-        console.log(`::set-output name=branch-name::${branchName}`);
-
         console.log('\n🎉 모든 작업이 성공적으로 완료되었습니다!');
 
     } catch (error) {
