@@ -3,7 +3,7 @@ name: Auto Release by Pull Request
 on:
   push:
     branches:
-      - <TARGET_BRANCH>
+      - test
 
 jobs:
   release:
@@ -17,12 +17,19 @@ jobs:
     steps:
       - name: Auto Release
         id: release
-        uses: akfmdl/github-actions-workflows/actions/auto-release-custom-versioning@main
+        uses: akfmdl/github-actions-workflows/actions/auto-release-custom-versioning@test
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          release-branches: '["<TARGET_BRANCH>"]'
+          release-branches: '["test"]'
           jira-base-url: ${{ secrets.JIRA_BASE_URL }}
           version-py-path: 'version.py'  # 선택사항: version.py 파일 경로
+
+      - name: Check outputs
+        run: |
+          echo "new-release-published: ${{ steps.release.outputs.new-release-published }}"
+          echo "new-release-version: ${{ steps.release.outputs.new-release-version }}"
+          echo "new-release-git-tag: ${{ steps.release.outputs.new-release-git-tag }}"
+          echo "new-release-git-head: ${{ steps.release.outputs.new-release-git-head }}"
 
       - name: Post-release notification
         if: steps.release.outputs.new-release-version != ''
