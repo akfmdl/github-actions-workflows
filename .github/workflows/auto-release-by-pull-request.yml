@@ -30,4 +30,4 @@ jobs:
           echo "🎉 새로운 릴리즈가 생성되었습니다!"
           echo "버전: ${{ steps.release.outputs.new-release-version }}"
           echo "태그: ${{ steps.release.outputs.new-release-git-tag }}"
-          echo "SHA: ${{ steps.release.outputs.new-release-git-head }}" 
+          echo "SHA: ${{ steps.release.outputs.new-release-git-head }}"
