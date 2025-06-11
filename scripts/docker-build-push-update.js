@@ -215,7 +215,7 @@ async function updateTargetRepositoryFile() {
         console.log('💾 파일 업데이트 중...');
         const commitMessage = COMMIT_MESSAGE || `Update ${IMAGE_NAME} image to ${IMAGE_TAG}`;
 
-        await githubAPI(`/repos/${owner}/${repo}/contents/${TARGET_FILE_PATH}`, {
+        const commitResult = await githubAPI(`/repos/${owner}/${repo}/contents/${TARGET_FILE_PATH}`, {
             method: 'PUT',
             body: JSON.stringify({
                 message: commitMessage,
@@ -228,7 +228,9 @@ async function updateTargetRepositoryFile() {
 
         return {
             commitMessage,
-            updatedFile: TARGET_FILE_PATH
+            updatedFile: TARGET_FILE_PATH,
+            commitSha: commitResult.commit.sha,
+            commitUrl: commitResult.commit.html_url
         };
 
     } catch (error) {
@@ -290,6 +292,45 @@ async function main() {
                 fs.appendFileSync(process.env.GITHUB_OUTPUT, `updated-file=${updateResult.updatedFile}\n`);
                 fs.appendFileSync(process.env.GITHUB_OUTPUT, `commit-message=${updateResult.commitMessage}\n`);
             }
+
+            // GitHub Step Summary 생성 (링크 포함)
+            if (process.env.GITHUB_STEP_SUMMARY) {
+                const [owner, repo] = TARGET_REPO.split('/');
+                const targetBranch = TARGET_BRANCH || 'main';
+                const fileUrl = `https://github.com/${owner}/${repo}/blob/${targetBranch}/${TARGET_FILE_PATH}`;
+                const repoUrl = `https://github.com/${owner}/${repo}`;
+                const branchUrl = `https://github.com/${owner}/${repo}/tree/${targetBranch}`;
+                const actualCommitUrl = updateResult.commitUrl || `https://github.com/${owner}/${repo}/commits/${targetBranch}`;
+
+                const summary = `
+## 🎉 Docker Build & Update 완료!
+
+### 🐳 Docker 이미지 정보
+- **Registry**: \`${DOCKER_REGISTRY}\`
+- **Image**: \`${IMAGE_NAME}\`
+- **Tag**: \`${IMAGE_TAG}\`
+- **Full Name**: \`${fullImageName}\`
+
+### 📁 업데이트 대상
+- **Repository**: [${TARGET_REPO}](${repoUrl})
+- **Branch**: [${targetBranch}](${branchUrl})
+- **File**: [${TARGET_FILE_PATH}](${fileUrl})
+
+### ✅ 업데이트 결과
+- **업데이트된 파일**: [${updateResult.updatedFile}](${fileUrl})
+- **커밋 메시지**: \`${updateResult.commitMessage}\`
+- **커밋 SHA**: \`${updateResult.commitSha || 'N/A'}\`
+- **변경사항 확인**: [커밋 보기](${actualCommitUrl})
+
+### 🔗 빠른 링크
+- [📋 업데이트된 파일 보기](${fileUrl})
+- [📈 레포지토리 보기](${repoUrl})
+- [🌿 브랜치 보기](${branchUrl})
+- [📝 이 커밋 보기](${actualCommitUrl})
+`;
+
+                fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
+            }
         } else {
             console.log('\n✅ 워크플로우 완료 (업데이트 없음)');
 
@@ -299,6 +340,38 @@ async function main() {
                 fs.appendFileSync(process.env.GITHUB_OUTPUT, `full-image-name=${fullImageName}\n`);
                 fs.appendFileSync(process.env.GITHUB_OUTPUT, `updated-file=\n`);
                 fs.appendFileSync(process.env.GITHUB_OUTPUT, `commit-message=\n`);
+            }
+
+            // GitHub Step Summary 생성 (업데이트 없는 경우)
+            if (process.env.GITHUB_STEP_SUMMARY) {
+                const [owner, repo] = TARGET_REPO.split('/');
+                const targetBranch = TARGET_BRANCH || 'main';
+                const fileUrl = `https://github.com/${owner}/${repo}/blob/${targetBranch}/${TARGET_FILE_PATH}`;
+                const repoUrl = `https://github.com/${owner}/${repo}`;
+
+                const summary = `
+## ✅ Docker Build 완료 (업데이트 없음)
+
+### 🐳 Docker 이미지 정보
+- **Registry**: \`${DOCKER_REGISTRY}\`
+- **Image**: \`${IMAGE_NAME}\`
+- **Tag**: \`${IMAGE_TAG}\`
+- **Full Name**: \`${fullImageName}\`
+
+### 📁 확인 대상
+- **Repository**: [${TARGET_REPO}](${repoUrl})
+- **Branch**: \`${targetBranch}\`
+- **File**: [${TARGET_FILE_PATH}](${fileUrl})
+
+### ℹ️ 상태
+파일 내용이 이미 최신 상태이므로 업데이트를 건너뛰었습니다.
+
+### 🔗 빠른 링크
+- [📋 대상 파일 보기](${fileUrl})
+- [📈 레포지토리 보기](${repoUrl})
+`;
+
+                fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
             }
         }
 

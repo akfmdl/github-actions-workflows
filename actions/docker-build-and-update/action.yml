@@ -101,24 +101,11 @@ runs:
         echo "🚀 Docker 이미지 빌드 및 레포지토리 업데이트를 시작합니다..."
         node /tmp/docker-build-push-update.js
         
-    - name: Summary
+    - name: Workflow Complete
       shell: bash
       run: |
-        echo "## 🎉 Docker Build & Update 완료!" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### Docker 이미지 정보" >> $GITHUB_STEP_SUMMARY
-        echo "- **Registry**: ${{ inputs.docker-registry }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Image**: ${{ inputs.image-name }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Tag**: ${{ steps.docker-build-update.outputs.image-tag }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Full Name**: ${{ steps.docker-build-update.outputs.full-image-name }}" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 업데이트 대상" >> $GITHUB_STEP_SUMMARY
-        echo "- **Repository**: ${{ inputs.target-repo }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **File**: ${{ inputs.target-file-path }}" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 업데이트 결과" >> $GITHUB_STEP_SUMMARY
-        echo "- **업데이트된 파일**: ${{ steps.docker-build-update.outputs.updated-file }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **커밋 메시지**: ${{ steps.docker-build-update.outputs.commit-message }}" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Docker Build and Update workflow completed successfully!"
+        echo "📊 Summary has been generated with detailed links and information."
 
 branding:
   icon: 'package'
