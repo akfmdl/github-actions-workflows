@@ -17,16 +17,17 @@ jobs:
       id: docker-build-update
       uses: akfmdl/github-actions-workflows/actions/docker-build-and-update@test
       with:
+        docker-registry: persolive.azurecr.io
         github-token: ${{ secrets.GIT_TOKEN }}
         image-name: audio-engine-server
         image-tag: 2025.06.11.1
-        target-repo: akfmdl/github-actions-workflows
-        target-file-path: stg-idc/02-perso-vt/01-perso-vt-audio/01-perso-vt-audio-engine/perso-vt-audio-engine-stg.yaml
-        target-branch: test
         dockerfile-path: Dockerfile
         build-context: .
         registry-username: ${{ secrets.REGISTRY_USERNAME }}
         registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+        target-repo: akfmdl/github-actions-workflows
+        target-file-path: stg-idc/02-perso-vt/01-perso-vt-audio/01-perso-vt-audio-engine/perso-vt-audio-engine-stg.yaml
+        target-branch: test
 
     - name: Post-deployment notification
       if: steps.docker-build-update.outputs.updated-file != ''

@@ -127,13 +127,9 @@ async function buildAndPushDockerImage() {
     }
 }
 
-
-
 // YAML 파일에서 이미지 태그 업데이트
 function updateYamlImageTag(content) {
     const fullImageName = `${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}`;
-
-    // 이미지 태그 패턴 매칭 (예: persolive.azurecr.io/audio-engine-server:2025.06.0.2)
     const imagePattern = new RegExp(
         `(\\s*image:\\s*)(${DOCKER_REGISTRY}/${IMAGE_NAME}):([^\\s\\n]+)`,
         'g'
@@ -159,14 +155,30 @@ async function updateTargetRepositoryFile() {
     }
 
     try {
-        // 1. 원본 파일 내용 가져오기
+        // 1. 레포지토리 접근 권한 확인
+        console.log(`🔍 레포지토리 접근 권한 확인: ${owner}/${repo}`);
+        const repoCheck = await githubAPI(`/repos/${owner}/${repo}`);
+        console.log(`✅ 레포지토리 접근 가능: ${repoCheck.full_name}`);
+
+        // 1.5. 브랜치 확인 (TARGET_BRANCH가 지정된 경우)
+        if (TARGET_BRANCH) {
+            console.log(`🔍 브랜치 존재 확인: ${TARGET_BRANCH}`);
+            try {
+                await githubAPI(`/repos/${owner}/${repo}/branches/${TARGET_BRANCH}`);
+                console.log(`✅ 브랜치 존재 확인됨: ${TARGET_BRANCH}`);
+            } catch (branchError) {
+                throw new Error(`❌ 지정된 브랜치가 존재하지 않습니다: ${TARGET_BRANCH}`);
+            }
+        }
+
+        // 2. 원본 파일 내용 가져오기
         console.log(`📥 파일 내용 가져오는 중: ${TARGET_FILE_PATH}`);
         const fileData = await githubAPI(`/repos/${owner}/${repo}/contents/${TARGET_FILE_PATH}`);
 
         const originalContent = Buffer.from(fileData.content, 'base64').toString('utf8');
         console.log('✅ 원본 파일 내용을 성공적으로 가져왔습니다.');
 
-        // 2. 파일 내용 수정
+        // 3. 파일 내용 수정
         console.log('🔄 이미지 태그 업데이트 중...');
         const updatedContent = updateYamlImageTag(originalContent);
 
@@ -175,7 +187,7 @@ async function updateTargetRepositoryFile() {
             return;
         }
 
-        // 3. 대상 브랜치 결정
+        // 4. 대상 브랜치 결정
         let targetBranch;
         if (TARGET_BRANCH) {
             targetBranch = TARGET_BRANCH;
@@ -186,7 +198,7 @@ async function updateTargetRepositoryFile() {
             console.log(`📍 기본 브랜치 사용: ${targetBranch}`);
         }
 
-        // 4. 파일 업데이트 (지정된 브랜치에 직접 push)
+        // 5. 파일 업데이트 (지정된 브랜치에 직접 push)
         console.log('💾 파일 업데이트 중...');
         const commitMessage = COMMIT_MESSAGE || `Update ${IMAGE_NAME} image to ${IMAGE_TAG}`;
 

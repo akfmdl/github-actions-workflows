@@ -12,10 +12,9 @@ inputs:
     default: '18'
   docker-registry:
     description: 'Docker registry URL'
-    required: false
-    default: 'persolive.azurecr.io'
+    required: true
   image-name:
-    description: 'Docker 이미지 이름 (예: audio-engine-server)'
+    description: 'Docker 이미지 이름'
     required: true
   image-tag:
     description: 'Docker 이미지 태그 (예: v1.0.0, 2025.01.15.1430)'
