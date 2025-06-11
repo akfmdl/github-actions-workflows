@@ -1,0 +1,36 @@
+name: Docker Build, Push and Update Repository
+
+on:
+  push:
+    branches:
+      - test
+
+jobs:
+  docker-build-and-update:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v4
+
+    - name: Docker Build, Push and Update Repository
+      id: docker-build-update
+      uses: akfmdl/github-actions-workflows/actions/docker-build-and-update@test
+      with:
+        github-token: ${{ secrets.GIT_TOKEN }}
+        image-name: audio-engine-server
+        image-tag: 2025.06.11.1
+        target-repo: akfmdl/github-actions-workflows
+        target-file-path: stg-idc/02-perso-vt/01-perso-vt-audio/01-perso-vt-audio-engine/perso-vt-audio-engine-stg.yaml
+        dockerfile-path: Dockerfile
+        build-context: .
+        registry-username: ${{ secrets.REGISTRY_USERNAME }}
+        registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+
+    - name: Post-deployment notification
+      if: steps.docker-build-update.outputs.updated-file != ''
+      run: |
+        echo "🎉 Docker 이미지 빌드 및 배포 완료!"
+        echo "Docker Image: ${{ steps.docker-build-update.outputs.full-image-name }}"
+        echo "Updated File: ${{ steps.docker-build-update.outputs.updated-file }}"
+        echo "Commit Message: ${{ steps.docker-build-update.outputs.commit-message }}" 
