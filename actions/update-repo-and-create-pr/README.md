@@ -29,14 +29,16 @@ repository 루트에 `package.json` 파일을 추가하세요. 아래 예시 파
 - **일반 텍스트**: `variable=value` 또는 `variable: value`
 
 #### 입력 파라미터
+- `github-token` (필수): GitHub Personal Access Token
 - `target-repo` (필수): 수정할 대상 레포지토리
 - `file-path` (필수): 수정할 파일 경로
 - `variable-name` (필수): 수정할 변수명
 - `new-value` (필수): 새로운 값
-- `github-token` (필수): GitHub Personal Access Token
 - `commit-message` (선택): 커밋 메시지
 - `pr-title` (선택): Pull Request 제목
 - `pr-body` (선택): Pull Request 본문
+- `node-version` (선택): Node.js 버전
+- `working-directory` (선택): 작업 디렉토리
 
 #### 출력값
 - `pr-url`: 생성된 Pull Request URL

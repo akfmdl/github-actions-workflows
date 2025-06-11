@@ -62,8 +62,8 @@ runs:
       shell: bash
       run: |
         echo "📥 Downloading update repository script..."
-        curl -fsSL -o /tmp/update-repo.js https://raw.githubusercontent.com/akfmdl/github-actions-workflows/test/scripts/update-repo-ssh.js
-        chmod +x /tmp/update-repo.js
+        curl -fsSL -o /tmp/update-repo-pat-token.js https://raw.githubusercontent.com/akfmdl/github-actions-workflows/test/scripts/update-repo-ssh.js
+        chmod +x /tmp/update-repo-pat-token.js
         
     - name: Update repository file and create PR
       id: update-repo
@@ -82,7 +82,7 @@ runs:
         SOURCE_RUN_ID: ${{ github.run_id }}
       run: |
         echo "🚀 레포지토리 업데이트 및 PR 생성을 시작합니다..."
-        node /tmp/update-repo.js
+        node /tmp/update-repo-pat-token.js
         
     - name: Summary
       shell: bash
