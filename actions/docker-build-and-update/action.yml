@@ -124,10 +124,21 @@ runs:
         }
         EOF
         
-        # Teams Webhook으로 메시지 전송
-        curl -H "Content-Type: application/json" \
-             -d @teams_message_start.json \
-             "${WEBHOOK_URL}"
+        # Teams Webhook으로 메시지 전송 및 응답 저장
+        TEAMS_RESPONSE=$(curl -s -H "Content-Type: application/json" \
+                             -d @teams_message_start.json \
+                             "${WEBHOOK_URL}")
+        
+        echo "Teams API Response: $TEAMS_RESPONSE"
+        
+        # 메시지 ID 추출 및 저장 (Power Automate 응답에서)
+        if echo "$TEAMS_RESPONSE" | grep -q '"messageId"'; then
+          MESSAGE_ID=$(echo "$TEAMS_RESPONSE" | grep -o '"messageId":"[^"]*"' | cut -d'"' -f4)
+          echo "TEAMS_MESSAGE_ID=$MESSAGE_ID" >> $GITHUB_ENV
+          echo "📝 Teams 메시지 ID 저장: $MESSAGE_ID"
+        else
+          echo "⚠️ Teams 메시지 ID를 추출할 수 없습니다. 댓글 기능을 사용할 수 없습니다."
+        fi
         
         echo "✅ Teams 배포 시작 알림 전송 완료"
 
@@ -193,8 +204,61 @@ runs:
           ACTIVITY_TITLE="❌ Stage 배포 실패"
         fi
         
-        # Teams Workflow용 메시지 JSON 생성 (스키마 호환)
-        cat > teams_message_complete.json << EOF
+        # 댓글로 보낼지 새 메시지로 보낼지 결정
+        if [ -n "${TEAMS_MESSAGE_ID:-}" ]; then
+          echo "📝 기존 메시지에 댓글로 배포 완료 알림 전송"
+          # 댓글용 메시지 JSON 생성
+          cat > teams_message_complete.json << EOF
+        {
+          "replyToMessageId": "${TEAMS_MESSAGE_ID}",
+          "attachments": [
+            {
+              "contentType": "application/vnd.microsoft.card.adaptive",
+              "content": {
+                "type": "AdaptiveCard",
+                "version": "1.2",
+                "body": [
+                  {
+                    "type": "TextBlock",
+                    "text": "${ACTIVITY_TITLE}",
+                    "size": "Medium",
+                    "weight": "Bolder"
+                  },
+                  {
+                    "type": "TextBlock",
+                    "text": "${STATUS_MESSAGE}",
+                    "wrap": true
+                  },
+                  {
+                    "type": "FactSet",
+                    "facts": [
+                      {
+                        "title": "전체 이미지명:",
+                        "value": "${FULL_IMAGE}"
+                      },
+                      {
+                        "title": "업데이트된 파일:",
+                        "value": "${UPDATED_FILE:-없음}"
+                      }
+                    ]
+                  }
+                ],
+                "actions": [
+                  {
+                    "type": "Action.OpenUrl",
+                    "title": "GitHub Actions 보기",
+                    "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+        EOF
+        else
+          echo "📝 새로운 메시지로 배포 완료 알림 전송"
+          # 새 메시지용 JSON 생성 (기존과 동일)
+          cat > teams_message_complete.json << EOF
         {
           "attachments": [
             {
@@ -252,6 +316,7 @@ runs:
           ]
         }
         EOF
+        fi
         
         # Teams Webhook으로 메시지 전송
         curl -H "Content-Type: application/json" \

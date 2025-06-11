@@ -62,6 +62,8 @@ Teams 알림을 사용하려면 다음 단계를 따르세요:
    - 액션 추가: "적용 대상" (Apply to each) → 입력값: `@triggerOutputs()?['body']?['attachments']`
    - 액션 내부에 "적응형 카드 게시" (Post adaptive card) 추가
    - 카드: `@item()?['content']`
+   - **댓글 기능을 위해**: "작성" 탭에서 "응답" 액션 추가
+   - 응답 본문: `{"messageId": "@{body('Post_adaptive_card_in_a_chat_or_channel')?['id']}"}`
    - 플로우 저장 후 HTTP POST URL 복사
 
 2. **GitHub Secrets 추가**:
@@ -69,9 +71,14 @@ Teams 알림을 사용하려면 다음 단계를 따르세요:
    - `TEAMS_WORKFLOWS_URL`에 복사한 Power Automate Workflow URL 추가
 
 3. **알림 기능**:
-   - 🚀 **배포 시작**: "Stage 배포 중입니다. @오디오엔진"
-   - ✅ **배포 완료**: "Stage 배포 완료했습니다. @오디오엔진"
-   - ❌ **배포 실패**: "Stage 배포 실패했습니다. @오디오엔진"
+   - 🚀 **배포 시작**: "Stage 배포 중입니다. @오디오엔진" (새 메시지)
+   - ✅ **배포 완료**: "Stage 배포 완료했습니다. @오디오엔진" (시작 메시지에 댓글)
+   - ❌ **배포 실패**: "Stage 배포 실패했습니다. @오디오엔진" (시작 메시지에 댓글)
+
+### 📝 **댓글 기능 설명**:
+- 배포 시작 메시지가 전송되면 메시지 ID를 저장
+- 배포 완료/실패 시 기존 메시지에 댓글로 결과 알림
+- 메시지 ID를 추출할 수 없는 경우 새로운 메시지로 전송
 
 **지원하는 Registry 예시:**
 - Azure Container Registry (ACR): `persolive.azurecr.io`
