@@ -26,7 +26,7 @@ jobs:
         registry-username: ${{ secrets.REGISTRY_USERNAME }}
         registry-password: ${{ secrets.REGISTRY_PASSWORD }}
         target-repo: akfmdl/mlops-lifecycle
-        target-file-path: stg-idc/02-perso-vt/01-perso-vt-audio/01-perso-vt-audio-engine/perso-vt-audio-engine-stg.yaml
+        target-file-path: values.yaml
         target-branch: test
 
     - name: Post-deployment notification
