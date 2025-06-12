@@ -93,10 +93,10 @@ runs:
                   "entities": [
                     {
                       "type": "mention",
-                      "text": "<at>김고은 팀(test용)</at>",
+                      "text": "<at>오디오엔진</at>",
                       "mentioned": {
                         "id": "8:orgid:b823fdcf-3759-481f-8440-0f181676accf",
-                        "name": "김고은 팀(test용)"
+                        "name": "오디오엔진"
                       }
                     }
                   ]
@@ -110,7 +110,7 @@ runs:
                   },
                   {
                     "type": "TextBlock",
-                    "text": "<at>김고은 팀(test용)</at>",
+                    "text": "<at>오디오엔진</at>",
                     "wrap": true
                   },
                   {
@@ -231,10 +231,10 @@ runs:
                   "entities": [
                     {
                       "type": "mention",
-                      "text": "<at>김고은 팀(test용)</at>",
+                      "text": "<at>오디오엔진</at>",
                       "mentioned": {
                         "id": "8:orgid:b823fdcf-3759-481f-8440-0f181676accf",
-                        "name": "김고은 팀(test용)"
+                        "name": "오디오엔진"
                       }
                     }
                   ]
@@ -248,7 +248,7 @@ runs:
                   },
                   {
                     "type": "TextBlock",
-                    "text": "<at>김고은 팀(test용)</at>",
+                    "text": "<at>오디오엔진</at>",
                     "wrap": true
                   },
                   {
