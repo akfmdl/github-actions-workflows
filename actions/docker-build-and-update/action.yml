@@ -51,6 +51,14 @@ inputs:
     description: 'Microsoft Teams Workflow URL'
     required: false
     default: ''
+  teams-message-start-json:
+    description: 'Teams 시작 알림 전체 JSON 메시지'
+    required: false
+    default: ''
+  teams-message-complete-json:
+    description: 'Teams 완료 알림 전체 JSON 메시지'
+    required: false
+    default: ''
 
 outputs:
   image-tag:
@@ -70,83 +78,15 @@ runs:
   using: 'composite'
   steps:
     - name: Send Teams notification - Start
-      if: ${{ inputs.teams-workflow-url != '' }}
+      if: ${{ inputs.teams-workflow-url != '' && inputs.teams-message-start-json != '' }}
       shell: bash
       run: |
         echo "📢 Teams 알림 전송 중: 배포 시작"
         
         TEAMS_WORKFLOW_URL="${{ inputs.teams-workflow-url }}"
-        IMAGE_INFO="${{ inputs.image-name }}:${{ inputs.image-tag }}"
-        REPO_INFO="${{ inputs.target-repo }}"
         
-        # Teams Workflow용 메시지 JSON 생성 (멘션 지원)
-        cat > teams_message_start.json << EOF
-        {
-          "type": "message",
-          "attachments": [
-            {
-              "contentType": "application/vnd.microsoft.card.adaptive",
-              "content": {
-                "$schema": "http://adaptivecards.json/schema/adaptive-card/1.5",
-                "type": "AdaptiveCard",
-                "msteams": {
-                  "entities": [
-                    {
-                      "type": "mention",
-                      "text": "<at>오디오엔진</at>",
-                      "mentioned": {
-                          "id": "ZjdkZDQ4MmItYzU4ZC00MDViLWFlNjAtNTlmNmFjMzZmZWVmIyNjMDQzMWZmOC0zZTBkLTQ0ZjgtYmFlZS05YWFjMDQ1Nzk1NjMjI3RLUUEyYWI5RnQ=",
-                          "name": "오디오엔진",
-                          "type": "tag"
-                      }
-                    }
-                  ]
-                },
-                "body": [
-                  {
-                    "type": "TextBlock",
-                    "text": "🚀 Stage 배포 시작",
-                    "size": "Large",
-                    "weight": "Bolder"
-                  },
-                  {
-                    "type": "TextBlock",
-                    "text": "<at>오디오엔진</at>",
-                    "wrap": true
-                  },
-                  {
-                    "type": "TextBlock",
-                    "text": "Stage 배포 중입니다.",
-                    "wrap": true
-                  },
-                  {
-                    "type": "TextBlock",
-                    "text": "⏳ 배포 진행 상태를 확인해주세요...",
-                    "wrap": true
-                  },
-                  {
-                    "type": "FactSet",
-                    "facts": [
-                      {
-                        "title": "이미지:",
-                        "value": "${IMAGE_INFO}"
-                      },
-                      {
-                        "title": "대상 레포지토리:",
-                        "value": "${REPO_INFO}"
-                      },
-                      {
-                        "title": "상태:",
-                        "value": "진행 중 🔄"
-                      }
-                    ]
-                  }
-                ]
-              }
-            }
-          ]
-        }
-        EOF
+        # 사용자 제공 JSON을 그대로 사용
+        echo '${{ inputs.teams-message-start-json }}' > teams_message_start.json
         
         # Teams Webhook으로 메시지 전송
         curl -H "Content-Type: application/json" \
@@ -192,110 +132,15 @@ runs:
         node /tmp/docker-build-push-update.js
         
     - name: Send Teams notification - Complete
-      if: ${{ inputs.teams-workflow-url != '' }}
+      if: ${{ inputs.teams-workflow-url != '' && inputs.teams-message-complete-json != '' }}
       shell: bash
       run: |
         echo "📢 Teams 알림 전송 중: 배포 완료"
         
         TEAMS_WORKFLOW_URL="${{ inputs.teams-workflow-url }}"
-        IMAGE_INFO="${{ inputs.image-name }}:${{ steps.docker-build-update.outputs.image-tag }}"
-        FULL_IMAGE="${{ steps.docker-build-update.outputs.full-image-name }}"
-        REPO_INFO="${{ inputs.target-repo }}"
-        UPDATED_FILE="${{ steps.docker-build-update.outputs.updated-file }}"
-        TARGET_BRANCH="${{ inputs.target-branch }}"
         
-        # 성공/실패 상태에 따른 색상 및 메시지 설정
-        if [ "${{ job.status }}" == "success" ]; then
-          THEME_COLOR="28A745"
-          STATUS_ICON="✅"
-          STATUS_MESSAGE="Stage 배포 완료했습니다."
-          ACTIVITY_TITLE="✅ Stage 배포 완료"
-        else
-          THEME_COLOR="DC3545"
-          STATUS_ICON="❌"
-          STATUS_MESSAGE="Stage 배포 실패했습니다."
-          ACTIVITY_TITLE="❌ Stage 배포 실패"
-        fi
-      
-        
-        # 배포 완료 메시지 JSON 생성 (멘션 지원)
-        cat > teams_message_complete.json << EOF
-        {
-          "type": "message",
-          "attachments": [
-            {
-              "contentType": "application/vnd.microsoft.card.adaptive",
-              "content": {
-                "$schema": "http://adaptivecards.json/schema/adaptive-card/1.5",
-                "type": "AdaptiveCard",
-                "msteams": {
-                  "entities": [
-                    {
-                        "type": "mention",
-                        "text": "<at>오디오엔진</at>",
-                        "mentioned": {
-                            "id": "ZjdkZDQ4MmItYzU4ZC00MDViLWFlNjAtNTlmNmFjMzZmZWVmIyNjMDQzMWZmOC0zZTBkLTQ0ZjgtYmFlZS05YWFjMDQ1Nzk1NjMjI3RLUUEyYWI5RnQ=",
-                            "name": "오디오엔진",
-                            "type": "tag"
-                        }
-                    }
-                  ]
-                },
-                "body": [
-                  {
-                    "type": "TextBlock",
-                    "text": "${ACTIVITY_TITLE}",
-                    "size": "Large",
-                    "weight": "Bolder"
-                  },
-                  {
-                    "type": "TextBlock",
-                    "text": "<at>오디오엔진</at>",
-                    "wrap": true
-                  },
-                  {
-                    "type": "TextBlock",
-                    "text": "${STATUS_MESSAGE}",
-                    "wrap": true
-                  },
-                  {
-                    "type": "FactSet",
-                    "facts": [
-                      {
-                        "title": "이미지:",
-                        "value": "${IMAGE_INFO}"
-                      },
-                      {
-                        "title": "전체 이미지명:",
-                        "value": "${FULL_IMAGE}"
-                      },
-                      {
-                        "title": "대상 레포지토리:",
-                        "value": "${REPO_INFO}"
-                      },
-                      {
-                        "title": "대상 브랜치:",
-                        "value": "${TARGET_BRANCH:-default}"
-                      },
-                      {
-                        "title": "업데이트된 파일:",
-                        "value": "${UPDATED_FILE:-없음}"
-                      }
-                    ]
-                  }
-                ],
-                "actions": [
-                  {
-                    "type": "Action.OpenUrl",
-                    "title": "GitHub Actions 보기",
-                    "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                  }
-                ]
-              }
-            }
-          ]
-        }
-        EOF
+        # 사용자 제공 JSON을 그대로 사용
+        echo '${{ inputs.teams-message-complete-json }}' > teams_message_complete.json
         
         # Teams Webhook으로 메시지 전송
         curl -H "Content-Type: application/json" \
