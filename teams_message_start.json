@@ -1,0 +1,64 @@
+{
+  "type": "message",
+  "attachments": [
+    {
+      "contentType": "application/vnd.microsoft.card.adaptive",
+      "content": {
+        "type": "AdaptiveCard",
+        "version": "1.2",
+        "msteams": {
+          "entities": [
+            {
+              "type": "mention",
+              "text": "<at>김고은 팀(test용)</at>",
+              "mentioned": {
+                "id": "8:orgid:b823fdcf-3759-481f-8440-0f181676accf",
+                "name": "김고은 팀(test용)"
+              }
+            }
+          ]
+        },
+        "body": [
+          {
+            "type": "TextBlock",
+            "text": "🚀 Stage 배포 시작",
+            "size": "Large",
+            "weight": "Bolder"
+          },
+          {
+            "type": "TextBlock",
+            "text": "<at>김고은 팀(test용)</at>",
+            "wrap": true
+          },
+          {
+            "type": "TextBlock",
+            "text": "Stage 배포 중입니다.",
+            "wrap": true
+          },
+          {
+            "type": "TextBlock",
+            "text": "⏳ 배포 진행 상태를 확인해주세요...",
+            "wrap": true
+          },
+          {
+            "type": "FactSet",
+            "facts": [
+              {
+                "title": "이미지:",
+                "value": "IMAGE_INFO"
+              },
+              {
+                "title": "대상 레포지토리:",
+                "value": "REPO_INFO"
+              },
+              {
+                "title": "상태:",
+                "value": "진행 중 🔄"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

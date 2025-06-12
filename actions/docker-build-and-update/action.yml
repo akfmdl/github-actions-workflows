@@ -75,7 +75,7 @@ runs:
       run: |
         echo "📢 Teams 알림 전송 중: 배포 시작"
         
-        WEBHOOK_URL="${{ inputs.teams-workflow-url }}"
+        TEAMS_WORKFLOW_URL="${{ inputs.teams-workflow-url }}"
         IMAGE_INFO="${{ inputs.image-name }}:${{ inputs.image-tag }}"
         REPO_INFO="${{ inputs.target-repo }}"
         
@@ -89,12 +89,39 @@ runs:
               "content": {
                 "type": "AdaptiveCard",
                 "version": "1.2",
+                "msteams": {
+                  "entities": [
+                    {
+                      "type": "mention",
+                      "text": "<at>김고은 팀(test용)</at>",
+                      "mentioned": {
+                        "id": "8:orgid:b823fdcf-3759-481f-8440-0f181676accf",
+                        "name": "김고은 팀(test용)"
+                      }
+                    }
+                  ]
+                },
                 "body": [
                   {
                     "type": "TextBlock",
                     "text": "🚀 Stage 배포 시작",
                     "size": "Large",
                     "weight": "Bolder"
+                  },
+                  {
+                    "type": "TextBlock",
+                    "text": "<at>김고은 팀(test용)</at>",
+                    "wrap": true
+                  },
+                  {
+                    "type": "TextBlock",
+                    "text": "Stage 배포 중입니다.",
+                    "wrap": true
+                  },
+                  {
+                    "type": "TextBlock",
+                    "text": "⏳ 배포 진행 상태를 확인해주세요...",
+                    "wrap": true
                   },
                   {
                     "type": "FactSet",
@@ -116,15 +143,14 @@ runs:
                 ]
               }
             }
-          ],
-          "text": "🚀 Stage 배포 시작\\n\\nStage 배포 중입니다. <at>김고은 / AI 엔진 플랫폼실 / 팀원</at>\\n\\n⏳ 배포 진행 상태를 확인해주세요..."
+          ]
         }
         EOF
         
         # Teams Webhook으로 메시지 전송
         curl -H "Content-Type: application/json" \
              -d @teams_message_start.json \
-             "${WEBHOOK_URL}"
+             "${TEAMS_WORKFLOW_URL}"
         
         echo "✅ Teams 배포 시작 알림 전송 완료"
 
@@ -170,7 +196,7 @@ runs:
       run: |
         echo "📢 Teams 알림 전송 중: 배포 완료"
         
-        WEBHOOK_URL="${{ inputs.teams-workflow-url }}"
+        TEAMS_WORKFLOW_URL="${{ inputs.teams-workflow-url }}"
         IMAGE_INFO="${{ inputs.image-name }}:${{ steps.docker-build-update.outputs.image-tag }}"
         FULL_IMAGE="${{ steps.docker-build-update.outputs.full-image-name }}"
         REPO_INFO="${{ inputs.target-repo }}"
@@ -181,20 +207,13 @@ runs:
         if [ "${{ job.status }}" == "success" ]; then
           THEME_COLOR="28A745"
           STATUS_ICON="✅"
-          STATUS_MESSAGE="Stage 배포 완료했습니다. <at>김고은 / AI 엔진 플랫폼실 / 팀원</at>"
+          STATUS_MESSAGE="Stage 배포 완료했습니다."
           ACTIVITY_TITLE="✅ Stage 배포 완료"
         else
           THEME_COLOR="DC3545"
           STATUS_ICON="❌"
-          STATUS_MESSAGE="Stage 배포 실패했습니다. <at>김고은 / AI 엔진 플랫폼실 / 팀원</at>"
+          STATUS_MESSAGE="Stage 배포 실패했습니다."
           ACTIVITY_TITLE="❌ Stage 배포 실패"
-        fi
-        
-        # 멘션을 위한 텍스트 메시지 준비
-        if [ "${{ job.status }}" == "success" ]; then
-          MENTION_MESSAGE="${STATUS_ICON} ${STATUS_MESSAGE}\\n\\n📋 상세 정보:\\n• 이미지: ${IMAGE_INFO}\\n• 전체 이미지명: ${FULL_IMAGE}\\n• 대상 레포지토리: ${REPO_INFO}\\n• 업데이트된 파일: ${UPDATED_FILE:-없음}\\n\\n[GitHub Actions 보기](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
-        else
-          MENTION_MESSAGE="${STATUS_ICON} ${STATUS_MESSAGE}\\n\\n📋 상세 정보:\\n• 이미지: ${IMAGE_INFO}\\n• 대상 레포지토리: ${REPO_INFO}\\n\\n[GitHub Actions 보기](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
         fi
       
         
@@ -208,12 +227,34 @@ runs:
               "content": {
                 "type": "AdaptiveCard",
                 "version": "1.2",
+                "msteams": {
+                  "entities": [
+                    {
+                      "type": "mention",
+                      "text": "<at>김고은 팀(test용)</at>",
+                      "mentioned": {
+                        "id": "8:orgid:b823fdcf-3759-481f-8440-0f181676accf",
+                        "name": "김고은 팀(test용)"
+                      }
+                    }
+                  ]
+                },
                 "body": [
                   {
                     "type": "TextBlock",
                     "text": "${ACTIVITY_TITLE}",
                     "size": "Large",
                     "weight": "Bolder"
+                  },
+                  {
+                    "type": "TextBlock",
+                    "text": "<at>김고은 팀(test용)</at>",
+                    "wrap": true
+                  },
+                  {
+                    "type": "TextBlock",
+                    "text": "${STATUS_MESSAGE}",
+                    "wrap": true
                   },
                   {
                     "type": "FactSet",
@@ -250,15 +291,14 @@ runs:
                 ]
               }
             }
-          ],
-          "text": "${MENTION_MESSAGE}"
+          ]
         }
         EOF
         
         # Teams Webhook으로 메시지 전송
         curl -H "Content-Type: application/json" \
              -d @teams_message_complete.json \
-             "${WEBHOOK_URL}"
+             "${TEAMS_WORKFLOW_URL}"
         
         echo "✅ Teams 배포 완료 알림 전송 완료"
 
