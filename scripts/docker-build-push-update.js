@@ -73,9 +73,9 @@ async function buildAndPushDockerImage() {
 
             try {
                 // 첫 번째 시도: 일반 로그인
-                // execSync(`echo "${REGISTRY_PASSWORD}" | docker login ${DOCKER_REGISTRY} -u ${REGISTRY_USERNAME} --password-stdin`, {
-                //     stdio: 'pipe'
-                // });
+                execSync(`echo "${REGISTRY_PASSWORD}" | docker login ${DOCKER_REGISTRY} -u ${REGISTRY_USERNAME} --password-stdin`, {
+                    stdio: 'pipe'
+                });
                 console.log('✅ Registry 로그인 성공');
             } catch (loginError) {
                 console.log('⚠️ 일반 로그인 실패, 대안 방법 시도 중...');
@@ -106,10 +106,6 @@ async function buildAndPushDockerImage() {
 
         // Docker 이미지 빌드
         console.log(`🔨 Docker 이미지 빌드 중: ${fullImageName}`);
-        try {
-            // execSync(`docker build -f ${DOCKERFILE_PATH} -t ${fullImageName} ${BUILD_CONTEXT}`, {
-            //     stdio: 'inherit'
-            // });
 
         // Build arguments 처리
         let buildArgsString = '';
@@ -128,15 +124,15 @@ async function buildAndPushDockerImage() {
         }
 
         try {
-            const buildCommand = `docker build -f ${DOCKERFILE_PATH} -t ${fullImageName}${buildArgsString} ${BUILD_CONTEXT}`;
-            console.log(`📋 Build 명령: ${buildCommand}`);
-            console.log('📺 Docker 빌드 로그:');
-            console.log('-'.repeat(60));
+            // const buildCommand = `docker build -f ${DOCKERFILE_PATH} -t ${fullImageName}${buildArgsString} ${BUILD_CONTEXT}`;
+            // console.log(`📋 Build 명령: ${buildCommand}`);
+            // console.log('📺 Docker 빌드 로그:');
+            // console.log('-'.repeat(60));
 
-            execSync(buildCommand, {
-                stdio: 'inherit',
-                encoding: 'utf8'
-            });
+            // execSync(buildCommand, {
+            //     stdio: 'inherit',
+            //     encoding: 'utf8'
+            // });
 
             console.log('-'.repeat(60));
             console.log('✅ Docker 이미지 빌드 완료');
