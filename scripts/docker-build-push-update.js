@@ -215,28 +215,22 @@ async function updateTargetRepositoryFile() {
         console.log('💾 파일 업데이트 중...');
         const commitMessage = COMMIT_MESSAGE || `Update ${IMAGE_NAME} image to ${IMAGE_TAG}`;
 
-        // const commitResult = await githubAPI(`/repos/${owner}/${repo}/contents/${TARGET_FILE_PATH}`, {
-        //     method: 'PUT',
-        //     body: JSON.stringify({
-        //         message: commitMessage,
-        //         content: Buffer.from(updatedContent, 'utf8').toString('base64'),
-        //         sha: fileData.sha,
-        //         branch: targetBranch
-        //     })
-        // });
+        const commitResult = await githubAPI(`/repos/${owner}/${repo}/contents/${TARGET_FILE_PATH}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                message: commitMessage,
+                content: Buffer.from(updatedContent, 'utf8').toString('base64'),
+                sha: fileData.sha,
+                branch: targetBranch
+            })
+        });
         console.log(`✅ 파일 업데이트 완료 (${targetBranch} 브랜치에 직접 push)`);
 
-        // return {
-        //     commitMessage,
-        //     updatedFile: TARGET_FILE_PATH,
-        //     commitSha: commitResult.commit.sha,
-        //     commitUrl: commitResult.commit.html_url
-        // };
         return {
             commitMessage,
             updatedFile: TARGET_FILE_PATH,
-            commitSha: 'commitResult.commit.sha',
-            commitUrl: 'commitResult.commit.html_url'
+            commitSha: commitResult.commit.sha,
+            commitUrl: commitResult.commit.html_url
         };
 
     } catch (error) {
