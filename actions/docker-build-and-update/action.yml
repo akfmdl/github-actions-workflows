@@ -27,6 +27,10 @@ inputs:
     description: '빌드 컨텍스트'
     required: false
     default: '.'
+  build-args:
+    description: 'Docker build arguments (KEY=VALUE,KEY2=VALUE2 형식으로 쉼표 구분)'
+    required: false
+    default: ''
   target-repo:
     description: '대상 레포지토리 (예: owner/k8s-manifests)'
     required: true
@@ -178,6 +182,7 @@ runs:
         IMAGE_TAG: ${{ inputs.image-tag }}
         DOCKERFILE_PATH: ${{ inputs.dockerfile-path }}
         BUILD_CONTEXT: ${{ inputs.build-context }}
+        BUILD_ARGS: ${{ inputs.build-args }}
         TARGET_REPO: ${{ inputs.target-repo }}
         TARGET_FILE_PATH: ${{ inputs.target-file-path }}
         TARGET_BRANCH: ${{ inputs.target-branch }}

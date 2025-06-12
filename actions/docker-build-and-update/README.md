@@ -87,6 +87,7 @@ Teams 알림을 사용하려면 다음 단계를 따르세요:
 | `docker-registry` | Docker 레지스트리 URL | ❌ | `***.azurecr.io` |
 | `dockerfile-path` | Dockerfile 경로 | ❌ | `./Dockerfile` |
 | `build-context` | 빌드 컨텍스트 | ❌ | `.` |
+| `build-args` | Docker build arguments (KEY=VALUE,KEY2=VALUE2) | ❌ | - |
 | `registry-username` | Container Registry 사용자명 | ❌ | - |
 | `registry-password` | Container Registry 패스워드 | ❌ | - |
 | `commit-message` | 커밋 메시지 | ❌ | 자동 생성 |
@@ -151,6 +152,7 @@ Teams 알림을 사용하려면 다음 단계를 따르세요:
     image-tag: '<IMAGE_TAG>'
     dockerfile-path: './docker/Dockerfile'
     build-context: './src'
+    build-args: 'NODE_ENV=production,APP_VERSION=1.0.0,DEBUG=false'
     target-repo: '<TARGET_REPO>'
     target-file-path: '<TARGET_FILE_PATH>'
     target-branch: '<TARGET_BRANCH>'  # staging 브랜치에 배포
@@ -158,6 +160,27 @@ Teams 알림을 사용하려면 다음 단계를 따르세요:
     registry-username: ${{ secrets.REGISTRY_USERNAME }}
     registry-password: ${{ secrets.REGISTRY_PASSWORD }}
 ```
+
+### 3. Build Arguments 사용 예시
+
+Docker build시 필요한 arguments를 쉼표로 구분하여 전달할 수 있습니다:
+
+```yaml
+- name: Build with Build Arguments
+  uses: akfmdl/github-actions-workflows/actions/docker-build-and-update@test
+  with:
+    github-token: ${{ secrets.GIT_TOKEN }}
+    image-name: 'my-app'
+    image-tag: 'v1.0.0'
+    build-args: 'NODE_ENV=production,APP_VERSION=${{ github.sha }},BUILD_DATE=${{ github.event.head_commit.timestamp }}'
+    target-repo: 'owner/k8s-manifests'
+    target-file-path: 'deployment.yaml'
+```
+
+**Build Arguments 형식:**
+- `KEY=VALUE` 형식으로 각 argument 작성
+- 여러 개는 쉼표(`,`)로 구분
+- 예: `NODE_ENV=production,DEBUG=false,PORT=3000`
 
 ## 🔍 지원하는 파일 형식
 
