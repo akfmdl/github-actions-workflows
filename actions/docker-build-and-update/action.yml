@@ -170,7 +170,7 @@ runs:
       shell: bash
       run: |
         echo "📥 Downloading Docker build and update script..."
-        curl -fsSL -o /tmp/docker-build-push-update.js https://raw.githubusercontent.com/akfmdl/github-actions-workflows/test/scripts/docker-build-push-update.js
+        curl -fsSL -o /tmp/docker-build-push-update.js https://raw.githubusercontent.com/akfmdl/github-actions-workflows/main/scripts/docker-build-push-update.js
         chmod +x /tmp/docker-build-push-update.js
         
     - name: Docker build, push and update repository
