@@ -3,7 +3,7 @@ name: Docker Build, Push and Update Repository
 on:
   push:
     branches:
-      - main
+      - <TARGET_BRANCH>
 
 jobs:
   docker-build-and-update:

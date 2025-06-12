@@ -87,16 +87,17 @@ runs:
             {
               "contentType": "application/vnd.microsoft.card.adaptive",
               "content": {
+                "$schema": "http://adaptivecards.json/schema/adaptive-card/1.5",
                 "type": "AdaptiveCard",
-                "version": "1.2",
                 "msteams": {
                   "entities": [
                     {
                       "type": "mention",
-                      "text": "<at>김고은 팀(test용)</at>",
+                      "text": "<at>오디오엔진</at>",
                       "mentioned": {
-                        "id": "8:orgid:b823fdcf-3759-481f-8440-0f181676accf",
-                        "name": "김고은 팀(test용)"
+                          "id": "ZjdkZDQ4MmItYzU4ZC00MDViLWFlNjAtNTlmNmFjMzZmZWVmIyNjMDQzMWZmOC0zZTBkLTQ0ZjgtYmFlZS05YWFjMDQ1Nzk1NjMjI3RpMjhNQUFaNA==",
+                          "name": "오디오엔진",
+                          "type": "tag"
                       }
                     }
                   ]
@@ -110,7 +111,7 @@ runs:
                   },
                   {
                     "type": "TextBlock",
-                    "text": "<at>김고은 팀(test용)</at>",
+                    "text": "<at>오디오엔진</at>",
                     "wrap": true
                   },
                   {
@@ -225,17 +226,18 @@ runs:
             {
               "contentType": "application/vnd.microsoft.card.adaptive",
               "content": {
+                "$schema": "http://adaptivecards.json/schema/adaptive-card/1.5",
                 "type": "AdaptiveCard",
-                "version": "1.2",
                 "msteams": {
                   "entities": [
                     {
-                      "type": "mention",
-                      "text": "<at>김고은 팀(test용)</at>",
-                      "mentioned": {
-                        "id": "8:orgid:b823fdcf-3759-481f-8440-0f181676accf",
-                        "name": "김고은 팀(test용)"
-                      }
+                        "type": "mention",
+                        "text": "<at>오디오엔진</at>",
+                        "mentioned": {
+                            "id": "ZjdkZDQ4MmItYzU4ZC00MDViLWFlNjAtNTlmNmFjMzZmZWVmIyNjMDQzMWZmOC0zZTBkLTQ0ZjgtYmFlZS05YWFjMDQ1Nzk1NjMjI3RpMjhNQUFaNA==",
+                            "name": "오디오엔진",
+                            "type": "tag"
+                        }
                     }
                   ]
                 },
@@ -248,7 +250,7 @@ runs:
                   },
                   {
                     "type": "TextBlock",
-                    "text": "<at>김고은 팀(test용)</at>",
+                    "text": "<at>오디오엔진</at>",
                     "wrap": true
                   },
                   {
