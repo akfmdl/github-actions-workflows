@@ -31,7 +31,7 @@ jobs:
           echo "new-release-git-head: ${{ steps.auto-release.outputs.new-release-git-head }}"
 
       - name: Post-release notification
-        if: steps.auto-release.outputs.new-release-version != ''
+        if: steps.auto-release.outputs.new-release-published == 'true'
         run: |
           echo "🎉 새로운 릴리즈가 생성되었습니다!"
           echo "버전: ${{ steps.auto-release.outputs.new-release-version }}"

@@ -9,6 +9,7 @@ const IMAGE_NAME = process.env.IMAGE_NAME;
 const IMAGE_TAG = process.env.IMAGE_TAG;
 const DOCKERFILE_PATH = process.env.DOCKERFILE_PATH;
 const BUILD_CONTEXT = process.env.BUILD_CONTEXT;
+const BUILD_ARGS = process.env.BUILD_ARGS;
 const TARGET_REPO = process.env.TARGET_REPO;
 const TARGET_FILE_PATH = process.env.TARGET_FILE_PATH;
 const TARGET_BRANCH = process.env.TARGET_BRANCH;
@@ -109,6 +110,35 @@ async function buildAndPushDockerImage() {
             // execSync(`docker build -f ${DOCKERFILE_PATH} -t ${fullImageName} ${BUILD_CONTEXT}`, {
             //     stdio: 'inherit'
             // });
+
+        // Build arguments 처리
+        let buildArgsString = '';
+        if (BUILD_ARGS) {
+            console.log('🔧 Build Arguments 설정:');
+            const buildArgs = BUILD_ARGS.split(',').map(arg => arg.trim()).filter(arg => arg);
+            buildArgs.forEach(arg => {
+                if (arg.includes('=')) {
+                    const [key, value] = arg.split('=', 2);
+                    buildArgsString += ` --build-arg ${key}="${value}"`;
+                    console.log(`   - ${key}=${value}`);
+                } else {
+                    console.log(`   ⚠️ 잘못된 형식의 build arg 무시됨: ${arg}`);
+                }
+            });
+        }
+
+        try {
+            const buildCommand = `docker build -f ${DOCKERFILE_PATH} -t ${fullImageName}${buildArgsString} ${BUILD_CONTEXT}`;
+            console.log(`📋 Build 명령: ${buildCommand}`);
+            console.log('📺 Docker 빌드 로그:');
+            console.log('-'.repeat(60));
+
+            execSync(buildCommand, {
+                stdio: 'inherit',
+                encoding: 'utf8'
+            });
+
+            console.log('-'.repeat(60));
             console.log('✅ Docker 이미지 빌드 완료');
         } catch (buildError) {
             console.log('❌ Docker 빌드 실패');
@@ -116,15 +146,24 @@ async function buildAndPushDockerImage() {
             console.log(`1. Dockerfile 경로가 올바른지 확인: ${DOCKERFILE_PATH}`);
             console.log(`2. 빌드 컨텍스트가 올바른지 확인: ${BUILD_CONTEXT}`);
             console.log('3. Dockerfile 문법이 올바른지 확인');
+            console.log('4. Build arguments가 올바른지 확인');
             throw buildError;
         }
 
         // Docker 이미지 푸시
         console.log(`📤 Docker 이미지 푸시 중: ${fullImageName}`);
         try {
-            // execSync(`docker push ${fullImageName}`, {
-            //     stdio: 'inherit'
-            // });
+            const pushCommand = `docker push ${fullImageName}`;
+            console.log(`📋 Push 명령: ${pushCommand}`);
+            console.log('📺 Docker 푸시 로그:');
+            console.log('-'.repeat(60));
+
+            execSync(pushCommand, {
+                stdio: 'inherit',
+                encoding: 'utf8'
+            });
+
+            console.log('-'.repeat(60));
             console.log('✅ Docker 이미지 푸시 완료');
         } catch (pushError) {
             console.log('❌ Docker 푸시 실패');
@@ -249,6 +288,7 @@ async function main() {
     console.log(`- Image Tag: ${IMAGE_TAG}`);
     console.log(`- Dockerfile Path: ${DOCKERFILE_PATH}`);
     console.log(`- Build Context: ${BUILD_CONTEXT}`);
+    console.log(`- Build Args: ${BUILD_ARGS || 'NOT PROVIDED'}`);
     console.log(`- Target Repository: ${TARGET_REPO}`);
     console.log(`- Target File Path: ${TARGET_FILE_PATH}`);
     console.log(`- Target Branch: ${TARGET_BRANCH || 'default branch'}`);

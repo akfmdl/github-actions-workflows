@@ -1,6 +1,10 @@
 # Docker Build, Push and Update Repository Action
 
-이 GitHub Action은 Docker 이미지를 빌드하고 레지스트리에 푸시한 후, 다른 레포지토리의 YAML 파일에서 이미지 태그를 자동으로 업데이트합니다.
+이 GitHub Action은 Docker 이미지를 빌드하고 레지스트리에 푸시한 후, 다른 레포지토리의 YAML 파일에서 이미지 태그를 자동으로 업데이트합니다. 또한 Microsoft Teams 알림을 전송합니다.
+
+## 📋 필수 조건
+
+1. **Node.js 프로젝트**여야 합니다 (`package.json` 필요)
 
 ## 🚀 기능
 
@@ -13,69 +17,17 @@
 
 ## 📋 사용법
 
-```yaml
-name: Docker Build and Update
+### 1. package.json 파일 확인/생성 (필수)
 
-on:
-  push:
-    branches: [main]
+repository 루트에 `package.json` 파일을 추가하세요. 아래 예시 파일을 copy & paste 하세요.
 
-jobs:
-  build-and-update:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+* [package.json](./package.json)
 
-      - name: Docker Build and Update
-        uses: akfmdl/github-actions-workflows/actions/docker-build-and-update@test
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          image-name: <IMAGE_NAME>
-          image-tag: <IMAGE_TAG>
-          target-repo: 'owner/k8s-manifests'
-          target-file-path: 'values.yaml'
-          target-branch: 'develop'  # 옵션: 미지정시 기본 브랜치
-          registry-username: ${{ secrets.REGISTRY_USERNAME }}
-          registry-password: ${{ secrets.REGISTRY_PASSWORD }}
-          teams-workflow-url: ${{ secrets.TEAMS_WORKFLOWS_URL }}  # 옵션: Teams 알림
-          teams-message-start-json: |
-            {
-              "type": "message",
-              "attachments": [{
-                "contentType": "application/vnd.microsoft.card.adaptive",
-                "content": {
-                  "type": "AdaptiveCard",
-                  "body": [
-                    {
-                      "type": "TextBlock",
-                      "text": "🚀 배포 시작: {{IMAGE_INFO}}",
-                      "size": "Large",
-                      "weight": "Bolder"
-                    }
-                  ]
-                }
-              }]
-            }
-          teams-message-complete-json: |
-            {
-              "type": "message",
-              "attachments": [{
-                "contentType": "application/vnd.microsoft.card.adaptive", 
-                "content": {
-                  "type": "AdaptiveCard",
-                  "body": [
-                    {
-                      "type": "TextBlock",
-                      "text": "{{ACTIVITY_TITLE}}",
-                      "size": "Large",
-                      "weight": "Bolder"
-                    }
-                  ]
-                }
-              }]
-            }
-```
+### 2. 워크플로우 파일 생성
+
+`.github/workflows` 에 `docker-build-and-update.yml` 파일을 추가하세요. 아래 예시 파일을 copy & paste 하세요.
+
+* [.github/workflows/docker-build-and-update.yml](../../.github/workflows/docker-build-and-update.yml)
 
 ## 🔐 필수 GitHub Secrets
 
@@ -118,7 +70,7 @@ Teams 알림을 사용하려면 다음 단계를 따르세요:
 - 메시지 ID를 추출할 수 없는 경우 새로운 메시지로 전송
 
 **지원하는 Registry 예시:**
-- Azure Container Registry (ACR): `persolive.azurecr.io`
+- Azure Container Registry (ACR): `***.azurecr.io`
 - Docker Hub: `registry-1.docker.io` 또는 생략
 - Google Container Registry (GCR): `gcr.io/project-id`
 - Amazon ECR: `123456789012.dkr.ecr.region.amazonaws.com`
@@ -133,9 +85,10 @@ Teams 알림을 사용하려면 다음 단계를 따르세요:
 | `target-repo` | 대상 레포지토리 (owner/repo) | ✅ | - |
 | `target-file-path` | 업데이트할 파일 경로 | ✅ | - |
 | `target-branch` | 대상 브랜치 (미지정시 기본 브랜치) | ❌ | - |
-| `docker-registry` | Docker 레지스트리 URL | ❌ | `persolive.azurecr.io` |
+| `docker-registry` | Docker 레지스트리 URL | ❌ | `***.azurecr.io` |
 | `dockerfile-path` | Dockerfile 경로 | ❌ | `./Dockerfile` |
 | `build-context` | 빌드 컨텍스트 | ❌ | `.` |
+| `build-args` | Docker build arguments (KEY=VALUE,KEY2=VALUE2) | ❌ | - |
 | `registry-username` | Container Registry 사용자명 | ❌ | - |
 | `registry-password` | Container Registry 패스워드 | ❌ | - |
 | `commit-message` | 커밋 메시지 | ❌ | 자동 생성 |
@@ -178,12 +131,12 @@ Teams 알림을 사용하려면 다음 단계를 따르세요:
 
 ```yaml
 - name: Build and Deploy
-  uses: akfmdl/github-actions-workflows/actions/docker-build-and-update@test
+  uses: akfmdl/github-actions-workflows/actions/docker-build-and-update@main
   with:
     github-token: ${{ secrets.GIT_TOKEN }}
-    image-name: <IMAGE_NAME>
-    image-tag: '2025.01.15.1430'
-    target-repo: 'akfmdl/mlops-lifecycle'
+    image-name: '<IMAGE_NAME>'
+    image-tag: '<IMAGE_TAG>'
+    target-repo: '<TARGET_REPO>'
     target-file-path: 'values.yaml'
     target-branch: 'main'  # 기본 브랜치에 직접 push
     registry-username: ${{ secrets.REGISTRY_USERNAME }}
@@ -197,18 +150,40 @@ Teams 알림을 사용하려면 다음 단계를 따르세요:
   uses: akfmdl/github-actions-workflows/actions/docker-build-and-update@test
   with:
     github-token: ${{ secrets.GIT_TOKEN }}
-    docker-registry: 'myregistry.azurecr.io'
-    image-name: 'my-app'
-    image-tag: 'v3.2.1'
+    docker-registry: '<DOCKER_REGISTRY>'
+    image-name: '<IMAGE_NAME>'
+    image-tag: '<IMAGE_TAG>'
     dockerfile-path: './docker/Dockerfile'
     build-context: './src'
-    target-repo: 'myorg/k8s-configs'
-    target-file-path: 'apps/my-app/deployment.yaml'
-    target-branch: 'staging'  # staging 브랜치에 배포
-    commit-message: '🚀 Deploy my-app with new features'
+    build-args: 'NODE_ENV=production,APP_VERSION=1.0.0,DEBUG=false'
+    target-repo: '<TARGET_REPO>'
+    target-file-path: '<TARGET_FILE_PATH>'
+    target-branch: '<TARGET_BRANCH>'  # staging 브랜치에 배포
+    commit-message: '🚀 Deploy <IMAGE_NAME> with new features'
     registry-username: ${{ secrets.REGISTRY_USERNAME }}
     registry-password: ${{ secrets.REGISTRY_PASSWORD }}
 ```
+
+### 3. Build Arguments 사용 예시
+
+Docker build시 필요한 arguments를 쉼표로 구분하여 전달할 수 있습니다:
+
+```yaml
+- name: Build with Build Arguments
+  uses: akfmdl/github-actions-workflows/actions/docker-build-and-update@test
+  with:
+    github-token: ${{ secrets.GIT_TOKEN }}
+    image-name: 'my-app'
+    image-tag: 'v1.0.0'
+    build-args: 'NODE_ENV=production,APP_VERSION=${{ github.sha }},BUILD_DATE=${{ github.event.head_commit.timestamp }}'
+    target-repo: 'owner/k8s-manifests'
+    target-file-path: 'deployment.yaml'
+```
+
+**Build Arguments 형식:**
+- `KEY=VALUE` 형식으로 각 argument 작성
+- 여러 개는 쉼표(`,`)로 구분
+- 예: `NODE_ENV=production,DEBUG=false,PORT=3000`
 
 ## 🔍 지원하는 파일 형식
 
@@ -218,12 +193,12 @@ Teams 알림을 사용하려면 다음 단계를 따르세요:
 # 업데이트 전
 containers:
 - name: app
-  image: persolive.azurecr.io/audio-engine-server:2025.06.0.2
+  image: ***.azurecr.io/<IMAGE_NAME>:2025.06.0.2
 
 # 업데이트 후  
 containers:
 - name: app
-  image: persolive.azurecr.io/audio-engine-server:2025.01.15.1430
+  image: ***.azurecr.io/<IMAGE_NAME>:<IMAGE_TAG>
 ```
 
 ## 🛡️ 필수 권한
