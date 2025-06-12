@@ -162,6 +162,9 @@ Teams 알림을 사용하려면 다음 단계를 따르세요:
     commit-message: '🚀 Deploy <IMAGE_NAME> with new features'
     registry-username: ${{ secrets.REGISTRY_USERNAME }}
     registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+    teams-workflow-url: ${{ secrets.TEAMS_WORKFLOWS_URL }}
+    teams-message-start-json: '<TEAMS_MESSAGE_START_JSON>'
+    teams-message-complete-json: '<TEAMS_MESSAGE_COMPLETE_JSON>'
 ```
 
 ### 3. Build Arguments 사용 예시

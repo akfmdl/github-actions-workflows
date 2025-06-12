@@ -3,7 +3,7 @@ name: Docker Build, Push and Update Repository
 on:
   push:
     branches:
-      - <TARGET_BRANCH>
+      - test
 
 jobs:
   docker-build-and-update:
@@ -12,6 +12,71 @@ jobs:
     steps:
     - name: Checkout source code
       uses: actions/checkout@v4
+
+    - name: Prepare Teams message templates
+      id: prepare-teams-messages
+      run: |
+        # Teams 시작 메시지 준비
+        if [ -f "scripts/teams_message_start.json" ]; then
+          echo "📋 Teams 시작 메시지 템플릿 읽는 중..."
+          
+          # 변수 정의
+          IMAGE_INFO="audio-engine-server:2025.06.11.1"
+          REPO_INFO="akfmdl/mlops-lifecycle"
+          
+          # JSON 파일 읽기 및 변수 치환
+          TEAMS_START_JSON=$(cat scripts/teams_message_start.json | \
+            sed "s|\${IMAGE_INFO}|${IMAGE_INFO}|g" | \
+            sed "s|\${REPO_INFO}|${REPO_INFO}|g")
+          
+          # 멀티라인 출력 처리
+          echo "TEAMS_START_JSON<<EOF" >> $GITHUB_OUTPUT
+          echo "$TEAMS_START_JSON" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "✅ Teams 시작 메시지 준비 완료"
+        else
+          echo "TEAMS_START_JSON=" >> $GITHUB_OUTPUT
+          echo "⚠️ Teams 시작 메시지 파일이 없습니다."
+        fi
+        
+        # Teams 완료 메시지 준비
+        if [ -f "scripts/teams_message_complete.json" ]; then
+          echo "📋 Teams 완료 메시지 템플릿 읽는 중..."
+          
+          # 변수 정의
+          IMAGE_INFO="audio-engine-server:2025.06.11.1"
+          REPO_INFO="akfmdl/mlops-lifecycle"
+          FULL_IMAGE="persolive.azurecr.io/audio-engine-server:2025.06.11.1"
+          TARGET_BRANCH="test"
+          UPDATED_FILE="stg-idc/02-perso-vt/01-perso-vt-audio/01-perso-vt-audio-engine/perso-vt-audio-engine-stg.yaml"
+          GITHUB_REPOSITORY="${{ github.repository }}"
+          GITHUB_RUN_ID="${{ github.run_id }}"
+          
+          # 성공 시 메시지 (기본값)
+          ACTIVITY_TITLE="✅ Stage 배포 완료"
+          STATUS_MESSAGE="Stage 배포가 성공적으로 완료되었습니다."
+          
+          # JSON 파일 읽기 및 변수 치환
+          TEAMS_COMPLETE_JSON=$(cat scripts/teams_message_complete.json | \
+            sed "s|\${IMAGE_INFO}|${IMAGE_INFO}|g" | \
+            sed "s|\${REPO_INFO}|${REPO_INFO}|g" | \
+            sed "s|\${FULL_IMAGE}|${FULL_IMAGE}|g" | \
+            sed "s|\${TARGET_BRANCH:-default}|${TARGET_BRANCH}|g" | \
+            sed "s|\${UPDATED_FILE:-없음}|${UPDATED_FILE}|g" | \
+            sed "s|\${ACTIVITY_TITLE}|${ACTIVITY_TITLE}|g" | \
+            sed "s|\${STATUS_MESSAGE}|${STATUS_MESSAGE}|g" | \
+            sed "s|\${GITHUB_REPOSITORY}|${GITHUB_REPOSITORY}|g" | \
+            sed "s|\${GITHUB_RUN_ID}|${GITHUB_RUN_ID}|g")
+          
+          # 멀티라인 출력 처리
+          echo "TEAMS_COMPLETE_JSON<<EOF" >> $GITHUB_OUTPUT
+          echo "$TEAMS_COMPLETE_JSON" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "✅ Teams 완료 메시지 준비 완료"
+        else
+          echo "TEAMS_COMPLETE_JSON=" >> $GITHUB_OUTPUT
+          echo "⚠️ Teams 완료 메시지 파일이 없습니다."
+        fi
 
     - name: Docker Build, Push and Update Repository
       id: docker-build-update
@@ -29,6 +94,8 @@ jobs:
         target-file-path: stg-idc/02-perso-vt/01-perso-vt-audio/01-perso-vt-audio-engine/perso-vt-audio-engine-stg.yaml
         target-branch: test
         teams-workflow-url: ${{ secrets.TEAMS_WORKFLOWS_URL }}
+        teams-message-start-json: ${{ steps.prepare-teams-messages.outputs.TEAMS_START_JSON }}
+        teams-message-complete-json: ${{ steps.prepare-teams-messages.outputs.TEAMS_COMPLETE_JSON }}
 
     - name: Post-deployment notification
       if: steps.docker-build-update.outputs.updated-file != ''
