@@ -1,0 +1,39 @@
+name: Docker Build, Push and Update Repository
+
+on:
+  push:
+    branches:
+      - <TARGET_BRANCH>
+
+jobs:
+  docker-build-and-update:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v4
+
+    - name: Docker Build, Push and Update Repository
+      id: docker-build-update
+      uses: akfmdl/github-actions-workflows/actions/docker-build-and-update@main
+      with:
+        docker-registry: <DOCKER_REGISTRY>
+        github-token: ${{ secrets.GIT_TOKEN }}
+        image-name: <IMAGE_NAME>
+        image-tag: <IMAGE_TAG>
+        dockerfile-path: Dockerfile
+        build-context: .
+        registry-username: ${{ secrets.REGISTRY_USERNAME }}
+        registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+        target-repo: <TARGET_REPO>
+        target-file-path: <TARGET_FILE_PATH>
+        target-branch: <TARGET_BRANCH>
+        teams-workflow-url: ${{ secrets.TEAMS_WORKFLOWS_URL }}
+
+    - name: Post-deployment notification
+      if: steps.docker-build-update.outputs.updated-file != ''
+      run: |
+        echo "🎉 Docker 이미지 빌드 및 배포 완료!"
+        echo "Docker Image: ${{ steps.docker-build-update.outputs.full-image-name }}"
+        echo "Updated File: ${{ steps.docker-build-update.outputs.updated-file }}"
+        echo "Commit Message: ${{ steps.docker-build-update.outputs.commit-message }}" 

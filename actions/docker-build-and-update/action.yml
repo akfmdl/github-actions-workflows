@@ -1,0 +1,313 @@
+name: 'Docker Build, Push and Update Repository'
+description: 'Build Docker image, push to registry, and update another repository with new image tag'
+author: 'GitHub Actions Workflows'
+
+inputs:
+  github-token:
+    description: 'GitHub Personal Access Token with repo permissions'
+    required: true
+  node-version:
+    description: 'Node.js version to use'
+    required: false
+    default: '18'
+  docker-registry:
+    description: 'Docker registry URL'
+    required: true
+  image-name:
+    description: 'Docker 이미지 이름'
+    required: true
+  image-tag:
+    description: 'Docker 이미지 태그 (예: v1.0.0, 2025.01.15.1430)'
+    required: true
+  dockerfile-path:
+    description: 'Dockerfile 경로'
+    required: false
+    default: './Dockerfile'
+  build-context:
+    description: '빌드 컨텍스트'
+    required: false
+    default: '.'
+  target-repo:
+    description: '대상 레포지토리 (예: owner/k8s-manifests)'
+    required: true
+  target-file-path:
+    description: '업데이트할 파일 경로'
+    required: true
+  target-branch:
+    description: '대상 브랜치 (미지정시 기본 브랜치 사용)'
+    required: false
+    default: ''
+  registry-username:
+    description: 'Container Registry 사용자명'
+    required: false
+  registry-password:
+    description: 'Container Registry 패스워드'
+    required: false
+  commit-message:
+    description: '커밋 메시지'
+    required: false
+    default: ''
+  teams-workflow-url:
+    description: 'Microsoft Teams Workflow URL'
+    required: false
+    default: ''
+
+outputs:
+  image-tag:
+    description: '생성된 이미지 태그'
+    value: ${{ steps.docker-build-update.outputs.image-tag }}
+  full-image-name:
+    description: '전체 이미지 이름 (registry/image:tag)'
+    value: ${{ steps.docker-build-update.outputs.full-image-name }}
+  updated-file:
+    description: '업데이트된 파일 경로'
+    value: ${{ steps.docker-build-update.outputs.updated-file }}
+  commit-message:
+    description: '커밋 메시지'
+    value: ${{ steps.docker-build-update.outputs.commit-message }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Send Teams notification - Start
+      if: ${{ inputs.teams-workflow-url != '' }}
+      shell: bash
+      run: |
+        echo "📢 Teams 알림 전송 중: 배포 시작"
+        
+        TEAMS_WORKFLOW_URL="${{ inputs.teams-workflow-url }}"
+        IMAGE_INFO="${{ inputs.image-name }}:${{ inputs.image-tag }}"
+        REPO_INFO="${{ inputs.target-repo }}"
+        
+        # Teams Workflow용 메시지 JSON 생성 (멘션 지원)
+        cat > teams_message_start.json << EOF
+        {
+          "type": "message",
+          "attachments": [
+            {
+              "contentType": "application/vnd.microsoft.card.adaptive",
+              "content": {
+                "type": "AdaptiveCard",
+                "version": "1.2",
+                "msteams": {
+                  "entities": [
+                    {
+                      "type": "mention",
+                      "text": "<at>김고은 팀(test용)</at>",
+                      "mentioned": {
+                        "id": "8:orgid:b823fdcf-3759-481f-8440-0f181676accf",
+                        "name": "김고은 팀(test용)"
+                      }
+                    }
+                  ]
+                },
+                "body": [
+                  {
+                    "type": "TextBlock",
+                    "text": "🚀 Stage 배포 시작",
+                    "size": "Large",
+                    "weight": "Bolder"
+                  },
+                  {
+                    "type": "TextBlock",
+                    "text": "<at>김고은 팀(test용)</at>",
+                    "wrap": true
+                  },
+                  {
+                    "type": "TextBlock",
+                    "text": "Stage 배포 중입니다.",
+                    "wrap": true
+                  },
+                  {
+                    "type": "TextBlock",
+                    "text": "⏳ 배포 진행 상태를 확인해주세요...",
+                    "wrap": true
+                  },
+                  {
+                    "type": "FactSet",
+                    "facts": [
+                      {
+                        "title": "이미지:",
+                        "value": "${IMAGE_INFO}"
+                      },
+                      {
+                        "title": "대상 레포지토리:",
+                        "value": "${REPO_INFO}"
+                      },
+                      {
+                        "title": "상태:",
+                        "value": "진행 중 🔄"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+        EOF
+        
+        # Teams Webhook으로 메시지 전송
+        curl -H "Content-Type: application/json" \
+             -d @teams_message_start.json \
+             "${TEAMS_WORKFLOW_URL}"
+        
+        echo "✅ Teams 배포 시작 알림 전송 완료"
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Download docker build update script
+      shell: bash
+      run: |
+        echo "📥 Downloading Docker build and update script..."
+        curl -fsSL -o /tmp/docker-build-push-update.js https://raw.githubusercontent.com/akfmdl/github-actions-workflows/test/scripts/docker-build-push-update.js
+        chmod +x /tmp/docker-build-push-update.js
+        
+    - name: Docker build, push and update repository
+      id: docker-build-update
+      shell: bash
+      env:
+        DOCKER_REGISTRY: ${{ inputs.docker-registry }}
+        IMAGE_NAME: ${{ inputs.image-name }}
+        IMAGE_TAG: ${{ inputs.image-tag }}
+        DOCKERFILE_PATH: ${{ inputs.dockerfile-path }}
+        BUILD_CONTEXT: ${{ inputs.build-context }}
+        TARGET_REPO: ${{ inputs.target-repo }}
+        TARGET_FILE_PATH: ${{ inputs.target-file-path }}
+        TARGET_BRANCH: ${{ inputs.target-branch }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        REGISTRY_USERNAME: ${{ inputs.registry-username }}
+        REGISTRY_PASSWORD: ${{ inputs.registry-password }}
+        COMMIT_MESSAGE: ${{ inputs.commit-message }}
+        SOURCE_REPOSITORY: ${{ github.repository }}
+      run: |
+        echo "🚀 Docker 이미지 빌드 및 레포지토리 업데이트를 시작합니다..."
+        node /tmp/docker-build-push-update.js
+        
+    - name: Send Teams notification - Complete
+      if: ${{ inputs.teams-workflow-url != '' }}
+      shell: bash
+      run: |
+        echo "📢 Teams 알림 전송 중: 배포 완료"
+        
+        TEAMS_WORKFLOW_URL="${{ inputs.teams-workflow-url }}"
+        IMAGE_INFO="${{ inputs.image-name }}:${{ steps.docker-build-update.outputs.image-tag }}"
+        FULL_IMAGE="${{ steps.docker-build-update.outputs.full-image-name }}"
+        REPO_INFO="${{ inputs.target-repo }}"
+        UPDATED_FILE="${{ steps.docker-build-update.outputs.updated-file }}"
+        TARGET_BRANCH="${{ inputs.target-branch }}"
+        
+        # 성공/실패 상태에 따른 색상 및 메시지 설정
+        if [ "${{ job.status }}" == "success" ]; then
+          THEME_COLOR="28A745"
+          STATUS_ICON="✅"
+          STATUS_MESSAGE="Stage 배포 완료했습니다."
+          ACTIVITY_TITLE="✅ Stage 배포 완료"
+        else
+          THEME_COLOR="DC3545"
+          STATUS_ICON="❌"
+          STATUS_MESSAGE="Stage 배포 실패했습니다."
+          ACTIVITY_TITLE="❌ Stage 배포 실패"
+        fi
+      
+        
+        # 배포 완료 메시지 JSON 생성 (멘션 지원)
+        cat > teams_message_complete.json << EOF
+        {
+          "type": "message",
+          "attachments": [
+            {
+              "contentType": "application/vnd.microsoft.card.adaptive",
+              "content": {
+                "type": "AdaptiveCard",
+                "version": "1.2",
+                "msteams": {
+                  "entities": [
+                    {
+                      "type": "mention",
+                      "text": "<at>김고은 팀(test용)</at>",
+                      "mentioned": {
+                        "id": "8:orgid:b823fdcf-3759-481f-8440-0f181676accf",
+                        "name": "김고은 팀(test용)"
+                      }
+                    }
+                  ]
+                },
+                "body": [
+                  {
+                    "type": "TextBlock",
+                    "text": "${ACTIVITY_TITLE}",
+                    "size": "Large",
+                    "weight": "Bolder"
+                  },
+                  {
+                    "type": "TextBlock",
+                    "text": "<at>김고은 팀(test용)</at>",
+                    "wrap": true
+                  },
+                  {
+                    "type": "TextBlock",
+                    "text": "${STATUS_MESSAGE}",
+                    "wrap": true
+                  },
+                  {
+                    "type": "FactSet",
+                    "facts": [
+                      {
+                        "title": "이미지:",
+                        "value": "${IMAGE_INFO}"
+                      },
+                      {
+                        "title": "전체 이미지명:",
+                        "value": "${FULL_IMAGE}"
+                      },
+                      {
+                        "title": "대상 레포지토리:",
+                        "value": "${REPO_INFO}"
+                      },
+                      {
+                        "title": "대상 브랜치:",
+                        "value": "${TARGET_BRANCH:-default}"
+                      },
+                      {
+                        "title": "업데이트된 파일:",
+                        "value": "${UPDATED_FILE:-없음}"
+                      }
+                    ]
+                  }
+                ],
+                "actions": [
+                  {
+                    "type": "Action.OpenUrl",
+                    "title": "GitHub Actions 보기",
+                    "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+        EOF
+        
+        # Teams Webhook으로 메시지 전송
+        curl -H "Content-Type: application/json" \
+             -d @teams_message_complete.json \
+             "${TEAMS_WORKFLOW_URL}"
+        
+        echo "✅ Teams 배포 완료 알림 전송 완료"
+
+    - name: Workflow Complete
+      shell: bash
+      run: |
+        echo "✅ Docker Build and Update workflow completed successfully!"
+        echo "📊 Summary has been generated with detailed links and information."
+
+branding:
+  icon: 'package'
+  color: 'blue' 

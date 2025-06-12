@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Auto Release
-        id: release
+        id: auto-release
         uses: akfmdl/github-actions-workflows/actions/auto-release-custom-versioning@main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -25,9 +25,9 @@ jobs:
           version-py-path: 'version.py'  # 선택사항: version.py 파일 경로
 
       - name: Post-release notification
-        if: steps.release.outputs.new-release-published == 'true'
+        if: steps.auto-release.outputs.new-release-published == 'true'
         run: |
           echo "🎉 새로운 릴리즈가 생성되었습니다!"
-          echo "버전: ${{ steps.release.outputs.new-release-version }}"
-          echo "태그: ${{ steps.release.outputs.new-release-git-tag }}"
-          echo "SHA: ${{ steps.release.outputs.new-release-git-head }}" 
+          echo "버전: ${{ steps.auto-release.outputs.new-release-version }}"
+          echo "태그: ${{ steps.auto-release.outputs.new-release-git-tag }}"
+          echo "SHA: ${{ steps.auto-release.outputs.new-release-git-head }}"
