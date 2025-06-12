@@ -391,6 +391,7 @@ async function generateCalendarRelease() {
 
         // GitHub Actions의 output 설정 (릴리즈 없음)
         if (process.env.GITHUB_OUTPUT) {
+            console.log(`📤 Test를 위해 수동으로 버전을 설정합니다.`);
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-published=true\n`);
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-version=2025.06.0.3\n`);
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-git-tag=v2025.06.0.3\n`);
@@ -406,7 +407,7 @@ async function generateCalendarRelease() {
             // console.log(`📤 Set GitHub Action outputs: new-release-published=false`);
         }
 
-        process.exit(0);
+        // process.exit(0);
     }
 
     const calendarVersion = generateCalendarVersion(releaseType);
