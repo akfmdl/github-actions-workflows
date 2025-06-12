@@ -117,7 +117,7 @@ runs:
               }
             }
           ],
-          "text": "🚀 Stage 배포 시작\\n\\nStage 배포 중입니다. <at>오디오엔진</at>\\n\\n⏳ 배포 진행 상태를 확인해주세요..."
+          "text": "🚀 Stage 배포 시작\\n\\nStage 배포 중입니다. <at>김고은 / AI 엔진 플랫폼실 / 팀원</at>\\n\\n⏳ 배포 진행 상태를 확인해주세요..."
         }
         EOF
         
@@ -181,12 +181,12 @@ runs:
         if [ "${{ job.status }}" == "success" ]; then
           THEME_COLOR="28A745"
           STATUS_ICON="✅"
-          STATUS_MESSAGE="Stage 배포 완료했습니다. <at>오디오엔진</at>"
+          STATUS_MESSAGE="Stage 배포 완료했습니다. <at>김고은 / AI 엔진 플랫폼실 / 팀원</at>"
           ACTIVITY_TITLE="✅ Stage 배포 완료"
         else
           THEME_COLOR="DC3545"
           STATUS_ICON="❌"
-          STATUS_MESSAGE="Stage 배포 실패했습니다. <at>오디오엔진</at>"
+          STATUS_MESSAGE="Stage 배포 실패했습니다. <at>김고은 / AI 엔진 플랫폼실 / 팀원</at>"
           ACTIVITY_TITLE="❌ Stage 배포 실패"
         fi
         
