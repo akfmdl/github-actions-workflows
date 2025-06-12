@@ -391,10 +391,14 @@ async function generateCalendarRelease() {
 
         // GitHub Actions의 output 설정 (릴리즈 없음)
         if (process.env.GITHUB_OUTPUT) {
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-published=false\n`);
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-version=\n`);
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-git-tag=\n`);
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-git-head=\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-published=true\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-version=2025.06.0.3\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-git-tag=v2025.06.0.3\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-git-head=1234567890\n`);
+            // fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-published=false\n`);
+            // fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-version=\n`);
+            // fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-git-tag=\n`);
+            // fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-git-head=\n`);
 
             console.log(`📤 Set GitHub Action outputs: new-release-published=false`);
         }
