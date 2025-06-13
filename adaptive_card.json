@@ -66,18 +66,7 @@
                     },
                     {
                         "type": "TextBlock",
-                        "text": "**🚀 Features**\r\r
-
-- 자동 릴리스 워크플로우에서 JIRA 기본 URL 설정 제거 ([#12](https: //github.com/akfmdl/github-actions-workflows/pull/12)) [@akfmdl](https://github.com/akfmdl)
-\r\r
-
-**👥 Contributors**\r\r
-
-Thank you to all contributors: [@akfmdl](https: //github.com/akfmdl)\r\r
-
----\r\r
-
-**Full Changelog**:\r\r https: //github.com/akfmdl/github-actions-workflows/compare/v2024.01.0.0...v2025.06.0.0",
+            "text": "abc\n\ndef\n\nghi",
                         "wrap": true
                     }
                 ]
