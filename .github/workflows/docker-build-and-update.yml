@@ -50,31 +50,31 @@ jobs:
           # 릴리즈 노트 파일 읽기
           if [ -f "${{ env.RELEASE_NOTES_FILE }}" ]; then
             # 릴리즈 노트를 JSON 문자열로 안전하게 처리 (Python 사용)
-            RELEASE_NOTES=$(python3 -c "
+            RELEASE_NOTES=$(python3 -c '
 import sys
 import re
 
 # 파일 읽기
-with open('${{ env.RELEASE_NOTES_FILE }}', 'r', encoding='utf-8') as f:
+with open("${{ env.RELEASE_NOTES_FILE }}", "r", encoding="utf-8") as f:
     content = f.read()
 
 # GitHub 마크다운 헤더를 Teams용 굵게 텍스트로 변환
-content = re.sub(r'^## (.*)$', r'**\1**', content, flags=re.MULTILINE)
+content = re.sub(r"^## (.*)$", r"**\1**", content, flags=re.MULTILINE)
 
 # JSON 문자열을 위한 이스케이프 처리
-content = content.replace('\\\\', '\\\\\\\\')  # 백슬래시 이스케이프
-content = content.replace('\"', '\\\\\"')      # 큰따옴표 이스케이프
-content = content.replace('\r', '')           # 캐리지 리턴 제거
-content = content.replace('\t', ' ')          # 탭을 공백으로 변환
+content = content.replace("\\", "\\\\")  # 백슬래시 이스케이프
+content = content.replace("\"", "\\\"")  # 큰따옴표 이스케이프
+content = content.replace("\r", "")      # 캐리지 리턴 제거
+content = content.replace("\t", " ")     # 탭을 공백으로 변환
 
 # 연속된 빈 줄을 하나로 줄임
-content = re.sub(r'\n\s*\n', '\n\n', content)
+content = re.sub(r"\n\s*\n", "\n\n", content)
 
 # 개행 문자를 JSON 문자열 리터럴로 변환
-content = content.replace('\n', '\\\\n\\\\n')
+content = content.replace("\n", "\\n\\n")
 
-print(content, end='')
-")
+print(content, end="")
+')
             echo "📝 릴리즈 노트 파일 읽기 완료: ${{ env.RELEASE_NOTES_FILE }}"
             echo "📝 처리된 릴리즈 노트 길이: ${#RELEASE_NOTES} 문자"
           else
