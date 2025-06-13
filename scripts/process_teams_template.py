@@ -6,14 +6,10 @@ Teams JSON 템플릿 처리 스크립트
 완성된 JSON을 출력합니다. 특히 릴리즈 노트의 개행 문자를 올바르게 처리합니다.
 
 사용법:
-python3 process_teams_template.py <template_file> [output_file]
-
-환경 변수:
-- IMAGE_INFO: 이미지 정보 (예: audio-engine-server:2025.06.0.0)
-- REPO_INFO: 리포지토리 정보 (예: akfmdl/mlops-lifecycle)
-- RELEASE_NOTES_FILE: 릴리즈 노트 파일 경로 (예: RELEASE_NOTES.md)
+python3 process_teams_template.py <template_file> --image-info <image_info> --repo-info <repo_info> --release-notes-file <release_notes_file> [--output <output_file>]
 """
 
+import argparse
 import json
 import os
 import re
@@ -55,7 +51,7 @@ def replace_variables_in_object(obj, variables):
         return obj
 
 
-def process_teams_template(template_file, output_file=None):
+def process_teams_template(template_file, image_info, repo_info, release_notes_file, output_file=None):
     """Teams JSON 템플릿을 처리합니다."""
     try:
         # 템플릿 파일 읽기
@@ -64,11 +60,6 @@ def process_teams_template(template_file, output_file=None):
 
         with open(template_file, "r", encoding="utf-8") as f:
             template = json.load(f)
-
-        # 환경 변수에서 값들 가져오기
-        image_info = os.environ["IMAGE_INFO"]
-        repo_info = os.environ["REPO_INFO"]
-        release_notes_file = os.environ["RELEASE_NOTES_FILE"]
 
         # 릴리즈 노트 로드
         release_notes = load_release_notes(release_notes_file)
@@ -106,14 +97,22 @@ def process_teams_template(template_file, output_file=None):
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("사용법: python3 process_teams_template.py <template_file> [output_file]", file=sys.stderr)
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description="Teams JSON 템플릿 처리 스크립트")
+    parser.add_argument("template_file", help="Teams JSON 템플릿 파일 경로")
+    parser.add_argument("--image-info", required=True, help="이미지 정보 (예: audio-engine-server:2025.06.0.0)")
+    parser.add_argument("--repo-info", required=True, help="리포지토리 정보 (예: akfmdl/mlops-lifecycle)")
+    parser.add_argument("--release-notes-file", required=True, help="릴리즈 노트 파일 경로 (예: RELEASE_NOTES.md)")
+    parser.add_argument("--output", help="출력 파일 경로 (기본값: stdout)")
 
-    template_file = sys.argv[1]
-    output_file = sys.argv[2] if len(sys.argv) > 2 else None
+    args = parser.parse_args()
 
-    process_teams_template(template_file, output_file)
+    process_teams_template(
+        template_file=args.template_file,
+        image_info=args.image_info,
+        repo_info=args.repo_info,
+        release_notes_file=args.release_notes_file,
+        output_file=args.output,
+    )
 
 
 if __name__ == "__main__":
