@@ -445,25 +445,11 @@ async function generateCalendarRelease() {
 
     // GitHub Actions의 환경 변수로도 설정
     if (process.env.GITHUB_ENV) {
-        // 릴리즈 노트를 Teams 메시지에 맞게 포맷팅
+        // 릴리즈 노트의 줄바꿈을 Teams 메시지에서 제대로 표시되도록 수정
         const formattedReleaseNotes = releaseNotes
             .split('\n')
-            .map(line => {
-                // 헤더 라인 처리
-                if (line.startsWith('#')) {
-                    return `**${line.replace(/^#+\s*/, '')}**`;
-                }
-                // 리스트 아이템 처리
-                if (line.startsWith('- ')) {
-                    return `• ${line.substring(2)}`;
-                }
-                // 링크 처리
-                if (line.includes('http')) {
-                    return line.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '[$1]($2)');
-                }
-                return line;
-            })
-            .join('\n');
+            .map(line => line.trim())
+            .join('  \n'); // 마크다운 줄바꿈을 위해 공백 두 개 추가
 
         fs.appendFileSync(process.env.GITHUB_ENV, `NEW_VERSION=${calendarVersion}\n`);
         fs.appendFileSync(process.env.GITHUB_ENV, `RELEASE_NOTES_FILE=RELEASE_NOTES.md\n`);
