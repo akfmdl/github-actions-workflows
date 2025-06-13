@@ -46,34 +46,15 @@ jobs:
           # 변수 정의
           IMAGE_INFO="${{ env.IMAGE_NAME }}:${{ steps.auto-release.outputs.new-release-version }}"
           REPO_INFO="${{ env.TARGET_REPO }}"
-          
-          # 릴리즈 노트 파일 읽기
-          if [ -f "${{ env.RELEASE_NOTES_FILE }}" ]; then
-            # 릴리즈 노트를 Teams 메시지에 맞게 변환하고 JSON에 안전하게 포함되도록 처리
-            RELEASE_NOTES=$(cat "${{ env.RELEASE_NOTES_FILE }}" | \
-              # GitHub 마크다운 헤더를 Teams용 굵게 텍스트로 변환
-              sed 's/^## \(.*\)/**\1**/g' | \
-              # 백슬래시 이스케이프
-              sed 's/\\/\\\\/g' | \
-              # 큰따옴표 이스케이프
-              sed 's/"/\\"/g' | \
-              # 탭 문자 이스케이프
-              sed 's/\t/\\t/g' | \
-              # 캐리지 리턴 제거
-              tr -d '\r' | \
-              # 줄바꿈을 \\n으로 변환
-              sed ':a;N;$!ba;s/\n/\\n/g')
-            echo "📝 릴리즈 노트 파일 읽기 완료: ${{ env.RELEASE_NOTES_FILE }}"
-          else
-            RELEASE_NOTES="릴리즈 노트를 찾을 수 없습니다."
-            echo "⚠️ 릴리즈 노트 파일을 찾을 수 없습니다: ${{ env.RELEASE_NOTES_FILE }}"
-          fi
+          VERSION="${{ steps.auto-release.outputs.new-release-version }}"
+          RELEASE_URL="https://github.com/${{ github.repository }}/releases/tag/v${{ steps.auto-release.outputs.new-release-version }}"
           
           # JSON 파일 읽기 및 변수 치환
           TEAMS_START_JSON=$(cat scripts/teams_message_start.json | \
             sed "s|\${IMAGE_INFO}|${IMAGE_INFO}|g" | \
             sed "s|\${REPO_INFO}|${REPO_INFO}|g" | \
-            sed "s|\${RELEASE_NOTES}|${RELEASE_NOTES}|g")
+            sed "s|\${VERSION}|${VERSION}|g" | \
+            sed "s|\${RELEASE_URL}|${RELEASE_URL}|g")
           
           # 멀티라인 출력 처리
           echo "TEAMS_START_JSON<<EOF" >> $GITHUB_OUTPUT
