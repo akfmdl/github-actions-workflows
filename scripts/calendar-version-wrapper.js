@@ -449,7 +449,7 @@ async function generateCalendarRelease() {
         const formattedReleaseNotes = releaseNotes
             .split('\n')
             .map(line => line.trim())
-            .join('  \n'); // 마크다운 줄바꿈을 위해 공백 두 개 추가
+            .join('\n\n'); // 빈 줄을 추가하여 섹션 구분
 
         fs.appendFileSync(process.env.GITHUB_ENV, `NEW_VERSION=${calendarVersion}\n`);
         fs.appendFileSync(process.env.GITHUB_ENV, `RELEASE_NOTES_FILE=RELEASE_NOTES.md\n`);

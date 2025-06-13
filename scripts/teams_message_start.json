@@ -70,7 +70,8 @@
                         "wrap": true,
                         "isSubtle": true,
                         "separator": true,
-                        "markdown": true
+                        "markdown": true,
+                        "spacing": "Large"
                     }
                 ]
             }
