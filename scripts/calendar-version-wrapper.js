@@ -167,22 +167,33 @@ function determineReleaseTypeFromLabels(labels, labelMappings = DEFAULT_LABEL_MA
         return null;
     }
 
-    // 우선순위: major > minor > patch
+    // 우선순위: major > minor > patch (인덱스가 낮을수록 우선순위가 높음)
     const releaseTypes = ['major', 'minor', 'patch'];
     let highestReleaseType = null;
-    let highestPriority = -1;
+    let highestPriority = Infinity; // 가장 낮은 우선순위로 초기화
+
+    console.log(`🔍 라벨 분석 시작: [${labels.join(', ')}]`);
 
     for (const label of labels) {
         const releaseType = labelMappings[label.toLowerCase()];
         if (releaseType) {
             const priority = releaseTypes.indexOf(releaseType);
-            if (priority > highestPriority) {
+            console.log(`   📌 라벨 "${label}" -> 릴리즈 타입: ${releaseType} (우선순위 인덱스: ${priority})`);
+
+            // 인덱스가 낮을수록(0에 가까울수록) 우선순위가 높음
+            if (priority < highestPriority) {
+                console.log(`   ✅ 새로운 최고 우선순위: ${releaseType} (이전: ${highestReleaseType || 'none'})`);
                 highestPriority = priority;
                 highestReleaseType = releaseType;
+            } else {
+                console.log(`   ⏭️  현재 우선순위 인덱스(${priority})가 최고 우선순위 인덱스(${highestPriority})보다 높음 (우선순위 낮음)`);
             }
+        } else {
+            console.log(`   ⚪ 라벨 "${label}"은 릴리즈 타입에 매핑되지 않음`);
         }
     }
 
+    console.log(`🎯 최종 결정된 릴리즈 타입: ${highestReleaseType}`);
     return highestReleaseType;
 }
 
