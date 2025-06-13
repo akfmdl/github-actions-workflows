@@ -61,8 +61,9 @@ jobs:
               tr -d '\r\t' | \
               # 연속된 빈 줄을 하나로 줄임
               sed '/^$/N;/^\n$/d' | \
-              # 줄바꿈을 문자열 리터럴 \n\n로 변환 (JSON에서 사용할 수 있게)
-              sed ':a;N;$!ba;s/\n/\\n\\n/g')
+              # 개행 문자를 임시 마커로 변환 후 다시 문자열 리터럴로 변환
+              tr '\n' '\001' | \
+              sed 's/\x01/\\n\\n/g')
             echo "📝 릴리즈 노트 파일 읽기 완료: ${{ env.RELEASE_NOTES_FILE }}"
             echo "📝 처리된 릴리즈 노트 길이: ${#RELEASE_NOTES} 문자"
           else
