@@ -138,8 +138,48 @@ runs:
           git commit -m "$COMMIT_MESSAGE"
           echo "✅ Git 커밋 완료: $COMMIT_MESSAGE"
           
-          git push origin HEAD
-          echo "✅ Git 푸시 완료"
+          # 푸시 재시도 로직 추가
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            echo "🔄 푸시 시도 $((RETRY_COUNT + 1))/$MAX_RETRIES"
+            
+            if git push origin HEAD; then
+              echo "✅ Git 푸시 완료"
+              break
+            else
+              echo "⚠️ 푸시 실패, 원격 변경사항 확인 중..."
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "🔄 원격 변경사항을 가져와서 rebase 시도..."
+                git fetch origin
+                
+                # 현재 브랜치 이름 가져오기
+                CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+                
+                # rebase 시도
+                if git rebase origin/$CURRENT_BRANCH; then
+                  echo "✅ Rebase 성공, 다시 푸시 시도"
+                else
+                  echo "⚠️ Rebase 실패, 충돌 해결 필요"
+                  git rebase --abort
+                  
+                  # 마지막 시도인 경우 force push 사용 (신중하게)
+                  if [ $RETRY_COUNT -eq $((MAX_RETRIES - 1)) ]; then
+                    echo "⚠️ 마지막 시도: force push 사용 (위험)"
+                    git push origin HEAD --force-with-lease
+                    echo "🚨 Force push 완료 (신중하게 사용됨)"
+                    break
+                  fi
+                fi
+              else
+                echo "❌ 최대 재시도 횟수 초과"
+                exit 1
+              fi
+            fi
+          done
         else
           echo "⚪ 커밋할 변경사항이 없습니다."
         fi
@@ -154,8 +194,31 @@ runs:
           echo "Creating new version tag: $NEW_VERSION"
           
           git tag "$NEW_VERSION"
-          git push origin "$NEW_VERSION"
-          echo "New version tag created: $NEW_VERSION"
+          
+          # 태그 푸시 재시도 로직
+          MAX_TAG_RETRIES=3
+          TAG_RETRY_COUNT=0
+          
+          while [ $TAG_RETRY_COUNT -lt $MAX_TAG_RETRIES ]; do
+            echo "🏷️ 태그 푸시 시도 $((TAG_RETRY_COUNT + 1))/$MAX_TAG_RETRIES"
+            
+            if git push origin "$NEW_VERSION"; then
+              echo "✅ 태그 푸시 완료: $NEW_VERSION"
+              break
+            else
+              echo "⚠️ 태그 푸시 실패"
+              TAG_RETRY_COUNT=$((TAG_RETRY_COUNT + 1))
+              
+              if [ $TAG_RETRY_COUNT -lt $MAX_TAG_RETRIES ]; then
+                echo "🔄 잠깐 대기 후 재시도..."
+                sleep 2
+              else
+                echo "❌ 태그 푸시 최대 재시도 횟수 초과"
+                # 태그 푸시 실패해도 릴리즈는 계속 진행
+                echo "⚠️ 태그 푸시는 실패했지만 릴리즈 생성은 계속 진행합니다."
+              fi
+            fi
+          done
           
           if ! command -v gh &> /dev/null; then
             echo "Installing GitHub CLI..."
