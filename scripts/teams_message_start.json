@@ -69,7 +69,8 @@
                         "text": "${RELEASE_NOTES}",
                         "wrap": true,
                         "isSubtle": true,
-                        "separator": true
+                        "separator": true,
+                        "markdown": true
                     }
                 ]
             }
