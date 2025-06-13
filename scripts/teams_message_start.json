@@ -57,6 +57,17 @@
                                 "value": "진행 중 🔄"
                             }
                         ]
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": "📝 릴리즈 노트",
+                        "weight": "Bolder",
+                        "wrap": true
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": "${RELEASE_NOTES}",
+                        "wrap": true
                     }
                 ]
             }

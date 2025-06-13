@@ -5,15 +5,38 @@ on:
     branches:
       - test
 
+env:
+  DOCKER_REGISTRY: persolive.azurecr.io
+  IMAGE_NAME: audio-engine-server
+  TARGET_REPO: est-infra/persolive-admin-aks-stg
+  TARGET_BRANCH: test
+  TARGET_FILE_PATH: stg-idc/02-perso-vt/01-perso-vt-audio/01-perso-vt-audio-engine/perso-vt-audio-engine-stg.yaml
+
 jobs:
-  docker-build-and-update:
+  release:
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+
     steps:
     - name: Checkout source code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Auto Release
+      id: auto-release
+      uses: akfmdl/github-actions-workflows/actions/auto-release-custom-versioning@test
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        release-branches: '["test"]'
+        jira-base-url: https://estsoft.atlassian.net
 
     - name: Prepare Teams message templates
+      if: steps.auto-release.outputs.new-release-published == 'true'
       id: prepare-teams-messages
       run: |
         # Teams 시작 메시지 준비
@@ -21,13 +44,14 @@ jobs:
           echo "📋 Teams 시작 메시지 템플릿 읽는 중..."
           
           # 변수 정의
-          IMAGE_INFO="audio-engine-server:2025.06.11.1"
-          REPO_INFO="akfmdl/mlops-lifecycle"
+          IMAGE_INFO="${{ env.IMAGE_NAME }}:${{ steps.auto-release.outputs.new-release-version }}"
+          REPO_INFO="${{ env.TARGET_REPO }}"
           
           # JSON 파일 읽기 및 변수 치환
           TEAMS_START_JSON=$(cat scripts/teams_message_start.json | \
             sed "s|\${IMAGE_INFO}|${IMAGE_INFO}|g" | \
-            sed "s|\${REPO_INFO}|${REPO_INFO}|g")
+            sed "s|\${REPO_INFO}|${REPO_INFO}|g" | \
+            sed "s|\${RELEASE_NOTES}|${{ env.RELEASE_NOTES }}|g")
           
           # 멀티라인 출력 처리
           echo "TEAMS_START_JSON<<EOF" >> $GITHUB_OUTPUT
@@ -44,11 +68,11 @@ jobs:
           echo "📋 Teams 완료 메시지 템플릿 읽는 중..."
           
           # 변수 정의
-          IMAGE_INFO="audio-engine-server:2025.06.11.1"
-          REPO_INFO="akfmdl/mlops-lifecycle"
-          FULL_IMAGE="persolive.azurecr.io/audio-engine-server:2025.06.11.1"
-          TARGET_BRANCH="test"
-          UPDATED_FILE="stg-idc/02-perso-vt/01-perso-vt-audio/01-perso-vt-audio-engine/perso-vt-audio-engine-stg.yaml"
+          IMAGE_INFO="${{ env.IMAGE_NAME }}:${{ steps.auto-release.outputs.new-release-version }}"
+          REPO_INFO="${{ env.TARGET_REPO }}"
+          FULL_IMAGE="${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.auto-release.outputs.new-release-version }}"
+          TARGET_BRANCH="${{ env.TARGET_BRANCH }}"
+          UPDATED_FILE="${{ env.TARGET_FILE_PATH }}"
           GITHUB_REPOSITORY="${{ github.repository }}"
           GITHUB_RUN_ID="${{ github.run_id }}"
           
@@ -78,22 +102,33 @@ jobs:
           echo "⚠️ Teams 완료 메시지 파일이 없습니다."
         fi
 
+    - name: Post-release notification
+      if: steps.auto-release.outputs.new-release-published == 'true'
+      run: |
+        echo "🎉 새로운 릴리즈가 생성되었습니다!"
+        echo "버전: ${{ steps.auto-release.outputs.new-release-version }}"
+        echo "태그: ${{ steps.auto-release.outputs.new-release-git-tag }}"
+        echo "SHA: ${{ steps.auto-release.outputs.new-release-git-head }}" 
+
     - name: Docker Build, Push and Update Repository
       id: docker-build-update
+      if: steps.auto-release.outputs.new-release-published == 'true'
       uses: akfmdl/github-actions-workflows/actions/docker-build-and-update@test
       with:
-        docker-registry: persolive.azurecr.io
+        docker-registry: ${{ env.DOCKER_REGISTRY }}
         github-token: ${{ secrets.GIT_TOKEN }}
-        image-name: audio-engine-server
-        image-tag: 2025.06.11.1
+        image-name: ${{ env.IMAGE_NAME }}
+        image-tag: ${{ steps.auto-release.outputs.new-release-version }}
         dockerfile-path: Dockerfile
         build-context: .
+        build-args: |
+          GIT_TOKEN=${{ secrets.GIT_TOKEN }}
         registry-username: ${{ secrets.REGISTRY_USERNAME }}
         registry-password: ${{ secrets.REGISTRY_PASSWORD }}
-        target-repo: akfmdl/mlops-lifecycle
-        target-file-path: stg-idc/02-perso-vt/01-perso-vt-audio/01-perso-vt-audio-engine/perso-vt-audio-engine-stg.yaml
-        target-branch: test
-        teams-workflow-url: ${{ secrets.TEAMS_WORKFLOWS_URL }}
+        target-repo: ${{ env.TARGET_REPO }}
+        target-file-path: ${{ env.TARGET_FILE_PATH }}
+        target-branch: ${{ env.TARGET_BRANCH }}
+        teams-workflow-url: https://prod-29.koreacentral.logic.azure.com:443/workflows/349eefc58f9c41f8bd88fb5252bfe9c1/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=YtUh3bh4RnGEUfzixwCFNlYHefFxe4y15LLUO2QrKII
         teams-message-start-json: ${{ steps.prepare-teams-messages.outputs.TEAMS_START_JSON }}
         teams-message-complete-json: ${{ steps.prepare-teams-messages.outputs.TEAMS_COMPLETE_JSON }}
 
@@ -103,4 +138,4 @@ jobs:
         echo "🎉 Docker 이미지 빌드 및 배포 완료!"
         echo "Docker Image: ${{ steps.docker-build-update.outputs.full-image-name }}"
         echo "Updated File: ${{ steps.docker-build-update.outputs.updated-file }}"
-        echo "Commit Message: ${{ steps.docker-build-update.outputs.commit-message }}" 
+        echo "Commit Message: ${{ steps.docker-build-update.outputs.commit-message }}"
