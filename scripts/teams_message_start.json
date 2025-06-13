@@ -59,29 +59,15 @@
                         ]
                     },
                     {
-                        "type": "Container",
-                        "items": [
-                            {
-                                "type": "TextBlock",
-                                "text": "📝 릴리즈 정보",
-                                "weight": "Bolder",
-                                "wrap": true
-                            },
-                            {
-                                "type": "FactSet",
-                                "facts": [
-                                    {
-                                        "title": "버전:",
-                                        "value": "${VERSION}"
-                                    },
-                                    {
-                                        "title": "릴리즈 노트:",
-                                        "value": "[GitHub에서 보기](${RELEASE_URL})"
-                                    }
-                                ]
-                            }
-                        ],
-                        "separator": true
+                        "type": "TextBlock",
+                        "text": "📝 릴리즈 노트",
+                        "weight": "Bolder",
+                        "wrap": true
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": "${RELEASE_NOTES}",
+                        "wrap": true
                     }
                 ]
             }
