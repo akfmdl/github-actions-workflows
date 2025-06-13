@@ -47,23 +47,11 @@ jobs:
           IMAGE_INFO="${{ env.IMAGE_NAME }}:${{ steps.auto-release.outputs.new-release-version }}"
           REPO_INFO="${{ env.TARGET_REPO }}"
           
-          # 릴리즈 노트 섹션 생성
-          RELEASE_NOTES="${{ env.RELEASE_NOTES }}"
-          SECTIONS=(${RELEASE_NOTES//|||/ })
-          RELEASE_NOTES_BLOCKS=""
-          
-          for section in "${SECTIONS[@]}"; do
-            RELEASE_NOTES_BLOCKS+="{\"type\":\"TextBlock\",\"text\":\"$section\",\"wrap\":true,\"isSubtle\":true,\"markdown\":true},"
-          done
-          
-          # 마지막 쉼표 제거
-          RELEASE_NOTES_BLOCKS=${RELEASE_NOTES_BLOCKS%,}
-          
           # JSON 파일 읽기 및 변수 치환
           TEAMS_START_JSON=$(cat scripts/teams_message_start.json | \
             sed "s|\${IMAGE_INFO}|${IMAGE_INFO}|g" | \
             sed "s|\${REPO_INFO}|${REPO_INFO}|g" | \
-            sed "s|\"items\":\s*\[\s*{\"type\":\"TextBlock\".*\"markdown\":true\s*}\s*\]|\"items\":[${RELEASE_NOTES_BLOCKS}]|g")
+            sed "s|\${RELEASE_NOTES}|${{ env.RELEASE_NOTES }}|g")
           
           # 멀티라인 출력 처리
           echo "TEAMS_START_JSON<<EOF" >> $GITHUB_OUTPUT

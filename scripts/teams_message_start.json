@@ -65,16 +65,10 @@
                         "wrap": true
                     },
                     {
-                        "type": "Container",
-                        "items": [
-                            {
-                                "type": "TextBlock",
-                                "text": "placeholder",
-                                "wrap": true,
-                                "isSubtle": true,
-                                "markdown": true
-                            }
-                        ],
+                        "type": "TextBlock",
+                        "text": "${RELEASE_NOTES}",
+                        "wrap": true,
+                        "isSubtle": true,
                         "separator": true
                     }
                 ]
