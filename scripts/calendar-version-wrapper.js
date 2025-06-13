@@ -440,10 +440,15 @@ async function generateCalendarRelease() {
     fs.writeFileSync('RELEASE_NOTES.md', releaseNotes);
     console.log(`📄 Release notes saved to RELEASE_NOTES.md`);
 
-    // Teams JSON용 릴리즈 노트 생성 (개행 문자를 \n\n 리터럴로 변환)
-    const releaseNotesForTeams = releaseNotes.replace(/\n/g, '\\n\\n');
+    // Teams JSON용 릴리즈 노트 생성 (개행 문자를 실제 문자열 리터럴로 변환)
+    const releaseNotesForTeams = releaseNotes
+        .replace(/\\/g, '\\\\')  // 백슬래시 이스케이프 먼저
+        .replace(/"/g, '\\"')    // 큰따옴표 이스케이프
+        .replace(/\n/g, String.fromCharCode(92) + 'n' + String.fromCharCode(92) + 'n');  // \n\n 문자열 리터럴
     fs.writeFileSync('RELEASE_NOTES_TEAMS.txt', releaseNotesForTeams);
     console.log(`📄 Release notes for Teams saved to RELEASE_NOTES_TEAMS.txt`);
+    console.log(`📝 Teams 릴리즈 노트 미리보기 (처음 200자):`);
+    console.log(releaseNotesForTeams.substring(0, 200) + '...');
 
     // 환경 변수로 calendar version 설정 (다른 플러그인이나 다음 워크플로우에서 사용 가능)
     process.env.NEW_VERSION = calendarVersion;
