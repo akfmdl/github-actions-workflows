@@ -67,7 +67,10 @@
                     {
                         "type": "TextBlock",
                         "text": "${RELEASE_NOTES}",
-                        "wrap": true
+                        "wrap": true,
+                        "isSubtle": true,
+                        "separator": true,
+                        "markdown": true
                     }
                 ]
             }
