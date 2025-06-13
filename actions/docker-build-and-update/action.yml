@@ -98,21 +98,6 @@ runs:
              "${TEAMS_WORKFLOW_URL}"
         
         echo "✅ Teams 배포 시작 알림 전송 완료"
-
-    # - name: Setup Node.js
-    #   uses: actions/setup-node@v4
-    #   with:
-    #     node-version: ${{ inputs.node-version }}
-
-    # - name: Set up Docker Buildx
-    #   uses: docker/setup-buildx-action@v3
-
-    # - name: Download docker build update script
-    #   shell: bash
-    #   run: |
-    #     echo "📥 Downloading Docker build and update script..."
-    #     curl -fsSL -o /tmp/docker-build-push-update.js https://raw.githubusercontent.com/akfmdl/github-actions-workflows/test/scripts/docker-build-push-update.js
-    #     chmod +x /tmp/docker-build-push-update.js
         
     # - name: Docker build, push and update repository
     #   id: docker-build-update
