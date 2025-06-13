@@ -445,32 +445,10 @@ async function generateCalendarRelease() {
 
     // GitHub Actions의 환경 변수로도 설정
     if (process.env.GITHUB_ENV) {
-        // 릴리즈 노트를 Adaptive Cards에서 지원하는 마크다운 형식으로 변환
-        const formattedReleaseNotes = releaseNotes
-            .split('\n')
-            .map(line => {
-                // 헤더 라인을 굵게 처리
-                if (line.startsWith('#')) {
-                    return `**${line.replace(/^#+\s*/, '')}**`;
-                }
-                // 리스트 아이템은 그대로 유지 (이미 - 로 시작)
-                if (line.startsWith('- ')) {
-                    return line;
-                }
-                // 빈 줄은 \r로 처리
-                if (line.trim() === '') {
-                    return '\r';
-                }
-                return line;
-            })
-            .join('\r');
-
         fs.appendFileSync(process.env.GITHUB_ENV, `NEW_VERSION=${calendarVersion}\n`);
         fs.appendFileSync(process.env.GITHUB_ENV, `RELEASE_NOTES_FILE=RELEASE_NOTES.md\n`);
-        fs.appendFileSync(process.env.GITHUB_ENV, `RELEASE_NOTES=${formattedReleaseNotes}\n`);
         console.log(`📝 Set NEW_VERSION environment variable: ${calendarVersion}`);
         console.log(`📝 Set RELEASE_NOTES_FILE environment variable: RELEASE_NOTES.md`);
-        console.log(`📝 Set RELEASE_NOTES environment variable`);
     }
 
     // GitHub Actions의 output 설정
