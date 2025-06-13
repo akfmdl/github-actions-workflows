@@ -440,12 +440,8 @@ async function generateCalendarRelease() {
     fs.writeFileSync('RELEASE_NOTES.md', releaseNotes);
     console.log(`📄 Release notes saved to RELEASE_NOTES.md`);
 
-    // Teams JSON용 릴리즈 노트 생성 (JSON에 안전한 형태로 변환)
-    const releaseNotesJsonSafe = JSON.stringify(releaseNotes).slice(1, -1);  // 양 끝 따옴표 제거
-    fs.writeFileSync('RELEASE_NOTES_JSON_SAFE.txt', releaseNotesJsonSafe);
-    console.log(`📄 JSON-safe release notes saved to RELEASE_NOTES_JSON_SAFE.txt`);
-    console.log(`📝 JSON-safe 릴리즈 노트 미리보기 (처음 200자):`);
-    console.log(releaseNotesJsonSafe.substring(0, 200) + '...');
+    // 기본 릴리즈 노트만 저장 (Python에서 처리할 예정)
+    console.log(`📄 Release notes saved. Python will handle Teams JSON processing.`);
 
     // 환경 변수로 calendar version 설정 (다른 플러그인이나 다음 워크플로우에서 사용 가능)
     process.env.NEW_VERSION = calendarVersion;
@@ -454,10 +450,8 @@ async function generateCalendarRelease() {
     if (process.env.GITHUB_ENV) {
         fs.appendFileSync(process.env.GITHUB_ENV, `NEW_VERSION=${calendarVersion}\n`);
         fs.appendFileSync(process.env.GITHUB_ENV, `RELEASE_NOTES_FILE=RELEASE_NOTES.md\n`);
-        fs.appendFileSync(process.env.GITHUB_ENV, `RELEASE_NOTES_JSON_SAFE_FILE=RELEASE_NOTES_JSON_SAFE.txt\n`);
         console.log(`📝 Set NEW_VERSION environment variable: ${calendarVersion}`);
         console.log(`📝 Set RELEASE_NOTES_FILE environment variable: RELEASE_NOTES.md`);
-        console.log(`📝 Set RELEASE_NOTES_JSON_SAFE_FILE environment variable: RELEASE_NOTES_JSON_SAFE.txt`);
     }
 
     // GitHub Actions의 output 설정
