@@ -47,21 +47,20 @@ jobs:
           IMAGE_INFO="${{ env.IMAGE_NAME }}:${{ steps.auto-release.outputs.new-release-version }}"
           REPO_INFO="${{ env.TARGET_REPO }}"
           
-          # Teams용 릴리즈 노트 파일 읽기 (이미 JSON 문자열에 적합한 형태로 처리됨)
-          
-          if [ -f "${{ env.RELEASE_NOTES_TEAMS_FILE }}" ]; then
-            RELEASE_NOTES_TEAMS=$(cat "${{ env.RELEASE_NOTES_TEAMS_FILE }}")
-            echo "📝 Teams용 릴리즈 노트 파일 읽기 완료: ${{ env.RELEASE_NOTES_TEAMS_FILE }}"
+          # JSON-safe 릴리즈 노트 파일 읽기 (JavaScript에서 JSON.stringify로 안전하게 처리됨)
+          if [ -f "${{ env.RELEASE_NOTES_JSON_SAFE_FILE }}" ]; then
+            RELEASE_NOTES_JSON_SAFE=$(cat "${{ env.RELEASE_NOTES_JSON_SAFE_FILE }}")
+            echo "📝 JSON-safe 릴리즈 노트 파일 읽기 완료: ${{ env.RELEASE_NOTES_JSON_SAFE_FILE }}"
           else
-            RELEASE_NOTES_TEAMS="릴리즈 노트를 찾을 수 없습니다."
-            echo "⚠️ Teams용 릴리즈 노트 파일을 찾을 수 없습니다: ${{ env.RELEASE_NOTES_TEAMS_FILE }}"
+            RELEASE_NOTES_JSON_SAFE="릴리즈 노트를 찾을 수 없습니다."
+            echo "⚠️ JSON-safe 릴리즈 노트 파일을 찾을 수 없습니다: ${{ env.RELEASE_NOTES_JSON_SAFE_FILE }}"
           fi
           
-          # JSON 파일 읽기 및 변수 치환 (기존 sed 방식 사용)
+          # JSON 템플릿 파일 읽기 및 변수 치환 (기존 방식 유지)
           TEAMS_START_JSON=$(cat scripts/teams_message_start.json | \
             sed "s|\${IMAGE_INFO}|${IMAGE_INFO}|g" | \
             sed "s|\${REPO_INFO}|${REPO_INFO}|g" | \
-            sed "s|\${RELEASE_NOTES}|${RELEASE_NOTES_TEAMS}|g")
+            sed "s|\${RELEASE_NOTES}|${RELEASE_NOTES_JSON_SAFE}|g")
           
           # 멀티라인 출력 처리
           echo "TEAMS_START_JSON<<EOF" >> $GITHUB_OUTPUT
