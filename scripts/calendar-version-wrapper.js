@@ -445,12 +445,32 @@ async function generateCalendarRelease() {
 
     // GitHub Actions의 환경 변수로도 설정
     if (process.env.GITHUB_ENV) {
+        // 릴리즈 노트를 Teams 메시지에 맞게 포맷팅
+        const formattedReleaseNotes = releaseNotes
+            .split('\n')
+            .map(line => {
+                // 헤더 라인 처리
+                if (line.startsWith('#')) {
+                    return `**${line.replace(/^#+\s*/, '')}**`;
+                }
+                // 리스트 아이템 처리
+                if (line.startsWith('- ')) {
+                    return `• ${line.substring(2)}`;
+                }
+                // 링크 처리
+                if (line.includes('http')) {
+                    return line.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '[$1]($2)');
+                }
+                return line;
+            })
+            .join('\n');
+
         fs.appendFileSync(process.env.GITHUB_ENV, `NEW_VERSION=${calendarVersion}\n`);
         fs.appendFileSync(process.env.GITHUB_ENV, `RELEASE_NOTES_FILE=RELEASE_NOTES.md\n`);
-        fs.appendFileSync(process.env.GITHUB_ENV, `RELEASE_NOTES=${releaseNotes.replace(/\n/g, '\\n')}\n`);
+        fs.appendFileSync(process.env.GITHUB_ENV, `RELEASE_NOTES=${formattedReleaseNotes.replace(/\n/g, '\\n')}\n`);
         console.log(`📝 Set NEW_VERSION environment variable: ${calendarVersion}`);
         console.log(`📝 Set RELEASE_NOTES_FILE environment variable: RELEASE_NOTES.md`);
-        console.log(`📝 Set RELEASE_NOTES environment variable: ${releaseNotes.replace(/\n/g, '\\n')}`);
+        console.log(`📝 Set RELEASE_NOTES environment variable: ${formattedReleaseNotes.replace(/\n/g, '\\n')}`);
     }
 
     // GitHub Actions의 output 설정
