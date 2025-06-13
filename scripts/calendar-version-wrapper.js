@@ -445,18 +445,16 @@ async function generateCalendarRelease() {
 
     // GitHub Actions의 환경 변수로도 설정
     if (process.env.GITHUB_ENV) {
-        // 릴리즈 노트의 줄바꿈을 Teams 메시지에서 제대로 표시되도록 수정
-        const formattedReleaseNotes = releaseNotes
-            .split('\n')
-            .map(line => line.trim())
-            .join('\n\n'); // 빈 줄을 추가하여 섹션 구분
+        // 릴리즈 노트를 섹션별로 분리
+        const sections = releaseNotes.split('\n\n').filter(section => section.trim());
+        const releaseNotesSections = sections.map(section => section.trim()).join('|||');
 
         fs.appendFileSync(process.env.GITHUB_ENV, `NEW_VERSION=${calendarVersion}\n`);
         fs.appendFileSync(process.env.GITHUB_ENV, `RELEASE_NOTES_FILE=RELEASE_NOTES.md\n`);
-        fs.appendFileSync(process.env.GITHUB_ENV, `RELEASE_NOTES=${formattedReleaseNotes.replace(/\n/g, '\\n')}\n`);
+        fs.appendFileSync(process.env.GITHUB_ENV, `RELEASE_NOTES=${releaseNotesSections}\n`);
         console.log(`📝 Set NEW_VERSION environment variable: ${calendarVersion}`);
         console.log(`📝 Set RELEASE_NOTES_FILE environment variable: RELEASE_NOTES.md`);
-        console.log(`📝 Set RELEASE_NOTES environment variable: ${formattedReleaseNotes.replace(/\n/g, '\\n')}`);
+        console.log(`📝 Set RELEASE_NOTES environment variable: ${releaseNotesSections}`);
     }
 
     // GitHub Actions의 output 설정

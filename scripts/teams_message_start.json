@@ -65,13 +65,17 @@
                         "wrap": true
                     },
                     {
-                        "type": "TextBlock",
-                        "text": "${RELEASE_NOTES}",
-                        "wrap": true,
-                        "isSubtle": true,
-                        "separator": true,
-                        "markdown": true,
-                        "spacing": "Large"
+                        "type": "Container",
+                        "items": [
+                            {
+                                "type": "TextBlock",
+                                "text": "placeholder",
+                                "wrap": true,
+                                "isSubtle": true,
+                                "markdown": true
+                            }
+                        ],
+                        "separator": true
                     }
                 ]
             }
