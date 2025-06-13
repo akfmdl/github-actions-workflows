@@ -440,11 +440,8 @@ async function generateCalendarRelease() {
     fs.writeFileSync('RELEASE_NOTES.md', releaseNotes);
     console.log(`📄 Release notes saved to RELEASE_NOTES.md`);
 
-    // Teams JSON용 릴리즈 노트 생성 (개행 문자를 실제 문자열 리터럴로 변환)
-    const releaseNotesForTeams = releaseNotes
-        .replace(/\\/g, '\\\\')  // 백슬래시 이스케이프 먼저
-        .replace(/"/g, '\\"')    // 큰따옴표 이스케이프
-        .replace(/\n/g, String.fromCharCode(92) + 'n' + String.fromCharCode(92) + 'n');  // \n\n 문자열 리터럴
+    // Teams JSON용 릴리즈 노트 생성 (JSON.stringify를 사용하여 안전하게 처리)
+    const releaseNotesForTeams = JSON.stringify(releaseNotes).slice(1, -1);  // 양 끝 따옴표 제거
     fs.writeFileSync('RELEASE_NOTES_TEAMS.txt', releaseNotesForTeams);
     console.log(`📄 Release notes for Teams saved to RELEASE_NOTES_TEAMS.txt`);
     console.log(`📝 Teams 릴리즈 노트 미리보기 (처음 200자):`);
