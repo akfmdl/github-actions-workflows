@@ -380,28 +380,21 @@ async function generateCalendarRelease() {
     const prInfos = analysis.prInfos;
 
     // 릴리즈 타입이 null이면 릴리즈를 하지 않음
-    if (!releaseType) {
-        console.log('⏹️ 릴리즈할 변경사항이 없어서 프로세스를 종료합니다.');
+    // if (!releaseType) {
+    //     console.log('⏹️ 릴리즈할 변경사항이 없어서 프로세스를 종료합니다.');
 
-        // GitHub Actions의 output 설정 (릴리즈 없음)
-        if (process.env.GITHUB_OUTPUT) {
-            console.log(`📤 Test를 위해 수동으로 버전을 설정합니다.`);
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-published=true\n`);
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-version=2025.06.0.3\n`);
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-git-tag=v2025.06.0.3\n`);
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-git-head=1234567890\n`);
-            fs.appendFileSync(process.env.GITHUB_ENV, `NEW_VERSION=2025.06.0.3\n`);
-            fs.appendFileSync(process.env.GITHUB_ENV, `RELEASE_NOTES_FILE=RELEASE_NOTES.md\n`);
-            // fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-published=false\n`);
-            // fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-version=\n`);
-            // fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-git-tag=\n`);
-            // fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-git-head=\n`);
+    //     // GitHub Actions의 output 설정 (릴리즈 없음)
+    //     if (process.env.GITHUB_OUTPUT) {
+    //         fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-published=false\n`);
+    //         fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-version=\n`);
+    //         fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-git-tag=\n`);
+    //         fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-git-head=\n`);
 
-            // console.log(`📤 Set GitHub Action outputs: new-release-published=false`);
-        }
+    //         console.log(`📤 Set GitHub Action outputs: new-release-published=false`);
+    //     }
 
-        // process.exit(0);
-    }
+    //     process.exit(0);
+    // }
 
     const calendarVersion = generateCalendarVersion(releaseType);
 
@@ -439,9 +432,6 @@ async function generateCalendarRelease() {
     // Release notes를 파일로 저장
     fs.writeFileSync('RELEASE_NOTES.md', releaseNotes);
     console.log(`📄 Release notes saved to RELEASE_NOTES.md`);
-
-    // 기본 릴리즈 노트만 저장 (Python에서 처리할 예정)
-    console.log(`📄 Release notes saved. Python will handle Teams JSON processing.`);
 
     // 환경 변수로 calendar version 설정 (다른 플러그인이나 다음 워크플로우에서 사용 가능)
     process.env.NEW_VERSION = calendarVersion;

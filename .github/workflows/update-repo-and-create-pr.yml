@@ -22,12 +22,6 @@ jobs:
           release-version: 2025.06.0.0
           branch-name: release/dubbing-2025.06.0.0
 
-      - name: Check outputs
-        run: |
-          echo "pr-url: ${{ steps.update-file-and-create-pr.outputs.pr-url }}"
-          echo "pr-number: ${{ steps.update-file-and-create-pr.outputs.pr-number }}"
-          echo "branch-name: ${{ steps.update-file-and-create-pr.outputs.branch-name }}"
-
       - name: Post-pull-request notification
         if: steps.update-file-and-create-pr.outputs.pr-url != ''
         run: |
