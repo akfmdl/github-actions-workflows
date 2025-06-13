@@ -1,4 +1,5 @@
 {
+    "type": "message",
     "attachments": [
         {
             "contentType": "application/vnd.microsoft.card.adaptive",
@@ -21,7 +22,63 @@
                 "body": [
                     {
                         "type": "TextBlock",
-                        "text": "Hi <at>오디오엔진</at>, please check this document."
+                        "text": "🚀 Stage 배포 시작",
+                        "size": "Large",
+                        "weight": "Bolder"
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": "<at>오디오엔진</at>",
+                        "wrap": true
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": "Stage 배포 중입니다.",
+                        "wrap": true
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": "⏳ 배포 진행 상태를 확인해주세요...",
+                        "wrap": true
+                    },
+                    {
+                        "type": "FactSet",
+                        "facts": [
+                            {
+                                "title": "이미지:",
+                                "value": "audio-engine-server:2025.06.0.0"
+                            },
+                            {
+                                "title": "대상 레포지토리:",
+                                "value": "akfmdl/mlops-lifecycle"
+                            },
+                            {
+                                "title": "상태:",
+                                "value": "진행 중 🔄"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": "📝 릴리즈 노트",
+                        "weight": "Bolder",
+                        "wrap": true
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": "**🚀 Features**\r\r
+
+- 자동 릴리스 워크플로우에서 JIRA 기본 URL 설정 제거 ([#12](https: //github.com/akfmdl/github-actions-workflows/pull/12)) [@akfmdl](https://github.com/akfmdl)
+\r\r
+
+**👥 Contributors**\r\r
+
+Thank you to all contributors: [@akfmdl](https: //github.com/akfmdl)\r\r
+
+---\r\r
+
+**Full Changelog**:\r\r https: //github.com/akfmdl/github-actions-workflows/compare/v2024.01.0.0...v2025.06.0.0",
+                        "wrap": true
                     }
                 ]
             }
