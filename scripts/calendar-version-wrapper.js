@@ -374,16 +374,10 @@ function generateCalendarVersion(releaseType) {
 
 // calendar versioning 기반 릴리즈 생성
 async function generateCalendarRelease() {
-    let releaseType = process.env.SEMANTIC_RELEASE_TYPE;
-    let prInfos = [];
-
-    // 환경변수가 없으면 PR 라벨을 분석해서 릴리즈 타입 결정
-    if (!releaseType) {
-        console.log('🔄 PR 라벨 분석을 통해 릴리즈 타입을 결정합니다...');
-        const analysis = await analyzeCommitsForReleaseType();
-        releaseType = analysis.releaseType;
-        prInfos = analysis.prInfos;
-    }
+    console.log('🔄 PR 라벨 분석을 통해 릴리즈 타입을 결정합니다...');
+    const analysis = await analyzeCommitsForReleaseType();
+    const releaseType = analysis.releaseType;
+    const prInfos = analysis.prInfos;
 
     // 릴리즈 타입이 null이면 릴리즈를 하지 않음
     if (!releaseType) {
@@ -441,15 +435,12 @@ async function generateCalendarRelease() {
 
     // 환경 변수로 calendar version 설정 (다른 플러그인이나 다음 워크플로우에서 사용 가능)
     process.env.NEW_VERSION = calendarVersion;
-    process.env.SEMANTIC_RELEASE_TYPE = releaseType;
 
     // GitHub Actions의 환경 변수로도 설정
     if (process.env.GITHUB_ENV) {
         fs.appendFileSync(process.env.GITHUB_ENV, `NEW_VERSION=${calendarVersion}\n`);
-        fs.appendFileSync(process.env.GITHUB_ENV, `SEMANTIC_RELEASE_TYPE=${releaseType}\n`);
         fs.appendFileSync(process.env.GITHUB_ENV, `RELEASE_NOTES_FILE=RELEASE_NOTES.md\n`);
         console.log(`📝 Set NEW_VERSION environment variable: ${calendarVersion}`);
-        console.log(`📝 Set SEMANTIC_RELEASE_TYPE environment variable: ${releaseType}`);
         console.log(`📝 Set RELEASE_NOTES_FILE environment variable: RELEASE_NOTES.md`);
     }
 
