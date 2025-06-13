@@ -8,7 +8,7 @@ on:
 env:
   DOCKER_REGISTRY: persolive.azurecr.io
   IMAGE_NAME: audio-engine-server
-  TARGET_REPO: est-infra/persolive-admin-aks-stg
+  TARGET_REPO: akfmdl/mlops-lifecycle
   TARGET_BRANCH: test
   TARGET_FILE_PATH: stg-idc/02-perso-vt/01-perso-vt-audio/01-perso-vt-audio-engine/perso-vt-audio-engine-stg.yaml
 
