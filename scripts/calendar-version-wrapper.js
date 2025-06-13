@@ -297,7 +297,7 @@ async function analyzeCommitsForReleaseType() {
     }
 
     let globalReleaseType = null;
-    let globalPriority = -1;
+    let globalPriority = Infinity; // 어떤 라벨이든 이 값보다 우선순위가 높도록 초기화
     let foundPRCommits = false;
     const prInfos = [];
     const releaseTypes = ['major', 'minor', 'patch'];
@@ -318,9 +318,15 @@ async function analyzeCommitsForReleaseType() {
                     console.log(`✅ PR #${prNumber}: ${releaseType} 릴리즈`);
 
                     const priority = releaseTypes.indexOf(releaseType);
-                    if (priority > globalPriority) {
+                    console.log(`🔍 글로벌 우선순위 비교: ${releaseType}(${priority}) vs 현재 최고(${globalPriority})`);
+
+                    // 인덱스가 낮을수록(0에 가까울수록) 우선순위가 높음
+                    if (priority < globalPriority) {
+                        console.log(`✅ 글로벌 릴리즈 타입 업데이트: ${globalReleaseType || 'none'} -> ${releaseType}`);
                         globalPriority = priority;
                         globalReleaseType = releaseType;
+                    } else {
+                        console.log(`⏭️  현재 우선순위(${priority})가 글로벌 최고 우선순위(${globalPriority})보다 낮음`);
                     }
                 } else {
                     console.log(`⚪ PR #${prNumber}: 릴리즈와 관련된 라벨 없음`);
@@ -391,21 +397,21 @@ async function generateCalendarRelease() {
     const prInfos = analysis.prInfos;
 
     // 릴리즈 타입이 null이면 릴리즈를 하지 않음
-    if (!releaseType) {
-        console.log('⏹️ 릴리즈할 변경사항이 없어서 프로세스를 종료합니다.');
+    // if (!releaseType) {
+    //     console.log('⏹️ 릴리즈할 변경사항이 없어서 프로세스를 종료합니다.');
 
-        // GitHub Actions의 output 설정 (릴리즈 없음)
-        if (process.env.GITHUB_OUTPUT) {
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-published=false\n`);
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-version=\n`);
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-git-tag=\n`);
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-git-head=\n`);
+    //     // GitHub Actions의 output 설정 (릴리즈 없음)
+    //     if (process.env.GITHUB_OUTPUT) {
+    //         fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-published=false\n`);
+    //         fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-version=\n`);
+    //         fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-git-tag=\n`);
+    //         fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-git-head=\n`);
 
-            console.log(`📤 Set GitHub Action outputs: new-release-published=false`);
-        }
+    //         console.log(`📤 Set GitHub Action outputs: new-release-published=false`);
+    //     }
 
-        process.exit(0);
-    }
+    //     process.exit(0);
+    // }
 
     const calendarVersion = generateCalendarVersion(releaseType);
 
