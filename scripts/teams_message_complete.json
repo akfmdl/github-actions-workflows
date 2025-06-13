@@ -1,0 +1,75 @@
+{
+    "type": "message",
+    "attachments": [
+        {
+            "contentType": "application/vnd.microsoft.card.adaptive",
+            "content": {
+                "$schema": "http://adaptivecards.json/schema/adaptive-card/1.5",
+                "type": "AdaptiveCard",
+                "msteams": {
+                    "entities": [
+                        {
+                            "type": "mention",
+                            "text": "<at>오디오엔진</at>",
+                            "mentioned": {
+                                "id": "ZjdkZDQ4MmItYzU4ZC00MDViLWFlNjAtNTlmNmFjMzZmZWVmIyNjMDQzMWZmOC0zZTBkLTQ0ZjgtYmFlZS05YWFjMDQ1Nzk1NjMjI3RLUUEyYWI5RnQ=",
+                                "name": "오디오엔진",
+                                "type": "tag"
+                            }
+                        }
+                    ]
+                },
+                "body": [
+                    {
+                        "type": "TextBlock",
+                        "text": "${ACTIVITY_TITLE}",
+                        "size": "Large",
+                        "weight": "Bolder"
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": "<at>오디오엔진</at>",
+                        "wrap": true
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": "${STATUS_MESSAGE}",
+                        "wrap": true
+                    },
+                    {
+                        "type": "FactSet",
+                        "facts": [
+                            {
+                                "title": "이미지:",
+                                "value": "${IMAGE_INFO}"
+                            },
+                            {
+                                "title": "전체 이미지명:",
+                                "value": "${FULL_IMAGE}"
+                            },
+                            {
+                                "title": "대상 레포지토리:",
+                                "value": "${REPO_INFO}"
+                            },
+                            {
+                                "title": "대상 브랜치:",
+                                "value": "${TARGET_BRANCH:-default}"
+                            },
+                            {
+                                "title": "업데이트된 파일:",
+                                "value": "${UPDATED_FILE:-없음}"
+                            }
+                        ]
+                    }
+                ],
+                "actions": [
+                    {
+                        "type": "Action.OpenUrl",
+                        "title": "GitHub Actions 보기",
+                        "url": "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+                    }
+                ]
+            }
+        }
+    ]
+}

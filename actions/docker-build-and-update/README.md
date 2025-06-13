@@ -13,6 +13,7 @@
 - **유연한 태그 지정**: 사용자가 직접 지정한 이미지 태그 사용 (v1.0.0, 2025.01.15.1430 등)
 - **크로스 레포지토리 업데이트**: 다른 레포지토리의 Kubernetes 매니페스트 파일 자동 업데이트
 - **즉시 배포**: Pull Request 없이 바로 push하여 즉시 반영
+- **완전 커스터마이징 가능한 Teams 알림**: 사용자가 직접 설계한 JSON 템플릿 사용
 
 ## 📋 사용법
 
@@ -92,6 +93,8 @@ Teams 알림을 사용하려면 다음 단계를 따르세요:
 | `registry-password` | Container Registry 패스워드 | ❌ | - |
 | `commit-message` | 커밋 메시지 | ❌ | 자동 생성 |
 | `teams-workflow-url` | Microsoft Teams Workflow URL | ❌ | - |
+| `teams-message-start-json` | Teams 시작 알림 전체 JSON 메시지 | ❌ | - |
+| `teams-message-complete-json` | Teams 완료 알림 전체 JSON 메시지 | ❌ | - |
 
 ## 📤 출력값 (Outputs)
 
@@ -110,7 +113,7 @@ Teams 알림을 사용하려면 다음 단계를 따르세요:
   uses: akfmdl/github-actions-workflows/actions/docker-build-and-update@test
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
-    image-name: 'audio-engine-server'
+    image-name: <IMAGE_NAME>
     image-tag: 'v2.1.0'
     target-repo: 'owner/k8s-manifests'
     target-file-path: 'deployment.yaml'
@@ -159,6 +162,9 @@ Teams 알림을 사용하려면 다음 단계를 따르세요:
     commit-message: '🚀 Deploy <IMAGE_NAME> with new features'
     registry-username: ${{ secrets.REGISTRY_USERNAME }}
     registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+    teams-workflow-url: ${{ secrets.TEAMS_WORKFLOWS_URL }}
+    teams-message-start-json: '<TEAMS_MESSAGE_START_JSON>'
+    teams-message-complete-json: '<TEAMS_MESSAGE_COMPLETE_JSON>'
 ```
 
 ### 3. Build Arguments 사용 예시
@@ -211,3 +217,158 @@ GitHub Token에는 다음 권한이 필요합니다:
 3. **Docker 빌드**: 이미지 빌드 및 레지스트리 푸시
 4. **파일 업데이트**: 대상 레포지토리의 YAML 파일 직접 수정
 5. **결과 출력**: 성공 상태 및 결과 정보 출력 
+
+## 🎨 Teams 메시지 완전 커스터마이징
+
+사용자가 Teams 메시지의 전체 JSON 구조를 직접 제공하여 완전히 자유롭게 디자인할 수 있습니다.
+
+### 📝 Teams 메시지 JSON 예시
+
+#### 🚀 시작 메시지 예시
+
+```json
+{
+  "type": "message",
+  "attachments": [
+    {
+      "contentType": "application/vnd.microsoft.card.adaptive",
+      "content": {
+        "$schema": "http://adaptivecards.json/schemas/adaptive-card.json",
+        "type": "AdaptiveCard",
+        "version": "1.5",
+        "msteams": {
+          "entities": [
+            {
+              "type": "mention",
+              "text": "<at>개발팀</at>",
+              "mentioned": {
+                "id": "your-team-id",
+                "name": "개발팀",
+                "type": "tag"
+              }
+            }
+          ]
+        },
+        "body": [
+          {
+            "type": "TextBlock",
+            "text": "🚀 배포 시작",
+            "size": "Large",
+            "weight": "Bolder",
+            "color": "Accent"
+          },
+          {
+            "type": "TextBlock",
+            "text": "<at>개발팀</at> 새로운 배포가 시작되었습니다.",
+            "wrap": true
+          },
+          {
+            "type": "FactSet",
+            "facts": [
+              {
+                "title": "이미지:",
+                "value": "my-app:v1.0.0"
+              },
+              {
+                "title": "대상 레포지토리:",
+                "value": "owner/k8s-manifests"
+              },
+              {
+                "title": "상태:",
+                "value": "진행 중 🔄"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+#### ✅ 완료 메시지 예시
+
+```json
+{
+  "type": "message",
+  "attachments": [
+    {
+      "contentType": "application/vnd.microsoft.card.adaptive",
+      "content": {
+        "$schema": "http://adaptivecards.json/schemas/adaptive-card.json",
+        "type": "AdaptiveCard",
+        "version": "1.5",
+        "msteams": {
+          "entities": [
+            {
+              "type": "mention",
+              "text": "<at>개발팀</at>",
+              "mentioned": {
+                "id": "your-team-id",
+                "name": "개발팀",
+                "type": "tag"
+              }
+            }
+          ]
+        },
+        "body": [
+          {
+            "type": "TextBlock",
+            "text": "✅ Stage 배포 완료",
+            "size": "Large",
+            "weight": "Bolder",
+            "color": "Good"
+          },
+          {
+            "type": "TextBlock",
+            "text": "<at>개발팀</at> Stage 배포가 성공적으로 완료되었습니다.",
+            "wrap": true
+          },
+          {
+            "type": "FactSet",
+            "facts": [
+              {
+                "title": "이미지:",
+                "value": "my-app:v1.0.0"
+              },
+              {
+                "title": "전체 이미지:",
+                "value": "registry.io/my-app:v1.0.0"
+              },
+              {
+                "title": "대상 레포지토리:",
+                "value": "owner/k8s-manifests"
+              },
+              {
+                "title": "브랜치:",
+                "value": "main"
+              }
+            ]
+          }
+        ],
+        "actions": [
+          {
+            "type": "Action.OpenUrl",
+            "title": "GitHub Actions 보기",
+            "url": "https://github.com/owner/repo/actions/runs/123456"
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+### 🎯 사용 방법
+
+Teams 알림을 사용하려면:
+
+1. **Teams Workflow URL 설정**: `teams-workflow-url` 파라미터에 Power Automate Workflow URL 제공
+2. **완전한 JSON 메시지 제공**: `teams-message-start-json`과 `teams-message-complete-json` 파라미터에 완전한 JSON 제공
+3. **동적 값 처리**: 필요한 경우 GitHub Actions의 환경 변수나 표현식을 활용하여 동적 값 설정
+
+### 📌 주의사항
+
+1. **필수 조건**: Teams 알림을 사용하려면 반드시 `teams-workflow-url`과 해당 메시지 JSON을 모두 제공해야 합니다.
+2. **유효한 JSON**: 제공하는 JSON은 반드시 유효한 형식이어야 합니다.
+3. **완전한 제어**: 사용자가 제공한 JSON이 그대로 Teams로 전송되므로 모든 내용을 직접 관리해야 합니다. 

@@ -1,0 +1,65 @@
+{
+    "type": "message",
+    "attachments": [
+        {
+            "contentType": "application/vnd.microsoft.card.adaptive",
+            "content": {
+                "$schema": "http://adaptivecards.json/schema/adaptive-card/1.5",
+                "type": "AdaptiveCard",
+                "msteams": {
+                    "entities": [
+                        {
+                            "type": "mention",
+                            "text": "<at>오디오엔진</at>",
+                            "mentioned": {
+                                "id": "ZjdkZDQ4MmItYzU4ZC00MDViLWFlNjAtNTlmNmFjMzZmZWVmIyNjMDQzMWZmOC0zZTBkLTQ0ZjgtYmFlZS05YWFjMDQ1Nzk1NjMjI3RLUUEyYWI5RnQ=",
+                                "name": "오디오엔진",
+                                "type": "tag"
+                            }
+                        }
+                    ]
+                },
+                "body": [
+                    {
+                        "type": "TextBlock",
+                        "text": "🚀 Stage 배포 시작",
+                        "size": "Large",
+                        "weight": "Bolder"
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": "<at>오디오엔진</at>",
+                        "wrap": true
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": "Stage 배포 중입니다.",
+                        "wrap": true
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": "⏳ 배포 진행 상태를 확인해주세요...",
+                        "wrap": true
+                    },
+                    {
+                        "type": "FactSet",
+                        "facts": [
+                            {
+                                "title": "이미지:",
+                                "value": "${IMAGE_INFO}"
+                            },
+                            {
+                                "title": "대상 레포지토리:",
+                                "value": "${REPO_INFO}"
+                            },
+                            {
+                                "title": "상태:",
+                                "value": "진행 중 🔄"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}

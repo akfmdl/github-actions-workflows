@@ -5,6 +5,14 @@ on:
     branches:
       - <TARGET_BRANCH>
 
+env:
+  DOCKER_REGISTRY: <DOCKER_REGISTRY>
+  IMAGE_NAME: <IMAGE_NAME>
+  IMAGE_TAG: <IMAGE_TAG>
+  TARGET_REPO: <TARGET_REPO>
+  TARGET_BRANCH: <TARGET_BRANCH>
+  TARGET_FILE_PATH: <TARGET_FILE_PATH>
+
 jobs:
   docker-build-and-update:
     runs-on: ubuntu-latest
@@ -12,6 +20,71 @@ jobs:
     steps:
     - name: Checkout source code
       uses: actions/checkout@v4
+
+    - name: Prepare Teams message templates
+      id: prepare-teams-messages
+      run: |
+        # Teams 시작 메시지 준비
+        if [ -f "scripts/teams_message_start.json" ]; then
+          echo "📋 Teams 시작 메시지 템플릿 읽는 중..."
+          
+          # 변수 정의
+          IMAGE_INFO="${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
+          REPO_INFO="${{ env.TARGET_REPO }}"
+          
+          # JSON 파일 읽기 및 변수 치환
+          TEAMS_START_JSON=$(cat scripts/teams_message_start.json | \
+            sed "s|\${IMAGE_INFO}|${IMAGE_INFO}|g" | \
+            sed "s|\${REPO_INFO}|${REPO_INFO}|g")
+          
+          # 멀티라인 출력 처리
+          echo "TEAMS_START_JSON<<EOF" >> $GITHUB_OUTPUT
+          echo "$TEAMS_START_JSON" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "✅ Teams 시작 메시지 준비 완료"
+        else
+          echo "TEAMS_START_JSON=" >> $GITHUB_OUTPUT
+          echo "⚠️ Teams 시작 메시지 파일이 없습니다."
+        fi
+        
+        # Teams 완료 메시지 준비
+        if [ -f "scripts/teams_message_complete.json" ]; then
+          echo "📋 Teams 완료 메시지 템플릿 읽는 중..."
+          
+          # 변수 정의
+          IMAGE_INFO="${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
+          REPO_INFO="${{ env.TARGET_REPO }}"
+          FULL_IMAGE="${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
+          TARGET_BRANCH="${{ env.TARGET_BRANCH }}"
+          UPDATED_FILE="${{ env.TARGET_FILE_PATH }}"
+          GITHUB_REPOSITORY="${{ github.repository }}"
+          GITHUB_RUN_ID="${{ github.run_id }}"
+          
+          # 성공 시 메시지 (기본값)
+          ACTIVITY_TITLE="✅ Stage 배포 완료"
+          STATUS_MESSAGE="Stage 배포가 성공적으로 완료되었습니다."
+          
+          # JSON 파일 읽기 및 변수 치환
+          TEAMS_COMPLETE_JSON=$(cat scripts/teams_message_complete.json | \
+            sed "s|\${IMAGE_INFO}|${IMAGE_INFO}|g" | \
+            sed "s|\${REPO_INFO}|${REPO_INFO}|g" | \
+            sed "s|\${FULL_IMAGE}|${FULL_IMAGE}|g" | \
+            sed "s|\${TARGET_BRANCH:-default}|${TARGET_BRANCH}|g" | \
+            sed "s|\${UPDATED_FILE:-없음}|${UPDATED_FILE}|g" | \
+            sed "s|\${ACTIVITY_TITLE}|${ACTIVITY_TITLE}|g" | \
+            sed "s|\${STATUS_MESSAGE}|${STATUS_MESSAGE}|g" | \
+            sed "s|\${GITHUB_REPOSITORY}|${GITHUB_REPOSITORY}|g" | \
+            sed "s|\${GITHUB_RUN_ID}|${GITHUB_RUN_ID}|g")
+          
+          # 멀티라인 출력 처리
+          echo "TEAMS_COMPLETE_JSON<<EOF" >> $GITHUB_OUTPUT
+          echo "$TEAMS_COMPLETE_JSON" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "✅ Teams 완료 메시지 준비 완료"
+        else
+          echo "TEAMS_COMPLETE_JSON=" >> $GITHUB_OUTPUT
+          echo "⚠️ Teams 완료 메시지 파일이 없습니다."
+        fi
 
     - name: Docker Build, Push and Update Repository
       id: docker-build-update
@@ -29,6 +102,8 @@ jobs:
         target-file-path: <TARGET_FILE_PATH>
         target-branch: <TARGET_BRANCH>
         teams-workflow-url: ${{ secrets.TEAMS_WORKFLOWS_URL }}
+        teams-message-start-json: ${{ steps.prepare-teams-messages.outputs.TEAMS_START_JSON }}
+        teams-message-complete-json: ${{ steps.prepare-teams-messages.outputs.TEAMS_COMPLETE_JSON }}
 
     - name: Post-deployment notification
       if: steps.docker-build-update.outputs.updated-file != ''
