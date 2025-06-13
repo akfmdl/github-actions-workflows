@@ -440,6 +440,11 @@ async function generateCalendarRelease() {
     fs.writeFileSync('RELEASE_NOTES.md', releaseNotes);
     console.log(`📄 Release notes saved to RELEASE_NOTES.md`);
 
+    // Teams JSON용 릴리즈 노트 생성 (개행 문자를 \n\n 리터럴로 변환)
+    const releaseNotesForTeams = releaseNotes.replace(/\n/g, '\\n\\n');
+    fs.writeFileSync('RELEASE_NOTES_TEAMS.txt', releaseNotesForTeams);
+    console.log(`📄 Release notes for Teams saved to RELEASE_NOTES_TEAMS.txt`);
+
     // 환경 변수로 calendar version 설정 (다른 플러그인이나 다음 워크플로우에서 사용 가능)
     process.env.NEW_VERSION = calendarVersion;
 
@@ -447,8 +452,10 @@ async function generateCalendarRelease() {
     if (process.env.GITHUB_ENV) {
         fs.appendFileSync(process.env.GITHUB_ENV, `NEW_VERSION=${calendarVersion}\n`);
         fs.appendFileSync(process.env.GITHUB_ENV, `RELEASE_NOTES_FILE=RELEASE_NOTES.md\n`);
+        fs.appendFileSync(process.env.GITHUB_ENV, `RELEASE_NOTES_TEAMS_FILE=RELEASE_NOTES_TEAMS.txt\n`);
         console.log(`📝 Set NEW_VERSION environment variable: ${calendarVersion}`);
         console.log(`📝 Set RELEASE_NOTES_FILE environment variable: RELEASE_NOTES.md`);
+        console.log(`📝 Set RELEASE_NOTES_TEAMS_FILE environment variable: RELEASE_NOTES_TEAMS.txt`);
     }
 
     // GitHub Actions의 output 설정
