@@ -70,7 +70,7 @@ runs:
       shell: bash
       run: |
         echo "📥 Downloading update repository script..."
-        curl -fsSL -o /tmp/update-repo-pat-token.js https://raw.githubusercontent.com/akfmdl/github-actions-workflows/test/scripts/update-repo-pat-token.js
+        curl -fsSL -o /tmp/update-repo-pat-token.js https://raw.githubusercontent.com/akfmdl/github-actions-workflows/main/scripts/update-repo-pat-token.js
         chmod +x /tmp/update-repo-pat-token.js
         
     - name: Update repository file and create PR
