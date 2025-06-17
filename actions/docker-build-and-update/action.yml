@@ -51,18 +51,6 @@ inputs:
     description: '커밋 메시지'
     required: false
     default: ''
-  teams-workflow-url:
-    description: 'Microsoft Teams Workflow URL'
-    required: false
-    default: ''
-  teams-message-start-json:
-    description: 'Teams 시작 알림 전체 JSON 메시지'
-    required: false
-    default: ''
-  teams-message-complete-json:
-    description: 'Teams 완료 알림 전체 JSON 메시지'
-    required: false
-    default: ''
 
 outputs:
   image-tag:
@@ -81,24 +69,6 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: Send Teams notification - Start
-      if: ${{ inputs.teams-workflow-url != '' && inputs.teams-message-start-json != '' }}
-      shell: bash
-      run: |
-        echo "📢 Teams 알림 전송 중: 배포 시작"
-        
-        TEAMS_WORKFLOW_URL="${{ inputs.teams-workflow-url }}"
-        
-        # 사용자 제공 JSON을 그대로 사용
-        echo '${{ inputs.teams-message-start-json }}' > teams_message_start.json
-        
-        # Teams Webhook으로 메시지 전송
-        curl -H "Content-Type: application/json" \
-             -d @teams_message_start.json \
-             "${TEAMS_WORKFLOW_URL}"
-        
-        echo "✅ Teams 배포 시작 알림 전송 완료"
-
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
@@ -135,24 +105,6 @@ runs:
       run: |
         echo "🚀 Docker 이미지 빌드 및 레포지토리 업데이트를 시작합니다..."
         node /tmp/docker-build-push-update.js
-        
-    - name: Send Teams notification - Complete
-      if: ${{ inputs.teams-workflow-url != '' && inputs.teams-message-complete-json != '' }}
-      shell: bash
-      run: |
-        echo "📢 Teams 알림 전송 중: 배포 완료"
-        
-        TEAMS_WORKFLOW_URL="${{ inputs.teams-workflow-url }}"
-        
-        # 사용자 제공 JSON을 그대로 사용
-        echo '${{ inputs.teams-message-complete-json }}' > teams_message_complete.json
-        
-        # Teams Webhook으로 메시지 전송
-        curl -H "Content-Type: application/json" \
-             -d @teams_message_complete.json \
-             "${TEAMS_WORKFLOW_URL}"
-        
-        echo "✅ Teams 배포 완료 알림 전송 완료"
 
     - name: Workflow Complete
       shell: bash

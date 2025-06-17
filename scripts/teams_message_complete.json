@@ -61,13 +61,6 @@
                             }
                         ]
                     }
-                ],
-                "actions": [
-                    {
-                        "type": "Action.OpenUrl",
-                        "title": "GitHub Actions 보기",
-                        "url": "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-                    }
                 ]
             }
         }
