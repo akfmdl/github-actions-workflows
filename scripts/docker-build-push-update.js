@@ -73,9 +73,9 @@ async function buildAndPushDockerImage() {
 
             try {
                 // 첫 번째 시도: 일반 로그인
-                execSync(`echo "${REGISTRY_PASSWORD}" | docker login ${DOCKER_REGISTRY} -u ${REGISTRY_USERNAME} --password-stdin`, {
-                    stdio: 'pipe'
-                });
+                // execSync(`echo "${REGISTRY_PASSWORD}" | docker login ${DOCKER_REGISTRY} -u ${REGISTRY_USERNAME} --password-stdin`, {
+                //     stdio: 'pipe'
+                // });
                 console.log('✅ Registry 로그인 성공');
             } catch (loginError) {
                 console.log('⚠️ 일반 로그인 실패, 대안 방법 시도 중...');

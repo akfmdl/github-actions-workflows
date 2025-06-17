@@ -119,7 +119,7 @@ jobs:
 
     - name: Docker Build, Push and Update Repository
       id: docker-build-update
-      uses: akfmdl/github-actions-workflows/actions/docker-build-and-update@main
+      uses: akfmdl/github-actions-workflows/actions/docker-build-and-update@test
       with:
         docker-registry: ${{ env.DOCKER_REGISTRY }}
         github-token: ${{ secrets.GIT_TOKEN }}
