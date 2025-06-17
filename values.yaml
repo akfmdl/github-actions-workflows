@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: perso-vt-audio-engine-stg
-          image: persolive.azurecr.io/audio-engine-server:2025.06.0.5
+          image: persolive.azurecr.io/audio-engine-server:1.0.0
           imagePullPolicy: Always
           ports:
             - containerPort: 80
@@ -46,7 +46,7 @@ spec:
         image: curlimages/curl:latest
         env:
         - name: FULL_IMAGE
-          value: persolive.azurecr.io/audio-engine-server:2025.06.0.5
+          value: persolive.azurecr.io/audio-engine-server:1.0.0
         - name: REPO_INFO
           value: est-infra/persolive-admin-aks-stg
         - name: TARGET_BRANCH
