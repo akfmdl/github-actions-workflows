@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: perso-vt-audio-engine-stg
-          image: nginx:latest
+          image: goranidocker/nginx:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 80
@@ -46,7 +46,7 @@ spec:
         image: curlimages/curl:latest
         env:
         - name: FULL_IMAGE
-          value: nginx:latest
+          value: goranidocker/nginx:latest
         - name: REPO_INFO
           value: est-infra/persolive-admin-aks-stg
         - name: TARGET_BRANCH
