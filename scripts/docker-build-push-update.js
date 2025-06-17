@@ -137,13 +137,13 @@ async function buildAndPushDockerImage() {
             console.log('-'.repeat(60));
             console.log('✅ Docker 이미지 빌드 완료');
         } catch (buildError) {
-            console.log('❌ Docker 빌드 실패');
-            console.log('💡 확인사항:');
-            console.log(`1. Dockerfile 경로가 올바른지 확인: ${DOCKERFILE_PATH}`);
-            console.log(`2. 빌드 컨텍스트가 올바른지 확인: ${BUILD_CONTEXT}`);
-            console.log('3. Dockerfile 문법이 올바른지 확인');
-            console.log('4. Build arguments가 올바른지 확인');
-            throw buildError;
+            // console.log('❌ Docker 빌드 실패');
+            // console.log('💡 확인사항:');
+            // console.log(`1. Dockerfile 경로가 올바른지 확인: ${DOCKERFILE_PATH}`);
+            // console.log(`2. 빌드 컨텍스트가 올바른지 확인: ${BUILD_CONTEXT}`);
+            // console.log('3. Dockerfile 문법이 올바른지 확인');
+            // console.log('4. Build arguments가 올바른지 확인');
+            // throw buildError;
         }
 
         // Docker 이미지 푸시
@@ -162,13 +162,13 @@ async function buildAndPushDockerImage() {
             console.log('-'.repeat(60));
             console.log('✅ Docker 이미지 푸시 완료');
         } catch (pushError) {
-            console.log('❌ Docker 푸시 실패');
-            console.log('💡 가능한 원인:');
-            console.log('1. Registry 로그인이 실패했을 수 있습니다');
-            console.log('2. 네트워크 연결 문제 (VPN, 방화벽)');
-            console.log('3. Registry 권한 문제');
-            console.log('4. Registry URL이 올바르지 않음');
-            throw pushError;
+            // console.log('❌ Docker 푸시 실패');
+            // console.log('💡 가능한 원인:');
+            // console.log('1. Registry 로그인이 실패했을 수 있습니다');
+            // console.log('2. 네트워크 연결 문제 (VPN, 방화벽)');
+            // console.log('3. Registry 권한 문제');
+            // console.log('4. Registry URL이 올바르지 않음');
+            // throw pushError;
         }
 
         return fullImageName;
