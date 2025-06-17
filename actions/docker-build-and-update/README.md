@@ -207,3 +207,54 @@ GitHub Token에는 다음 권한이 필요합니다:
 ### Action에서 사용하기 예시
 
 * [.github/workflows/docker-build-and-update.yml](../../.github/workflows/docker-build-and-update.yml)
+
+### Action에서 Teams 메시지에 release note 추가
+
+1. [teams_message_complete.json](./teams_message_complete.json)에 block 추가
+```json
+{
+    "type": "message",
+    "attachments": [
+        {
+            "contentType": "application/vnd.microsoft.card.adaptive",
+            "content": {
+                "$schema": "http://adaptivecards.json/schema/adaptive-card/1.5",
+                "type": "AdaptiveCard",
+                "body": [
+                    ...(기존 메시지 내용)
+                    {
+                        "type": "TextBlock",
+                        "text": "📝 릴리즈 노트",
+                        "weight": "Bolder",
+                        "wrap": true
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": "${RELEASE_NOTES}",
+                        "wrap": true
+                    }
+                ]
+            }
+        }
+    ]
+}
+```
+
+2. action에 아래와 같이 [scripts/process_teams_template.py](../../scripts/process_teams_template.py) 를 이용하여 release 노트를 teams용으로 변환
+```yaml
+          
+          # Python으로 Teams JSON 템플릿 처리 (안전한 JSON 생성)
+          echo "🐍 Python으로 Teams JSON 처리 중..."
+          
+          # Python 스크립트로 Teams JSON 생성 (argparse 방식)
+          if [ -f "scripts/teams_message_start.json" ]; then
+            TEAMS_START_JSON=$(python3 scripts/process_teams_template.py \
+              scripts/teams_message_start.json \
+              --image-info "${IMAGE_INFO}" \
+              --repo-info "${REPO_INFO}"
+            echo "📝 Python으로 Teams JSON 생성 완료"
+          else
+            echo "⚠️ Teams 템플릿 파일이 없습니다: scripts/teams_message_start.json"
+            TEAMS_START_JSON='{"type": "message", "text": "Teams 템플릿을 찾을 수 없습니다."}'
+          fi
+```
