@@ -97,26 +97,65 @@ jobs:
           echo "⚠️ Teams 완료 메시지 파일이 없습니다."
         fi
 
+    - name: Send Teams notification - Start
+      if: steps.prepare-teams-messages.outputs.TEAMS_START_JSON != ''
+      shell: bash
+      run: |
+        if [ -z "${{ secrets.TEAMS_WORKFLOWS_URL }}" ]; then
+          echo "⚠️ TEAMS_WORKFLOWS_URL이 설정되지 않았습니다. Teams 알림을 건너뜁니다."
+          exit 0
+        fi
+        
+        echo "📢 Teams 알림 전송 중: 배포 시작"
+        
+        # 사용자 제공 JSON을 그대로 사용
+        echo '${{ steps.prepare-teams-messages.outputs.TEAMS_START_JSON }}' > teams_message_start.json
+        
+        # Teams Webhook으로 메시지 전송
+        curl -H "Content-Type: application/json" \
+             -d @teams_message_start.json \
+             "${{ secrets.TEAMS_WORKFLOWS_URL }}"
+        
+        echo "✅ Teams 배포 시작 알림 전송 완료"
+
     - name: Docker Build, Push and Update Repository
       id: docker-build-update
       uses: akfmdl/github-actions-workflows/actions/docker-build-and-update@main
       with:
-        docker-registry: <DOCKER_REGISTRY>
+        docker-registry: ${{ env.DOCKER_REGISTRY }}
         github-token: ${{ secrets.GIT_TOKEN }}
-        image-name: <IMAGE_NAME>
-        image-tag: <IMAGE_TAG>
+        image-name: ${{ env.IMAGE_NAME }}
+        image-tag: ${{ env.IMAGE_TAG }}
         dockerfile-path: Dockerfile
         build-context: .
         build-args: |
           GIT_TOKEN=${{ secrets.GIT_TOKEN }}
         registry-username: ${{ secrets.REGISTRY_USERNAME }}
         registry-password: ${{ secrets.REGISTRY_PASSWORD }}
-        target-repo: <TARGET_REPO>
-        target-file-path: <TARGET_FILE_PATH>
-        target-branch: <TARGET_BRANCH>
-        teams-workflow-url: ${{ secrets.TEAMS_WORKFLOWS_URL }}
-        teams-message-start-json: ${{ steps.prepare-teams-messages.outputs.TEAMS_START_JSON }}
-        teams-message-complete-json: ${{ steps.prepare-teams-messages.outputs.TEAMS_COMPLETE_JSON }}
+        target-repo: ${{ env.TARGET_REPO }}
+        target-file-path: ${{ env.TARGET_FILE_PATH }}
+        target-branch: ${{ env.TARGET_BRANCH }}
+        
+    - name: Send Teams notification - Complete
+      if: steps.prepare-teams-messages.outputs.TEAMS_COMPLETE_JSON != ''
+      shell: bash
+      run: |
+        if [ -z "${{ secrets.TEAMS_WORKFLOWS_URL }}" ]; then
+          echo "⚠️ TEAMS_WORKFLOWS_URL이 설정되지 않았습니다. Teams 알림을 건너뜁니다."
+          exit 0
+        fi
+        
+        echo "📢 Teams 알림 전송 중: 배포 완료"
+        
+        # 사용자 제공 JSON을 그대로 사용
+        echo '${{ steps.prepare-teams-messages.outputs.TEAMS_COMPLETE_JSON }}' > teams_message_complete.json
+        
+        # Teams Webhook으로 메시지 전송
+        curl -H "Content-Type: application/json" \
+             -d @teams_message_complete.json \
+             "${{ secrets.TEAMS_WORKFLOWS_URL }}"
+        
+        echo "✅ Teams 배포 완료 알림 전송 완료"
 
     - name: Post-deployment notification
       if: steps.docker-build-update.outputs.updated-file != ''
