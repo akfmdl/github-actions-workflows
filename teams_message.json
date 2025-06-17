@@ -1,0 +1,64 @@
+{
+    "type": "message",
+    "attachments": [
+        {
+            "contentType": "application/vnd.microsoft.card.adaptive",
+            "content": {
+                "": "http://adaptivecards.json/schema/adaptive-card/1.5",
+                "type": "AdaptiveCard",
+                "msteams": {
+                    "entities": [
+                        {
+                            "type": "mention",
+                            "text": "<at>오디오엔진</at>",
+                            "mentioned": {
+                                "id": "ZjdkZDQ4MmItYzU4ZC00MDViLWFlNjAtNTlmNmFjMzZmZWVmIyNjMDQzMWZmOC0zZTBkLTQ0ZjgtYmFlZS05YWFjMDQ1Nzk1NjMjI3RLUUEyYWI5RnQ=",
+                                "name": "오디오엔진",
+                                "type": "tag"
+                            }
+                        }
+                    ]
+                },
+                "body": [
+                    {
+                        "type": "TextBlock",
+                        "text": "✅ Stage 배포 완료",
+                        "size": "Large",
+                        "weight": "Bolder"
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": "<at>오디오엔진</at>",
+                        "wrap": true
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": "Stage 배포가 성공적으로 완료되었습니다.",
+                        "wrap": true
+                    },
+                    {
+                        "type": "FactSet",
+                        "facts": [
+                            {
+                                "title": "전체 이미지명: ",
+                                "value": "goranidocker/nginx:b729c33087fb33e1aca5c03b9fae9e20e8b96a3b"
+                            },
+                            {
+                                "title": "대상 레포지토리: ",
+                                "value": "est-infra/persolive-admin-aks-stg"
+                            },
+                            {
+                                "title": "대상 브랜치:",
+                                "value": "main"
+                            },
+                            {
+                                "title": "업데이트된 파일:",
+                                "value": "stg-idc/02-perso-vt/01-perso-vt-audio/01-perso-vt-audio-engine/perso-vt-audio-engine-stg.yaml"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}
