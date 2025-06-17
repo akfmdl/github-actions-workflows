@@ -31,22 +31,11 @@ jobs:
           # 변수 정의
           IMAGE_INFO="${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
           REPO_INFO="${{ env.TARGET_REPO }}"
-          
-          # Python으로 Teams JSON 템플릿 처리 (안전한 JSON 생성)
-          echo "🐍 Python으로 Teams JSON 처리 중..."
-          
-          # Python 스크립트로 Teams JSON 생성 (argparse 방식)
-          if [ -f "scripts/teams_message_start.json" ]; then
-            TEAMS_START_JSON=$(python3 scripts/process_teams_template.py \
-              scripts/teams_message_start.json \
-              --image-info "${IMAGE_INFO}" \
-              --repo-info "${REPO_INFO}" \
-              --release-notes-file "${{ env.RELEASE_NOTES_FILE }}")
-            echo "📝 Python으로 Teams JSON 생성 완료"
-          else
-            echo "⚠️ Teams 템플릿 파일이 없습니다: scripts/teams_message_start.json"
-            TEAMS_START_JSON='{"type": "message", "text": "Teams 템플릿을 찾을 수 없습니다."}'
-          fi
+
+          # JSON 파일 읽기 및 변수 치환
+          TEAMS_START_JSON=$(cat scripts/teams_message_start.json | \
+            sed "s|\${IMAGE_INFO}|${IMAGE_INFO}|g" | \
+            sed "s|\${REPO_INFO}|${REPO_INFO}|g")
           
           # 멀티라인 출력 처리
           echo "TEAMS_START_JSON<<EOF" >> $GITHUB_OUTPUT
