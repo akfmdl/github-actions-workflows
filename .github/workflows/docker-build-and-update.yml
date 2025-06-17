@@ -3,7 +3,7 @@ name: Docker Build, Push and Update Repository
 on:
   push:
     branches:
-      - <TARGET_BRANCH>
+      - test
 
 env:
   DOCKER_REGISTRY: persolive.azurecr.io
@@ -20,6 +20,14 @@ jobs:
     steps:
     - name: Checkout source code
       uses: actions/checkout@v4
+
+    - name: Auto Release
+      id: auto-release
+      uses: akfmdl/github-actions-workflows/actions/auto-release-custom-versioning@test
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        release-branches: '["test"]'
+        jira-base-url: ${{ secrets.JIRA_BASE_URL }}
 
     - name: Prepare Teams message templates
       id: prepare-teams-messages
@@ -40,8 +48,7 @@ jobs:
             TEAMS_START_JSON=$(python3 scripts/process_teams_template.py \
               scripts/teams_message_start.json \
               --image-info "${IMAGE_INFO}" \
-              --repo-info "${REPO_INFO}" \
-              --release-notes-file "${{ env.RELEASE_NOTES_FILE }}")
+              --repo-info "${REPO_INFO}"
             echo "📝 Python으로 Teams JSON 생성 완료"
           else
             echo "⚠️ Teams 템플릿 파일이 없습니다: scripts/teams_message_start.json"
@@ -56,45 +63,6 @@ jobs:
         else
           echo "TEAMS_START_JSON=" >> $GITHUB_OUTPUT
           echo "⚠️ Teams 시작 메시지 파일이 없습니다."
-        fi
-        
-        # Teams 완료 메시지 준비
-        if [ -f "scripts/teams_message_complete.json" ]; then
-          echo "📋 Teams 완료 메시지 템플릿 읽는 중..."
-          
-          # 변수 정의
-          IMAGE_INFO="${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
-          REPO_INFO="${{ env.TARGET_REPO }}"
-          FULL_IMAGE="${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
-          TARGET_BRANCH="${{ env.TARGET_BRANCH }}"
-          UPDATED_FILE="${{ env.TARGET_FILE_PATH }}"
-          GITHUB_REPOSITORY="${{ github.repository }}"
-          GITHUB_RUN_ID="${{ github.run_id }}"
-          
-          # 성공 시 메시지 (기본값)
-          ACTIVITY_TITLE="✅ Stage 배포 완료"
-          STATUS_MESSAGE="Stage 배포가 성공적으로 완료되었습니다."
-          
-          # JSON 파일 읽기 및 변수 치환
-          TEAMS_COMPLETE_JSON=$(cat scripts/teams_message_complete.json | \
-            sed "s|\${IMAGE_INFO}|${IMAGE_INFO}|g" | \
-            sed "s|\${REPO_INFO}|${REPO_INFO}|g" | \
-            sed "s|\${FULL_IMAGE}|${FULL_IMAGE}|g" | \
-            sed "s|\${TARGET_BRANCH:-default}|${TARGET_BRANCH}|g" | \
-            sed "s|\${UPDATED_FILE:-없음}|${UPDATED_FILE}|g" | \
-            sed "s|\${ACTIVITY_TITLE}|${ACTIVITY_TITLE}|g" | \
-            sed "s|\${STATUS_MESSAGE}|${STATUS_MESSAGE}|g" | \
-            sed "s|\${GITHUB_REPOSITORY}|${GITHUB_REPOSITORY}|g" | \
-            sed "s|\${GITHUB_RUN_ID}|${GITHUB_RUN_ID}|g")
-          
-          # 멀티라인 출력 처리
-          echo "TEAMS_COMPLETE_JSON<<EOF" >> $GITHUB_OUTPUT
-          echo "$TEAMS_COMPLETE_JSON" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-          echo "✅ Teams 완료 메시지 준비 완료"
-        else
-          echo "TEAMS_COMPLETE_JSON=" >> $GITHUB_OUTPUT
-          echo "⚠️ Teams 완료 메시지 파일이 없습니다."
         fi
 
     - name: Send Teams notification - Start
@@ -136,26 +104,26 @@ jobs:
         target-file-path: ${{ env.TARGET_FILE_PATH }}
         target-branch: ${{ env.TARGET_BRANCH }}
         
-    - name: Send Teams notification - Complete
-      if: steps.prepare-teams-messages.outputs.TEAMS_COMPLETE_JSON != ''
-      shell: bash
-      run: |
-        if [ -z "${{ secrets.TEAMS_WORKFLOWS_URL }}" ]; then
-          echo "⚠️ TEAMS_WORKFLOWS_URL이 설정되지 않았습니다. Teams 알림을 건너뜁니다."
-          exit 0
-        fi
+    # - name: Send Teams notification - Complete
+    #   if: steps.prepare-teams-messages.outputs.TEAMS_COMPLETE_JSON != ''
+    #   shell: bash
+    #   run: |
+    #     if [ -z "${{ secrets.TEAMS_WORKFLOWS_URL }}" ]; then
+    #       echo "⚠️ TEAMS_WORKFLOWS_URL이 설정되지 않았습니다. Teams 알림을 건너뜁니다."
+    #       exit 0
+    #     fi
         
-        echo "📢 Teams 알림 전송 중: 배포 완료"
+    #     echo "📢 Teams 알림 전송 중: 배포 완료"
         
-        # 사용자 제공 JSON을 그대로 사용
-        echo '${{ steps.prepare-teams-messages.outputs.TEAMS_COMPLETE_JSON }}' > teams_message_complete.json
+    #     # 사용자 제공 JSON을 그대로 사용
+    #     echo '${{ steps.prepare-teams-messages.outputs.TEAMS_COMPLETE_JSON }}' > teams_message_complete.json
         
-        # Teams Webhook으로 메시지 전송
-        curl -H "Content-Type: application/json" \
-             -d @teams_message_complete.json \
-             "${{ secrets.TEAMS_WORKFLOWS_URL }}"
+    #     # Teams Webhook으로 메시지 전송
+    #     curl -H "Content-Type: application/json" \
+    #          -d @teams_message_complete.json \
+    #          "${{ secrets.TEAMS_WORKFLOWS_URL }}"
         
-        echo "✅ Teams 배포 완료 알림 전송 완료"
+    #     echo "✅ Teams 배포 완료 알림 전송 완료"
 
     - name: Post-deployment notification
       if: steps.docker-build-update.outputs.updated-file != ''
