@@ -1,0 +1,165 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: perso-vt-audio-engine-stg
+  namespace: perso-vt-audio
+  labels:
+    app: perso-vt-audio-engine-stg
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: perso-vt-audio-engine-stg
+  template:
+    metadata:
+      labels:
+        app: perso-vt-audio-engine-stg
+    spec:
+      containers:
+        - name: perso-vt-audio-engine-stg
+          image: persolive.azurecr.io/audio-engine-server:2025.06.0.5
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: notify-deployment-complete
+  namespace: perso-vt-audio
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  # Job 완료 후 300초(5분) 뒤 자동 삭제
+  ttlSecondsAfterFinished: 300
+  # 실패 시 재시도 횟수 제한
+  backoffLimit: 2
+  # 최대 실행 시간 (10분)
+  activeDeadlineSeconds: 600
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: teams-notification
+        image: curlimages/curl:latest
+        env:
+        - name: FULL_IMAGE
+          value: persolive.azurecr.io/audio-engine-server:2025.06.0.5
+        - name: REPO_INFO
+          value: est-infra/persolive-admin-aks-stg
+        - name: TARGET_BRANCH
+          value: main
+        - name: UPDATED_FILE
+          value: stg-idc/02-perso-vt/01-perso-vt-audio/01-perso-vt-audio-engine/perso-vt-audio-engine-stg.yaml
+        - name: TEAMS_WORKFLOW_URL
+          value: https://prod-29.koreacentral.logic.azure.com:443/workflows/349eefc58f9c41f8bd88fb5252bfe9c1/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=YtUh3bh4RnGEUfzixwCFNlYHefFxe4y15LLUO2QrKII
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "📢 Teams 배포 완료 알림을 전송합니다..."
+          
+          # Teams Workflow URL 확인
+          if [ -z "$TEAMS_WORKFLOW_URL" ]; then
+            echo "⚠️ TEAMS_Workflow_URL이 설정되지 않았습니다. Teams 알림을 건너뜁니다."
+            exit 0
+          fi
+
+          
+          # Teams 메시지 JSON 생성
+          cat > /tmp/teams_message.json << EOF
+          {
+              "type": "message",
+              "attachments": [
+                  {
+                      "contentType": "application/vnd.microsoft.card.adaptive",
+                      "content": {
+                          "$schema": "http://adaptivecards.json/schema/adaptive-card/1.5",
+                          "type": "AdaptiveCard",
+                          "msteams": {
+                              "entities": [
+                                  {
+                                      "type": "mention",
+                                      "text": "<at>오디오엔진</at>",
+                                      "mentioned": {
+                                          "id": "ZjdkZDQ4MmItYzU4ZC00MDViLVFlNjAtNTlmNmFjMzZmZWVmIyNjMDQzMWZmOC0zZTBkLTQ0ZjgtYmFlZS05YWFjMDQ1Nzk1NjMjI3RLUUEyYWI5RnQ=",
+                                          "name": "오디오엔진",
+                                          "type": "tag"
+                                      }
+                                  }
+                              ]
+                          },
+                          "body": [
+                              {
+                                  "type": "TextBlock",
+                                  "text": "✅ Stage 배포 완료",
+                                  "size": "Large",
+                                  "weight": "Bolder"
+                              },
+                              {
+                                  "type": "TextBlock",
+                                  "text": "<at>오디오엔진</at>",
+                                  "wrap": true
+                              },
+                              {
+                                  "type": "TextBlock",
+                                  "text": "Stage 배포가 성공적으로 완료되었습니다.",
+                                  "wrap": true
+                              },
+                              {
+                                  "type": "FactSet",
+                                  "facts": [
+                                      {
+                                          "title": "전체 이미지명: ",
+                                          "value": "${FULL_IMAGE}"
+                                      },
+                                      {
+                                          "title": "대상 레포지토리: ",
+                                          "value": "${REPO_INFO}"
+                                      },
+                                      {
+                                          "title": "대상 브랜치:",
+                                          "value": "${TARGET_BRANCH:-main}"
+                                      },
+                                      {
+                                          "title": "업데이트된 파일:",
+                                          "value": "${UPDATED_FILE:-알 수 없음}"
+                                      }
+                                  ]
+                              }
+                          ]
+                      }
+                  }
+              ]
+          }
+          EOF
+          
+          echo "📋 Teams 메시지 내용:"
+          cat /tmp/teams_message.json
+          
+          # Teams Workflow로 메시지 전송
+          response=$(curl -w "%{http_code}" -s -X POST \
+            -H "Content-Type: application/json" \
+            -d @/tmp/teams_message.json \
+            "$TEAMS_WORKFLOW_URL")
+          
+          # /bin/sh 호환 문법으로 응답 코드 추출
+          http_code=$(echo "$response" | tail -c 4)
+          response_body=$(echo "$response" | head -c -4)
+          
+          echo ""
+          echo "HTTP 응답 코드: $http_code"
+          if [ "$response_body" != "" ]; then
+            echo "응답 내용: $response_body"
+          fi
+          
+          if [ "$http_code" -ge "400" ]; then
+            echo "❌ Teams 알림 전송 실패 (HTTP $http_code)"
+            exit 1
+          else
+            echo "✅ Teams 배포 완료 알림 전송 성공"
+          fi
+          
+          echo "🎉 배포 완료 알림 전송 완료"

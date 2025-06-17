@@ -3,15 +3,14 @@ name: Docker Build, Push and Update Repository
 on:
   push:
     branches:
-      - <TARGET_BRANCH>
-
+      - test
 env:
-  DOCKER_REGISTRY: <DOCKER_REGISTRY>
-  IMAGE_NAME: <IMAGE_NAME>
-  IMAGE_TAG: <IMAGE_TAG>
-  TARGET_REPO: <TARGET_REPO>
-  TARGET_BRANCH: <TARGET_BRANCH>
-  TARGET_FILE_PATH: <TARGET_FILE_PATH>
+  DOCKER_REGISTRY: persolive.azurecr.io
+  IMAGE_NAME: audio-engine-server
+  TARGET_REPO: akfmdl/github-actions-workflows
+  TARGET_BRANCH: test
+  TARGET_FILE_PATH: values.yaml
+  IMAGE_TAG: 1.0.0
 
 jobs:
   docker-build-and-update:
