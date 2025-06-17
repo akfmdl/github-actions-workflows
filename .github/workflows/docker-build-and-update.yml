@@ -122,19 +122,19 @@ jobs:
       id: docker-build-update
       uses: akfmdl/github-actions-workflows/actions/docker-build-and-update@main
       with:
-        docker-registry: <DOCKER_REGISTRY>
+        docker-registry: ${{ env.DOCKER_REGISTRY }}
         github-token: ${{ secrets.GIT_TOKEN }}
-        image-name: <IMAGE_NAME>
-        image-tag: <IMAGE_TAG>
+        image-name: ${{ env.IMAGE_NAME }}
+        image-tag: ${{ env.IMAGE_TAG }}
         dockerfile-path: Dockerfile
         build-context: .
         build-args: |
           GIT_TOKEN=${{ secrets.GIT_TOKEN }}
         registry-username: ${{ secrets.REGISTRY_USERNAME }}
         registry-password: ${{ secrets.REGISTRY_PASSWORD }}
-        target-repo: <TARGET_REPO>
-        target-file-path: <TARGET_FILE_PATH>
-        target-branch: <TARGET_BRANCH>
+        target-repo: ${{ env.TARGET_REPO }}
+        target-file-path: ${{ env.TARGET_FILE_PATH }}
+        target-branch: ${{ env.TARGET_BRANCH }}
         
     - name: Send Teams notification - Complete
       if: steps.prepare-teams-messages.outputs.TEAMS_COMPLETE_JSON != ''
