@@ -180,8 +180,9 @@ async function buildAndPushDockerImage() {
 // YAML 파일에서 이미지 태그 업데이트
 function updateYamlImageTag(content) {
     const fullImageName = `${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}`;
+    // image: 와 value: 모두 매칭하는 정규표현식
     const imagePattern = new RegExp(
-        `(\\s*image:\\s*)(${DOCKER_REGISTRY}/${IMAGE_NAME}):([^\\s\\n]+)`,
+        `(\\s*(?:image|value):\\s*)(${DOCKER_REGISTRY}/${IMAGE_NAME}):([^\\s\\n]+)`,
         'g'
     );
 
