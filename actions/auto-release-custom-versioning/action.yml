@@ -97,11 +97,11 @@ runs:
           exit 1
         fi
 
-    - name: Use local calendar version wrapper script
+    - name: Download calendar version wrapper script
       shell: bash
       run: |
-        echo "📥 Using local calendar version wrapper script..."
-        cp scripts/calendar-version-wrapper.js /tmp/calendar-version-wrapper.js
+        echo "📥 Downloading calendar version wrapper script..."
+        curl -fsSL -o /tmp/calendar-version-wrapper.js https://raw.githubusercontent.com/akfmdl/github-actions-workflows/test/scripts/calendar-version-wrapper.js
         chmod +x /tmp/calendar-version-wrapper.js
 
     - name: Run custom versioning
