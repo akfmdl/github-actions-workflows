@@ -281,7 +281,7 @@ function generateReleaseNotes(prInfos, version) {
     }
 
     // 전체 변경사항 링크
-    releaseNotes += `---\n\n**Full Changelog**: https://github.com/${GITHUB_REPOSITORY}/compare/v${getLastVersion()}...v${version}`;
+    releaseNotes += `---\n\n**Full Changelog**: https://github.com/${GITHUB_REPOSITORY}/compare/${getLastVersion()}...${version}`;
 
     return releaseNotes;
 }
