@@ -9,6 +9,13 @@ const GITHUB_API_URL = process.env.GITHUB_API_URL || 'https://api.github.com';
 const JIRA_BASE_URL = process.env.JIRA_BASE_URL || 'https://your-jira-instance.atlassian.net';
 const VERSION_PY_PATH = process.env.VERSION_PY_PATH || '';
 const VERSION_PREFIX = process.env.VERSION_PREFIX || '';
+const DEFAULT_RELEASE_TYPE = process.env.DEFAULT_RELEASE_TYPE || 'patch'; // 'patch' 또는 'minor'
+
+// DEFAULT_RELEASE_TYPE 유효성 검사
+if (!['patch', 'minor'].includes(DEFAULT_RELEASE_TYPE)) {
+    console.error(`❌ 잘못된 DEFAULT_RELEASE_TYPE: ${DEFAULT_RELEASE_TYPE}. 'patch' 또는 'minor'만 사용 가능합니다.`);
+    process.exit(1);
+}
 
 const DEFAULT_LABEL_MAPPINGS = {
     // PR 라벨: 릴리즈 타입
@@ -348,8 +355,8 @@ async function analyzeCommitsForReleaseType() {
         console.log(`🎯 최종 결정된 릴리즈 타입: ${globalReleaseType}`);
     } else {
         console.log('⚪ 릴리즈와 관련된 변경사항이 없습니다.');
-        globalReleaseType = 'patch'; // 기본값으로 patch 사용
-        console.log(`🔧 기본값으로 ${globalReleaseType} 릴리즈 사용`);
+        globalReleaseType = DEFAULT_RELEASE_TYPE; // 환경변수로 설정된 기본값 사용
+        console.log(`🔧 기본값으로 ${globalReleaseType} 릴리즈 사용 (DEFAULT_RELEASE_TYPE 환경변수)`);
     }
 
     return { releaseType: globalReleaseType, prInfos };
