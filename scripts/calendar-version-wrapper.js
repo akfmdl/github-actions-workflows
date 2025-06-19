@@ -278,18 +278,30 @@ async function findPRsFromCommitMessages(sinceDate) {
 
         const prNumbers = new Set();
         const patterns = [
-            /Merge pull request #(\d+)/i,
-            /\(#(\d+)\)$/,
-            /#(\d+)$/,
-            /\(#(\d+)\)/g // 중간에 있는 PR 번호도 찾기
+            /Merge pull request #(\d+)/gi,
+            /\(#(\d+)\)/g,
+            /#(\d+)/g
         ];
 
         for (const message of commits) {
+            console.log(`🔎 커밋 메시지 분석: "${message}"`);
+
             for (const pattern of patterns) {
-                const matches = message.matchAll(pattern);
-                for (const match of matches) {
-                    if (match[1]) {
-                        prNumbers.add(parseInt(match[1], 10));
+                // matchAll 대신 match를 사용하고 모든 매치 찾기
+                let match;
+                const regex = new RegExp(pattern.source, pattern.flags);
+                const allMatches = message.match(regex);
+
+                if (allMatches) {
+                    // 각 매치에서 PR 번호 추출
+                    const singleMatch = new RegExp(pattern.source, pattern.flags.replace('g', ''));
+                    for (const matchStr of allMatches) {
+                        const result = matchStr.match(singleMatch);
+                        if (result && result[1]) {
+                            const prNum = parseInt(result[1], 10);
+                            console.log(`   🎯 발견된 PR 번호: #${prNum}`);
+                            prNumbers.add(prNum);
+                        }
                     }
                 }
             }
@@ -454,7 +466,10 @@ function generateCalendarVersion(releaseType) {
     const currentMonth = now.getMonth() + 1;
 
     const lastVersion = getLastVersion();
+    console.log(`🔍 마지막 버전: ${lastVersion}`);
+
     const versionParts = lastVersion.split('.');
+    console.log(`🔍 버전 파트들: [${versionParts.join(', ')}]`);
 
     while (versionParts.length < 4) {
         versionParts.push('0');
@@ -466,20 +481,31 @@ function generateCalendarVersion(releaseType) {
     let lastMinor = parseInt(versionParts[2], 10);
     let lastFixNumber = 0;
 
+    console.log(`🔍 파싱된 버전: ${lastYear}.${lastMonth}.${lastMinor}`);
+    console.log(`🔍 현재 날짜: ${currentYear}.${currentMonth}`);
+    console.log(`🔍 릴리즈 타입: ${releaseType}`);
+
     // patch 버전에서 숫자 부분만 추출 (문자열 prefix가 있는 경우 고려)
     const lastFixPart = versionParts[3];
+    console.log(`🔍 마지막 패치 부분: "${lastFixPart}"`);
+    console.log(`🔍 PATCH_VERSION_PREFIX: "${PATCH_VERSION_PREFIX}"`);
+
     if (PATCH_VERSION_PREFIX && lastFixPart.startsWith(PATCH_VERSION_PREFIX)) {
         // prefix가 있는 경우: 'rc1' -> 1
         lastFixNumber = parseInt(lastFixPart.substring(PATCH_VERSION_PREFIX.length), 10) || 0;
+        console.log(`🔍 prefix 있는 경우 파싱: ${lastFixNumber}`);
     } else if (!PATCH_VERSION_PREFIX && /^\d+$/.test(lastFixPart)) {
         // prefix가 없고 숫자만 있는 경우: '1' -> 1
         lastFixNumber = parseInt(lastFixPart, 10) || 0;
+        console.log(`🔍 숫자만 있는 경우 파싱: ${lastFixNumber}`);
     } else if (!PATCH_VERSION_PREFIX && isNaN(parseInt(lastFixPart, 10))) {
         // prefix가 없는데 숫자가 아닌 경우: 'rc1' -> 0 (리셋)
         lastFixNumber = 0;
+        console.log(`🔍 숫자가 아닌 경우 리셋: ${lastFixNumber}`);
     } else {
         // 기타 경우
         lastFixNumber = parseInt(lastFixPart, 10) || 0;
+        console.log(`🔍 기타 경우 파싱: ${lastFixNumber}`);
     }
 
     let newYear = currentYear;
@@ -487,18 +513,26 @@ function generateCalendarVersion(releaseType) {
     let newMinor = 0;
     let newFixNumber = 0;
 
+    console.log(`🔍 년/월 비교: 현재(${currentYear}.${currentMonth}) vs 마지막(${lastYear}.${lastMonth})`);
+
     if (currentYear !== lastYear || currentMonth !== lastMonth) {
+        console.log(`🔄 년/월이 변경되어 버전 리셋`);
         newMinor = 0;
         newFixNumber = 0;
     } else {
+        console.log(`✅ 같은 년/월 내에서 버전 증가`);
         if (releaseType === 'minor') {
             newMinor = (lastMinor || 0) + 1;
             newFixNumber = 0;
+            console.log(`🔺 Minor 릴리즈: ${lastMinor} -> ${newMinor}`);
         } else if (releaseType === 'patch') {
             newMinor = lastMinor || 0;
             newFixNumber = lastFixNumber + 1;
+            console.log(`🔺 Patch 릴리즈: ${lastFixNumber} -> ${newFixNumber}`);
         }
     }
+
+    console.log(`🎯 새 버전 구성: ${newYear}.${newMonth}.${newMinor}.${newFixNumber} (release type: ${releaseType})`);
 
     // 버전 포맷팅 (minor 릴리즈일 때 patch 버전 생략 여부 고려)
     let finalVersion;
