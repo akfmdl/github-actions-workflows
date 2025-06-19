@@ -10,6 +10,8 @@ const JIRA_BASE_URL = process.env.JIRA_BASE_URL || 'https://your-jira-instance.a
 const VERSION_PY_PATH = process.env.VERSION_PY_PATH || '';
 const VERSION_PREFIX = process.env.VERSION_PREFIX || '';
 const DEFAULT_RELEASE_TYPE = process.env.DEFAULT_RELEASE_TYPE || 'patch'; // 'patch' 또는 'minor'
+const PATCH_VERSION_PREFIX = process.env.PATCH_VERSION_PREFIX || ''; // patch 버전에 사용할 문자열 prefix (예: 'rc', 'alpha' 등)
+const INCLUDE_PATCH_FOR_MINOR = process.env.INCLUDE_PATCH_FOR_MINOR !== 'false'; // minor 릴리즈일 때 patch 버전 포함 여부 (환경변수가 없으면 기본값: true)
 
 // DEFAULT_RELEASE_TYPE 유효성 검사
 if (!['patch', 'minor'].includes(DEFAULT_RELEASE_TYPE)) {
@@ -374,27 +376,65 @@ function generateCalendarVersion(releaseType) {
         versionParts.push('0');
     }
 
-    const [lastYear, lastMonth, lastMinor, lastFix] = versionParts.map(n => parseInt(n, 10));
+    // 마지막 버전의 patch 부분을 파싱 (문자열 prefix가 있을 수 있음)
+    let lastYear = parseInt(versionParts[0], 10);
+    let lastMonth = parseInt(versionParts[1], 10);
+    let lastMinor = parseInt(versionParts[2], 10);
+    let lastFixNumber = 0;
+
+    // patch 버전에서 숫자 부분만 추출 (문자열 prefix가 있는 경우 고려)
+    const lastFixPart = versionParts[3];
+    if (PATCH_VERSION_PREFIX && lastFixPart.startsWith(PATCH_VERSION_PREFIX)) {
+        // prefix가 있는 경우: 'rc1' -> 1
+        lastFixNumber = parseInt(lastFixPart.substring(PATCH_VERSION_PREFIX.length), 10) || 0;
+    } else if (!PATCH_VERSION_PREFIX && /^\d+$/.test(lastFixPart)) {
+        // prefix가 없고 숫자만 있는 경우: '1' -> 1
+        lastFixNumber = parseInt(lastFixPart, 10) || 0;
+    } else if (!PATCH_VERSION_PREFIX && isNaN(parseInt(lastFixPart, 10))) {
+        // prefix가 없는데 숫자가 아닌 경우: 'rc1' -> 0 (리셋)
+        lastFixNumber = 0;
+    } else {
+        // 기타 경우
+        lastFixNumber = parseInt(lastFixPart, 10) || 0;
+    }
 
     let newYear = currentYear;
     let newMonth = currentMonth;
     let newMinor = 0;
-    let newFix = 0;
+    let newFixNumber = 0;
 
     if (currentYear !== lastYear || currentMonth !== lastMonth) {
         newMinor = 0;
-        newFix = 0;
+        newFixNumber = 0;
     } else {
         if (releaseType === 'minor') {
             newMinor = (lastMinor || 0) + 1;
-            newFix = 0;
+            newFixNumber = 0;
         } else if (releaseType === 'patch') {
             newMinor = lastMinor || 0;
-            newFix = (lastFix || 0) + 1;
+            newFixNumber = lastFixNumber + 1;
         }
     }
 
-    return `${VERSION_PREFIX}${newYear}.${newMonth.toString().padStart(2, '0')}.${newMinor}.${newFix}`;
+    // 버전 포맷팅 (minor 릴리즈일 때 patch 버전 생략 여부 고려)
+    let finalVersion;
+
+    if (releaseType === 'minor' && !INCLUDE_PATCH_FOR_MINOR) {
+        // minor 릴리즈이고 patch 버전을 생략하는 경우
+        finalVersion = `${VERSION_PREFIX}${newYear}.${newMonth.toString().padStart(2, '0')}.${newMinor}`;
+        console.log(`🔖 Minor release with patch version omitted: ${finalVersion}`);
+    } else {
+        // patch 버전 포함
+        const patchVersion = PATCH_VERSION_PREFIX ? `${PATCH_VERSION_PREFIX}${newFixNumber}` : `${newFixNumber}`;
+        finalVersion = `${VERSION_PREFIX}${newYear}.${newMonth.toString().padStart(2, '0')}.${newMinor}.${patchVersion}`;
+
+        // 로그 출력
+        if (PATCH_VERSION_PREFIX) {
+            console.log(`🔖 Patch version prefix applied: "${PATCH_VERSION_PREFIX}" -> ${patchVersion}`);
+        }
+    }
+
+    return finalVersion;
 }
 
 // calendar versioning 기반 릴리즈 생성
