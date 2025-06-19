@@ -35,9 +35,9 @@ const DEFAULT_LABEL_MAPPINGS = {
 function getLastVersion() {
     try {
         const lastTag = execSync('git describe --tags --abbrev=0', { encoding: 'utf8' }).trim();
-        const version = lastTag.replace(/^v/, '');
+        const version = lastTag.replace(/^[a-zA-Z-]*/, ''); // 모든 prefix 제거
         console.log(`🔍 Git describe로 가져온 마지막 태그: "${lastTag}" -> 버전: "${version}"`);
-        return version;
+        return { version, tag: lastTag };
     } catch (error) {
         try {
             console.log(`🔄 모든 태그에서 최신 버전 검색 중...`);
@@ -47,17 +47,17 @@ function getLastVersion() {
                 const tags = allTags.split('\n').filter(tag => tag.trim());
                 if (tags.length > 0) {
                     const latestTag = tags[0];
-                    const version = latestTag.replace(/^v/, '');
+                    const version = latestTag.replace(/^[a-zA-Z-]*/, ''); // 모든 prefix 제거
                     console.log(`🎯 최신 태그: ${latestTag} -> 버전: ${version}`);
-                    return version;
+                    return { version, tag: latestTag };
                 }
             }
 
             console.log(`🔧 기본 버전 사용: 2024.01.0.0`);
-            return '2024.01.0.0';
+            return { version: '2024.01.0.0', tag: null };
         } catch (tagError) {
             console.log(`🔧 기본 버전 사용: 2024.01.0.0`);
-            return '2024.01.0.0';
+            return { version: '2024.01.0.0', tag: null };
         }
     }
 }
@@ -231,14 +231,23 @@ function generateReleaseNotes(prInfos, version) {
 
     // 첫 번째 릴리즈인지 확인
     const lastVersion = getLastVersion();
-    const lastTag = `v${lastVersion}`;
+
+    // 실제 최신 태그 찾기
+    let tagExists = false;
+    let lastTag;
 
     try {
-        // 실제 태그가 존재하는지 확인
-        execSync(`git rev-parse ${lastTag}`, { encoding: 'utf8', stdio: 'ignore' });
+        lastTag = findActualTagForVersion(lastVersion);
+        tagExists = true;
+    } catch (error) {
+        // 태그를 찾을 수 없음
+        tagExists = false;
+    }
+
+    if (tagExists) {
         // 태그가 존재하면 일반적인 비교 링크
         releaseNotes += `**Full Changelog**: https://github.com/${GITHUB_REPOSITORY}/compare/${lastVersion}...${version}`;
-    } catch (error) {
+    } else {
         // 첫 번째 릴리즈인 경우 (태그가 존재하지 않음)
         try {
             // 첫 번째 커밋 해시 가져오기
@@ -262,38 +271,84 @@ async function getRecentMergedPullRequests() {
     }
 
     try {
-        const lastVersion = getLastVersion();
-        const lastTag = `v${lastVersion}`;
-
-        console.log(`🔍 마지막 태그 ${lastTag} 이후의 커밋들에서 PR 검색...`);
+        const lastVersionInfo = getLastVersion();
+        const lastTag = lastVersionInfo.tag;
 
         // 마지막 태그 이후의 커밋들에서 PR 번호 추출
         const prNumbers = new Set();
 
-        try {
-            // 마지막 태그부터 HEAD까지의 커밋 메시지 가져오기
-            const commits = execSync(`git log ${lastTag}..HEAD --pretty=format:"%s"`, { encoding: 'utf8' })
-                .trim()
-                .split('\n')
-                .filter(line => line.trim());
+        if (lastTag) {
+            console.log(`🔍 마지막 태그 ${lastTag} 이후의 커밋들에서 PR 검색...`);
 
-            console.log(`📋 마지막 태그 이후 커밋 수: ${commits.length}개`);
+            try {
+                // 현재 HEAD와 마지막 태그의 커밋 해시 확인
+                const currentHead = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
+                const lastTagHash = execSync(`git rev-parse ${lastTag}`, { encoding: 'utf8' }).trim();
 
-            for (const message of commits) {
-                // 모든 #숫자 패턴을 찾아서 PR 번호로 간주
-                const prMatches = message.match(/#(\d+)/g);
-                if (prMatches) {
-                    for (const match of prMatches) {
-                        const prNum = parseInt(match.replace('#', ''), 10);
-                        if (prNum && prNum > 0) {
-                            prNumbers.add(prNum);
+                console.log(`🔍 현재 HEAD: ${currentHead}`);
+                console.log(`🔍 마지막 태그 ${lastTag} 해시: ${lastTagHash}`);
+
+                if (currentHead === lastTagHash) {
+                    console.log(`⚠️ 현재 HEAD와 마지막 태그가 동일합니다. 새로운 커밋이 없습니다.`);
+                    return [];
+                }
+
+                // 마지막 태그부터 HEAD까지의 커밋 메시지 가져오기
+                const commits = execSync(`git log ${lastTag}..HEAD --pretty=format:"%s"`, { encoding: 'utf8' })
+                    .trim()
+                    .split('\n')
+                    .filter(line => line.trim());
+
+                console.log(`📋 마지막 태그 이후 커밋 수: ${commits.length}개`);
+
+                if (commits.length === 0) {
+                    console.log(`⚠️ 마지막 태그 ${lastTag} 이후 새로운 커밋이 없습니다.`);
+                    return [];
+                }
+
+                console.log(`📋 커밋 메시지들:`);
+                commits.forEach((commit, index) => {
+                    console.log(`   ${index + 1}. ${commit}`);
+                });
+
+                for (const message of commits) {
+                    // 모든 #숫자 패턴을 찾아서 PR 번호로 간주
+                    const prMatches = message.match(/#(\d+)/g);
+                    if (prMatches) {
+                        for (const match of prMatches) {
+                            const prNum = parseInt(match.replace('#', ''), 10);
+                            if (prNum && prNum > 0) {
+                                console.log(`   🎯 발견된 PR 번호: #${prNum} (커밋: "${message}")`);
+                                prNumbers.add(prNum);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                // 태그가 없는 경우 최근 30일간의 모든 커밋 검색
+                console.log(`⚠️ 태그 범위 검색 실패, 최근 30일간 커밋 검색: ${error.message}`);
+
+                const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                const commits = execSync(`git log --since="${since}" --pretty=format:"%s"`, { encoding: 'utf8' })
+                    .trim()
+                    .split('\n')
+                    .filter(line => line.trim());
+
+                for (const message of commits) {
+                    const prMatches = message.match(/#(\d+)/g);
+                    if (prMatches) {
+                        for (const match of prMatches) {
+                            const prNum = parseInt(match.replace('#', ''), 10);
+                            if (prNum && prNum > 0) {
+                                prNumbers.add(prNum);
+                            }
                         }
                     }
                 }
             }
-        } catch (error) {
+        } else {
             // 태그가 없는 경우 최근 30일간의 모든 커밋 검색
-            console.log(`⚠️ 태그 범위 검색 실패, 최근 30일간 커밋 검색: ${error.message}`);
+            console.log(`⚠️ 태그가 없으므로 최근 30일간 커밋 검색...`);
 
             const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
             const commits = execSync(`git log --since="${since}" --pretty=format:"%s"`, { encoding: 'utf8' })
@@ -312,6 +367,11 @@ async function getRecentMergedPullRequests() {
                     }
                 }
             }
+        }
+
+        if (prNumbers.size === 0) {
+            console.log(`⚠️ 마지막 태그 이후 커밋에서 PR 번호를 찾을 수 없습니다.`);
+            return [];
         }
 
         console.log(`🔎 발견된 PR 번호: ${Array.from(prNumbers).length}개 [${Array.from(prNumbers).sort((a, b) => b - a).slice(0, 10).join(', ')}${Array.from(prNumbers).length > 10 ? '...' : ''}]`);
@@ -354,8 +414,15 @@ async function analyzePullRequestsForReleaseType() {
     const prInfos = await getRecentMergedPullRequests();
 
     if (prInfos.length === 0) {
-        console.log('🚫 분석할 PR이 없어서 릴리즈를 건너뜁니다.');
-        return { releaseType: null, prInfos: [] };
+        console.log('🚫 분석할 PR이 없습니다.');
+        console.log('💡 이는 다음 중 하나의 이유일 수 있습니다:');
+        console.log('   1. 마지막 태그 이후 새로운 커밋이 없음');
+        console.log('   2. 새로운 커밋이 있지만 PR 번호가 포함되지 않음');
+        console.log('   3. 발견된 PR이 merged 상태가 아님');
+        console.log('🔧 강제로 기본 릴리즈를 생성하려면 DEFAULT_RELEASE_TYPE을 사용합니다.');
+
+        // 기본 릴리즈 타입으로 빈 릴리즈 생성
+        return { releaseType: DEFAULT_RELEASE_TYPE, prInfos: [] };
     }
 
     console.log(`🔗 ${prInfos.length}개의 PR을 발견했습니다.`);
@@ -395,7 +462,8 @@ function generateCalendarVersion(releaseType) {
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1;
 
-    const lastVersion = getLastVersion();
+    const lastVersionInfo = getLastVersion();
+    const lastVersion = lastVersionInfo.version;
     console.log(`🔍 마지막 버전: ${lastVersion}`);
 
     // VERSION_PREFIX 제거
