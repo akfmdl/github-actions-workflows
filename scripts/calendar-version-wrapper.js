@@ -8,6 +8,7 @@ const GITHUB_REPOSITORY = process.env.GITHUB_REPOSITORY || 'akfmdl/github-action
 const GITHUB_API_URL = process.env.GITHUB_API_URL || 'https://api.github.com';
 const JIRA_BASE_URL = process.env.JIRA_BASE_URL || 'https://your-jira-instance.atlassian.net';
 const VERSION_PY_PATH = process.env.VERSION_PY_PATH || '';
+const VERSION_PREFIX = process.env.VERSION_PREFIX || '';
 
 const DEFAULT_LABEL_MAPPINGS = {
     // PR 라벨: 릴리즈 타입
@@ -386,7 +387,7 @@ function generateCalendarVersion(releaseType) {
         }
     }
 
-    return `${newYear}.${newMonth.toString().padStart(2, '0')}.${newMinor}.${newFix}`;
+    return `${VERSION_PREFIX}${newYear}.${newMonth.toString().padStart(2, '0')}.${newMinor}.${newFix}`;
 }
 
 // calendar versioning 기반 릴리즈 생성
@@ -395,27 +396,12 @@ async function generateCalendarRelease() {
     const analysis = await analyzeCommitsForReleaseType();
     const releaseType = analysis.releaseType;
     const prInfos = analysis.prInfos;
-
-    // 릴리즈 타입이 null이면 릴리즈를 하지 않음
-    // if (!releaseType) {
-    //     console.log('⏹️ 릴리즈할 변경사항이 없어서 프로세스를 종료합니다.');
-
-    //     // GitHub Actions의 output 설정 (릴리즈 없음)
-    //     if (process.env.GITHUB_OUTPUT) {
-    //         fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-published=false\n`);
-    //         fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-version=\n`);
-    //         fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-git-tag=\n`);
-    //         fs.appendFileSync(process.env.GITHUB_OUTPUT, `new-release-git-head=\n`);
-
-    //         console.log(`📤 Set GitHub Action outputs: new-release-published=false`);
-    //     }
-
-    //     process.exit(0);
-    // }
-
     const calendarVersion = generateCalendarVersion(releaseType);
 
     console.log(`📅 Calendar version generated: ${calendarVersion}`);
+    if (VERSION_PREFIX) {
+        console.log(`🔖 Version prefix applied: "${VERSION_PREFIX}"`);
+    }
     console.log(`🏷️ Release type: ${releaseType}`);
 
     // Release notes 생성
