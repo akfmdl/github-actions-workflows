@@ -119,7 +119,6 @@ version-prefix: 'v'  # 결과: v2025.01.0.1
   - 파일이 없으면 건너뜁니다
 | `version-prefix` | ❌ | `''` | 버전 앞에 붙일 prefix (예: `v1.0.0`의 `v`) |
 | `default-release-type` | ❌ | `'patch'` | PR 라벨이 없을 때 사용할 기본 릴리즈 타입 (`patch` 또는 `minor`) |
-
 | `include-patch-for-minor` | ❌ | `'true'` | minor 릴리즈일 때 patch 버전 포함 여부 (`true`: 2025.06.1.0, `false`: 2025.06.1) |
 
 #### 4.2 버전 형식 예시
