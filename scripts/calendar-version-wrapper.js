@@ -118,6 +118,30 @@ function addJiraLinksToText(text) {
     });
 }
 
+function searchPRNumbersInRecentCommits(prNumbers, days = 30) {
+    // 최근 N일간의 커밋에서 PR 번호 검색
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const commits = execSync(`git log --since="${since}" --pretty=format:"%s"`, { encoding: 'utf8' })
+        .trim()
+        .split('\n')
+        .filter(line => line.trim());
+
+    console.log(`📋 최근 ${days}일간 커밋 수: ${commits.length}개`);
+
+    for (const message of commits) {
+        const prMatches = message.match(/#(\d+)/g);
+        if (prMatches) {
+            for (const match of prMatches) {
+                const prNum = parseInt(match.replace('#', ''), 10);
+                if (prNum && prNum > 0) {
+                    console.log(`   🎯 발견된 PR 번호: #${prNum} (커밋: "${message}")`);
+                    prNumbers.add(prNum);
+                }
+            }
+        }
+    }
+}
+
 function determineReleaseTypeFromLabels(labels, labelMappings = DEFAULT_LABEL_MAPPINGS) {
     if (!labels || labels.length === 0) {
         return null;
@@ -230,23 +254,13 @@ function generateReleaseNotes(prInfos, version) {
     releaseNotes += `---\n\n`;
 
     // 첫 번째 릴리즈인지 확인
-    const lastVersion = getLastVersion();
-
-    // 실제 최신 태그 찾기
-    let tagExists = false;
-    let lastTag;
-
-    try {
-        lastTag = findActualTagForVersion(lastVersion);
-        tagExists = true;
-    } catch (error) {
-        // 태그를 찾을 수 없음
-        tagExists = false;
-    }
+    const lastVersionInfo = getLastVersion();
+    const lastTag = lastVersionInfo.tag;
+    const tagExists = lastTag !== null;
 
     if (tagExists) {
         // 태그가 존재하면 일반적인 비교 링크
-        releaseNotes += `**Full Changelog**: https://github.com/${GITHUB_REPOSITORY}/compare/${lastVersion}...${version}`;
+        releaseNotes += `**Full Changelog**: https://github.com/${GITHUB_REPOSITORY}/compare/${lastTag}...${version}`;
     } else {
         // 첫 번째 릴리즈인 경우 (태그가 존재하지 않음)
         try {
@@ -325,48 +339,14 @@ async function getRecentMergedPullRequests() {
                     }
                 }
             } catch (error) {
-                // 태그가 없는 경우 최근 30일간의 모든 커밋 검색
+                // 태그 범위 검색 실패 시 최근 30일간 커밋 검색
                 console.log(`⚠️ 태그 범위 검색 실패, 최근 30일간 커밋 검색: ${error.message}`);
-
-                const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-                const commits = execSync(`git log --since="${since}" --pretty=format:"%s"`, { encoding: 'utf8' })
-                    .trim()
-                    .split('\n')
-                    .filter(line => line.trim());
-
-                for (const message of commits) {
-                    const prMatches = message.match(/#(\d+)/g);
-                    if (prMatches) {
-                        for (const match of prMatches) {
-                            const prNum = parseInt(match.replace('#', ''), 10);
-                            if (prNum && prNum > 0) {
-                                prNumbers.add(prNum);
-                            }
-                        }
-                    }
-                }
+                searchPRNumbersInRecentCommits(prNumbers, 30);
             }
         } else {
-            // 태그가 없는 경우 최근 30일간의 모든 커밋 검색
+            // 태그가 없는 경우 최근 30일간 커밋 검색
             console.log(`⚠️ 태그가 없으므로 최근 30일간 커밋 검색...`);
-
-            const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-            const commits = execSync(`git log --since="${since}" --pretty=format:"%s"`, { encoding: 'utf8' })
-                .trim()
-                .split('\n')
-                .filter(line => line.trim());
-
-            for (const message of commits) {
-                const prMatches = message.match(/#(\d+)/g);
-                if (prMatches) {
-                    for (const match of prMatches) {
-                        const prNum = parseInt(match.replace('#', ''), 10);
-                        if (prNum && prNum > 0) {
-                            prNumbers.add(prNum);
-                        }
-                    }
-                }
-            }
+            searchPRNumbersInRecentCommits(prNumbers, 30);
         }
 
         // GitHub API를 통해 최근 merged PR들도 가져오기 (squash merge 대응)
