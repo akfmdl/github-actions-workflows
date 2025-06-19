@@ -227,7 +227,28 @@ function generateReleaseNotes(prInfos, version) {
     }
 
     // 전체 변경사항 링크
-    releaseNotes += `---\n\n**Full Changelog**: https://github.com/${GITHUB_REPOSITORY}/compare/${getLastVersion()}...${version}`;
+    releaseNotes += `---\n\n`;
+
+    // 첫 번째 릴리즈인지 확인
+    const lastVersion = getLastVersion();
+    const lastTag = `v${lastVersion}`;
+
+    try {
+        // 실제 태그가 존재하는지 확인
+        execSync(`git rev-parse ${lastTag}`, { encoding: 'utf8', stdio: 'ignore' });
+        // 태그가 존재하면 일반적인 비교 링크
+        releaseNotes += `**Full Changelog**: https://github.com/${GITHUB_REPOSITORY}/compare/${lastVersion}...${version}`;
+    } catch (error) {
+        // 첫 번째 릴리즈인 경우 (태그가 존재하지 않음)
+        try {
+            // 첫 번째 커밋 해시 가져오기
+            const firstCommit = execSync('git rev-list --max-parents=0 HEAD', { encoding: 'utf8' }).trim();
+            releaseNotes += `**Full Changelog**: https://github.com/${GITHUB_REPOSITORY}/compare/${firstCommit}...${version}`;
+        } catch (commitError) {
+            // 커밋 히스토리도 가져올 수 없는 경우 링크 생략
+            releaseNotes += `**Initial Release** 🎉`;
+        }
+    }
 
     return releaseNotes;
 }
