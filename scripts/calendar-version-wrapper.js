@@ -168,7 +168,7 @@ function determineReleaseTypeFromLabels(labels, labelMappings = DEFAULT_LABEL_MA
     return highestReleaseType;
 }
 
-function generateReleaseNotes(prInfos, version) {
+function generateReleaseNotes(prInfos, version, lastTag = null) {
     if (!prInfos || prInfos.length === 0) {
         return `# Release ${version}\n\nNo pull requests found for this release.`;
     }
@@ -253,12 +253,7 @@ function generateReleaseNotes(prInfos, version) {
     // 전체 변경사항 링크
     releaseNotes += `---\n\n`;
 
-    // 첫 번째 릴리즈인지 확인
-    const lastVersionInfo = getLastVersion();
-    const lastTag = lastVersionInfo.tag;
-    const tagExists = lastTag !== null;
-
-    if (tagExists) {
+    if (lastTag) {
         // 태그가 존재하면 일반적인 비교 링크
         releaseNotes += `**Full Changelog**: https://github.com/${GITHUB_REPOSITORY}/compare/${lastTag}...${version}`;
     } else {
@@ -491,9 +486,8 @@ function generateCalendarVersion(releaseType) {
     const lastVersion = lastVersionInfo.version;
     console.log(`🔍 마지막 버전: ${lastVersion}`);
 
-    // VERSION_PREFIX 제거
-    const cleanVersion = lastVersion.replace(/^[a-zA-Z]+/, '');
-    const versionParts = cleanVersion.split('.');
+    // 버전 파싱 (이미 getLastVersion에서 prefix 제거됨)
+    const versionParts = lastVersion.split('.');
 
     // 정확히 4개의 파트가 있어야 함
     while (versionParts.length < 4) {
@@ -571,8 +565,9 @@ async function generateCalendarRelease() {
     console.log(`📅 Calendar version generated: ${calendarVersion}`);
     console.log(`🏷️ Release type: ${releaseType}`);
 
-    // Release notes 생성
-    const releaseNotes = generateReleaseNotes(prInfos, calendarVersion);
+    // Release notes 생성 (lastTag 정보 재사용)
+    const lastVersionInfo = getLastVersion();
+    const releaseNotes = generateReleaseNotes(prInfos, calendarVersion, lastVersionInfo.tag);
     console.log(`📝 Release notes generated`);
 
     // package.json의 버전을 calendar 버전으로 업데이트
