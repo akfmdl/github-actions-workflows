@@ -4,6 +4,6 @@
 
 ## 종류
 
-- [auto-release-workflow](actions/auto-release-semantic-versioning/README.md): Semantic Versioning 기반 릴리즈 노트 자동 생성
-- [auto-release-workflow](actions/auto-release-custom-versioning/README.md): 커스텀 버전 기반 릴리즈 노트 자동 생성
+- [auto-release-semantic-versioning](actions/auto-release-semantic-versioning/README.md): Semantic Versioning 기반 릴리즈 노트 자동 생성
+- [auto-release-custom-versioning](actions/auto-release-custom-versioning/README.md): 커스텀 버전 기반 릴리즈 노트 자동 생성
 - [update-repo-and-create-pr](actions/update-repo-and-create-pr/README.md): 파일 수정 후 PR 생성
