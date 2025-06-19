@@ -38,7 +38,6 @@ inputs:
     description: 'Default release type when no PR labels are found (patch or minor)'
     required: false
     default: 'patch'
-
   include-patch-for-minor:
     description: 'Include patch version for minor releases (true/false)'
     required: false
