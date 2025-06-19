@@ -271,8 +271,6 @@ function generateReleaseNotes(prInfos, version, lastTag = null) {
     return releaseNotes;
 }
 
-
-
 async function getRecentMergedPullRequests() {
     if (!GITHUB_TOKEN || !GITHUB_REPOSITORY) {
         console.log('⚠️ GitHub 토큰 또는 리포지토리 정보가 없어서 API를 사용할 수 없습니다.');
