@@ -30,6 +30,22 @@ inputs:
     description: 'Path to version.py file (relative to working directory)'
     required: false
     default: ''
+  version-prefix:
+    description: 'Prefix for version numbers (e.g., "v" for v1.0.0)'
+    required: false
+    default: ''
+  default-release-type:
+    description: 'Default release type when no PR labels are found (patch or minor)'
+    required: false
+    default: 'patch'
+  patch-version-prefix:
+    description: 'Prefix for patch version numbers (e.g., "rc", "alpha", "beta")'
+    required: false
+    default: ''
+  include-patch-for-minor:
+    description: 'Include patch version for minor releases (true/false)'
+    required: false
+    default: 'true'
 
 outputs:
   new-release-published:
@@ -81,11 +97,11 @@ runs:
           exit 1
         fi
 
-    - name: Download calendar version wrapper script
+    - name: Use local calendar version wrapper script
       shell: bash
       run: |
-        echo "📥 Downloading calendar version wrapper script..."
-        curl -fsSL -o /tmp/calendar-version-wrapper.js https://raw.githubusercontent.com/akfmdl/github-actions-workflows/main/scripts/calendar-version-wrapper.js
+        echo "📥 Using local calendar version wrapper script..."
+        cp scripts/calendar-version-wrapper.js /tmp/calendar-version-wrapper.js
         chmod +x /tmp/calendar-version-wrapper.js
 
     - name: Run custom versioning
@@ -97,6 +113,10 @@ runs:
         GITHUB_REPOSITORY: ${{ github.repository }}
         JIRA_BASE_URL: ${{ inputs.jira-base-url }}
         VERSION_PY_PATH: ${{ inputs.version-py-path }}
+        VERSION_PREFIX: ${{ inputs.version-prefix }}
+        DEFAULT_RELEASE_TYPE: ${{ inputs.default-release-type }}
+        PATCH_VERSION_PREFIX: ${{ inputs.patch-version-prefix }}
+        INCLUDE_PATCH_FOR_MINOR: ${{ inputs.include-patch-for-minor }}
       run: |        
         echo "🚀 Running custom versioning..."
         node /tmp/calendar-version-wrapper.js
