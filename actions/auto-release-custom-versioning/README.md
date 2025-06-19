@@ -75,7 +75,7 @@ __VERSION__ = "0.0.0"
           version-py-path: 'src/version.py' # 선택사항: version.py 파일 경로
           version-prefix: 'v'               # 선택사항: 버전 prefix (예: v1.0.0)
           default-release-type: 'minor'     # 선택사항: 기본 릴리즈 타입 (patch/minor)
-          include-patch-for-minor: 'false'  # 선택사항: minor 시 patch 버전 생략 여부
+          include-patch-for-minor: 'false'  # 선택사항: minor 시 patch 버전 포함 여부
 ```
 
 ### 4. 고급 설정 (선택사항)
