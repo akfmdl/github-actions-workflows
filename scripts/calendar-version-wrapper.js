@@ -10,7 +10,6 @@ const JIRA_BASE_URL = process.env.JIRA_BASE_URL || 'https://your-jira-instance.a
 const VERSION_PY_PATH = process.env.VERSION_PY_PATH || '';
 const VERSION_PREFIX = process.env.VERSION_PREFIX || '';
 const DEFAULT_RELEASE_TYPE = process.env.DEFAULT_RELEASE_TYPE || 'patch'; // 'patch', 'minor', 또는 'post'
-
 const INCLUDE_PATCH_FOR_MINOR = process.env.INCLUDE_PATCH_FOR_MINOR !== 'false'; // minor 릴리즈일 때 patch 버전 포함 여부 (환경변수가 없으면 기본값: true)
 
 // DEFAULT_RELEASE_TYPE 유효성 검사
