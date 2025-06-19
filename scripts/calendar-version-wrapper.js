@@ -348,14 +348,19 @@ async function getRecentMergedPullRequests() {
 
         console.log(`📋 총 PR 수: ${combinedPRs.length}개 (직접: ${mergedPRs.length}, 간접: ${addedCount})`);
 
-        return combinedPRs.map(pr => ({
-            number: pr.number,
-            title: pr.title,
-            author: pr.user.login,
-            labels: pr.labels.map(label => label.name),
-            url: pr.html_url,
-            merged_at: pr.merged_at
-        }));
+        return combinedPRs.filter(pr => pr).map(pr => {
+            if (!pr.user) {
+                console.log(`⚠️ PR #${pr.number}: 사용자 정보 없음 (삭제된 계정일 수 있음)`);
+            }
+            return {
+                number: pr.number,
+                title: pr.title || 'Unknown title',
+                author: pr.user?.login || 'unknown-user',
+                labels: (pr.labels || []).map(label => label.name),
+                url: pr.html_url || '',
+                merged_at: pr.merged_at
+            };
+        });
 
     } catch (error) {
         console.log(`⚠️ GitHub API를 통한 PR 검색 실패: ${error.message}`);
