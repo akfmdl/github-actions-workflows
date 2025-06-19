@@ -39,7 +39,7 @@ inputs:
     required: false
     default: 'patch'
   patch-version-prefix:
-    description: 'Prefix for patch version numbers (e.g., "rc", "alpha", "beta")'
+    description: 'Prefix for patch version numbers (e.g., "rc", "alpha", "beta", "post")'
     required: false
     default: ''
   include-patch-for-minor:
