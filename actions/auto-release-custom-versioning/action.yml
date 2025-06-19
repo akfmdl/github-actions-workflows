@@ -126,7 +126,6 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
-        VERSION_PY_PATH: ${{ inputs.version-py-path }}
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -136,7 +135,7 @@ runs:
         FILES_TO_COMMIT=""
         
         # 관심있는 파일들만 필터링
-        for file in package.json $VERSION_PY_PATH; do
+        for file in package.json ${{ inputs.version-py-path }}; do
           if [ -f "$file" ] && echo "$CHANGED_FILES" | grep -q "^$file$"; then
             FILES_TO_COMMIT="$FILES_TO_COMMIT $file"
           fi

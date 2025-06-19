@@ -72,7 +72,7 @@ __VERSION__ = "0.0.0"
         ...
         with:
           ...
-          version-py-path: 'src/version.py'  # 선택사항: version.py 파일 경로
+          version-py-path: 'src/version.py' # 선택사항: version.py 파일 경로
           version-prefix: 'v'               # 선택사항: 버전 prefix (예: v1.0.0)
           default-release-type: 'minor'     # 선택사항: 기본 릴리즈 타입 (patch/minor)
           patch-version-prefix: 'rc'        # 선택사항: patch 버전 prefix (예: rc1, alpha1)
@@ -126,7 +126,6 @@ version-prefix: 'v'  # 결과: v2025.01.0.1
 | `working-directory` | ❌ | `'.'` | 작업 디렉토리 |
 | `jira-base-url` | ❌ | `'https://your-jira-instance.atlassian.net'` | Jira 인스턴스 URL |
 | `version-py-path` | ❌ | `''` | version.py 파일의 경로 (예: `src/version.py`, `app/version.py`)
-  - 지정하지 않으면 루트 디렉토리의 `version.py`를 찾습니다
   - 파일이 없으면 건너뜁니다
 | `version-prefix` | ❌ | `''` | 버전 앞에 붙일 prefix (예: `v1.0.0`의 `v`) |
 | `default-release-type` | ❌ | `'patch'` | PR 라벨이 없을 때 사용할 기본 릴리즈 타입 (`patch` 또는 `minor`) |

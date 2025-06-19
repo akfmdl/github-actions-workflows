@@ -128,6 +128,9 @@ function determineReleaseTypeFromLabels(labels, labelMappings = DEFAULT_LABEL_MA
     let highestPriority = Infinity;
 
     for (const label of labels) {
+        if (!label || typeof label !== 'string') {
+            continue; // undefined, null, 또는 문자열이 아닌 라벨 건너뛰기
+        }
         const releaseType = labelMappings[label.toLowerCase()];
         if (releaseType) {
             const priority = releaseTypes.indexOf(releaseType);
@@ -229,69 +232,7 @@ function generateReleaseNotes(prInfos, version) {
     return releaseNotes;
 }
 
-async function findPRsFromCommitMessages(sinceDate) {
-    try {
-        const lastVersion = getLastVersion();
-        const lastTag = `v${lastVersion}`;
 
-        let commits;
-        try {
-            commits = execSync(`git log ${lastTag}..HEAD --pretty=format:"%s"`, { encoding: 'utf8' })
-                .trim()
-                .split('\n')
-                .filter(line => line.trim());
-        } catch (error) {
-            commits = execSync('git log --pretty=format:"%s"', { encoding: 'utf8' })
-                .trim()
-                .split('\n')
-                .filter(line => line.trim());
-        }
-
-        const prNumbers = new Set();
-
-        for (const message of commits) {
-            const prMatches = message.match(/#(\d+)/g);
-            if (prMatches) {
-                for (const match of prMatches) {
-                    const prNum = parseInt(match.replace('#', ''), 10);
-                    if (prNum && prNum > 0) {
-                        prNumbers.add(prNum);
-                    }
-                }
-            }
-        }
-
-        console.log(`🔎 커밋 메시지에서 발견된 PR: ${Array.from(prNumbers).length}개`);
-
-        // 각 PR 정보를 API로 가져오기
-        const prInfos = [];
-        for (const prNumber of prNumbers) {
-            try {
-                const url = `${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${prNumber}`;
-                const prData = await fetchWithAuth(url);
-
-                // 날짜 필터링
-                if (prData.merged_at && new Date(prData.merged_at) > new Date(sinceDate)) {
-                    prInfos.push({
-                        number: prData.number,
-                        title: prData.title,
-                        author: prData.user.login,
-                        labels: prData.labels.map(label => label.name),
-                        url: prData.html_url,
-                        merged_at: prData.merged_at
-                    });
-                }
-            } catch (error) {
-                console.log(`⚠️ PR #${prNumber} 정보 조회 실패: ${error.message}`);
-            }
-        }
-
-        return prInfos;
-    } catch (error) {
-        console.log(`⚠️ 커밋 기반 PR 검색 실패: ${error.message}`);
-        return [];
-    }
-}
 
 async function getRecentMergedPullRequests() {
     if (!GITHUB_TOKEN || !GITHUB_REPOSITORY) {
@@ -303,62 +244,85 @@ async function getRecentMergedPullRequests() {
         const lastVersion = getLastVersion();
         const lastTag = `v${lastVersion}`;
 
-        // 마지막 태그의 날짜를 가져옴
-        let sinceDate;
+        console.log(`🔍 마지막 태그 ${lastTag} 이후의 커밋들에서 PR 검색...`);
+
+        // 마지막 태그 이후의 커밋들에서 PR 번호 추출
+        const prNumbers = new Set();
+
         try {
-            const tagDate = execSync(`git log -1 --format=%ai ${lastTag}`, { encoding: 'utf8' }).trim();
-            sinceDate = new Date(tagDate).toISOString();
-            console.log(`📅 마지막 태그 ${lastTag}의 날짜: ${sinceDate}`);
+            // 마지막 태그부터 HEAD까지의 커밋 메시지 가져오기
+            const commits = execSync(`git log ${lastTag}..HEAD --pretty=format:"%s"`, { encoding: 'utf8' })
+                .trim()
+                .split('\n')
+                .filter(line => line.trim());
+
+            console.log(`📋 마지막 태그 이후 커밋 수: ${commits.length}개`);
+
+            for (const message of commits) {
+                // 모든 #숫자 패턴을 찾아서 PR 번호로 간주
+                const prMatches = message.match(/#(\d+)/g);
+                if (prMatches) {
+                    for (const match of prMatches) {
+                        const prNum = parseInt(match.replace('#', ''), 10);
+                        if (prNum && prNum > 0) {
+                            prNumbers.add(prNum);
+                        }
+                    }
+                }
+            }
         } catch (error) {
-            sinceDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-            console.log(`📅 1개월 전부터 검색: ${sinceDate}`);
-        }
+            // 태그가 없는 경우 최근 30일간의 모든 커밋 검색
+            console.log(`⚠️ 태그 범위 검색 실패, 최근 30일간 커밋 검색: ${error.message}`);
 
-        // 현재 브랜치 확인
-        const currentBranch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim();
-        console.log(`🔍 Target 브랜치: ${currentBranch}`);
+            const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            const commits = execSync(`git log --since="${since}" --pretty=format:"%s"`, { encoding: 'utf8' })
+                .trim()
+                .split('\n')
+                .filter(line => line.trim());
 
-        const url = `${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls?state=closed&base=${currentBranch}&sort=updated&direction=desc&per_page=100`;
-        console.log(`🔍 Merged PR 검색 중...`);
-
-        const pullRequests = await fetchWithAuth(url);
-        const mergedPRs = pullRequests.filter(pr =>
-            pr.merged_at &&
-            new Date(pr.merged_at) > new Date(sinceDate)
-        );
-
-        console.log(`📋 직접 merge된 PR: ${mergedPRs.length}개`);
-
-        // 간접 참조된 PR들도 찾기
-        console.log(`🔍 간접 참조된 PR들 검색...`);
-        const additionalPRs = await findPRsFromCommitMessages(sinceDate);
-        console.log(`📋 간접 참조된 PR: ${additionalPRs.length}개`);
-
-        // 중복 제거하면서 병합
-        const directPRNumbers = new Set(mergedPRs.map(pr => pr.number));
-        const combinedPRs = [...mergedPRs];
-
-        let addedCount = 0;
-        for (const additionalPR of additionalPRs) {
-            if (!directPRNumbers.has(additionalPR.number)) {
-                combinedPRs.push(additionalPR);
-                addedCount++;
+            for (const message of commits) {
+                const prMatches = message.match(/#(\d+)/g);
+                if (prMatches) {
+                    for (const match of prMatches) {
+                        const prNum = parseInt(match.replace('#', ''), 10);
+                        if (prNum && prNum > 0) {
+                            prNumbers.add(prNum);
+                        }
+                    }
+                }
             }
         }
 
-        console.log(`📋 총 PR 수: ${combinedPRs.length}개 (직접: ${mergedPRs.length}, 간접: ${addedCount})`);
+        console.log(`🔎 발견된 PR 번호: ${Array.from(prNumbers).length}개 [${Array.from(prNumbers).sort((a, b) => b - a).slice(0, 10).join(', ')}${Array.from(prNumbers).length > 10 ? '...' : ''}]`);
 
-        return combinedPRs.map(pr => ({
-            number: pr.number,
-            title: pr.title,
-            author: pr.user.login,
-            labels: pr.labels.map(label => label.name),
-            url: pr.html_url,
-            merged_at: pr.merged_at
-        }));
+        // 각 PR 정보를 API로 가져오기
+        const prInfos = [];
+        for (const prNumber of prNumbers) {
+            try {
+                const url = `${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${prNumber}`;
+                const prData = await fetchWithAuth(url);
+
+                // merged된 PR만 포함
+                if (prData.merged_at) {
+                    prInfos.push({
+                        number: prData.number,
+                        title: prData.title || 'Unknown title',
+                        author: prData.user?.login || 'unknown-user',
+                        labels: (prData.labels || []).map(label => label?.name).filter(name => name),
+                        url: prData.html_url || '',
+                        merged_at: prData.merged_at
+                    });
+                }
+            } catch (error) {
+                console.log(`⚠️ PR #${prNumber} 정보 조회 실패: ${error.message}`);
+            }
+        }
+
+        console.log(`📋 최종 merged PR 수: ${prInfos.length}개`);
+        return prInfos;
 
     } catch (error) {
-        console.log(`⚠️ GitHub API를 통한 PR 검색 실패: ${error.message}`);
+        console.log(`⚠️ PR 검색 실패: ${error.message}`);
         return [];
     }
 }
