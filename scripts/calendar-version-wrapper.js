@@ -34,14 +34,39 @@ const DEFAULT_LABEL_MAPPINGS = {
 
 function getLastVersion() {
     try {
+        // 먼저 현재 커밋에서 직접 접근 가능한 태그 시도
         const lastTag = execSync('git describe --tags --abbrev=0', { encoding: 'utf8' }).trim();
         const version = lastTag.replace(/^v/, '');
-        console.log(`🔍 Git에서 가져온 마지막 태그: "${lastTag}" -> 버전: "${version}"`);
+        console.log(`🔍 Git describe로 가져온 마지막 태그: "${lastTag}" -> 버전: "${version}"`);
         return version;
     } catch (error) {
-        console.log(`⚠️ Git 태그를 찾을 수 없음: ${error.message}`);
-        console.log(`🔧 기본 버전 사용: "2024.01.0.0"`);
-        return '2024.01.0.0';
+        console.log(`⚠️ Git describe 실패: ${error.message}`);
+
+        try {
+            // 모든 태그를 날짜순으로 정렬해서 최신 태그 찾기
+            console.log(`🔄 모든 태그에서 최신 버전 검색 중...`);
+            const allTags = execSync('git tag --sort=-version:refname', { encoding: 'utf8' }).trim();
+
+            if (allTags) {
+                const tags = allTags.split('\n').filter(tag => tag.trim());
+                console.log(`📋 발견된 태그들: [${tags.join(', ')}]`);
+
+                if (tags.length > 0) {
+                    const latestTag = tags[0];
+                    const version = latestTag.replace(/^v/, '');
+                    console.log(`🎯 최신 태그 선택: "${latestTag}" -> 버전: "${version}"`);
+                    return version;
+                }
+            }
+
+            console.log(`⚠️ 사용 가능한 태그가 없음`);
+            console.log(`🔧 기본 버전 사용: "2024.01.0.0"`);
+            return '2024.01.0.0';
+        } catch (tagError) {
+            console.log(`⚠️ 태그 검색 실패: ${tagError.message}`);
+            console.log(`🔧 기본 버전 사용: "2024.01.0.0"`);
+            return '2024.01.0.0';
+        }
     }
 }
 
