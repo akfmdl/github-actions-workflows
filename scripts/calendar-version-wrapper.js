@@ -230,23 +230,13 @@ function generateReleaseNotes(prInfos, version) {
     releaseNotes += `---\n\n`;
 
     // 첫 번째 릴리즈인지 확인
-    const lastVersion = getLastVersion();
-
-    // 실제 최신 태그 찾기
-    let tagExists = false;
-    let lastTag;
-
-    try {
-        lastTag = findActualTagForVersion(lastVersion);
-        tagExists = true;
-    } catch (error) {
-        // 태그를 찾을 수 없음
-        tagExists = false;
-    }
+    const lastVersionInfo = getLastVersion();
+    const lastTag = lastVersionInfo.tag;
+    const tagExists = lastTag !== null;
 
     if (tagExists) {
         // 태그가 존재하면 일반적인 비교 링크
-        releaseNotes += `**Full Changelog**: https://github.com/${GITHUB_REPOSITORY}/compare/${lastVersion}...${version}`;
+        releaseNotes += `**Full Changelog**: https://github.com/${GITHUB_REPOSITORY}/compare/${lastTag}...${version}`;
     } else {
         // 첫 번째 릴리즈인 경우 (태그가 존재하지 않음)
         try {
