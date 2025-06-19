@@ -369,12 +369,57 @@ async function getRecentMergedPullRequests() {
             }
         }
 
+        // GitHub API를 통해 최근 merged PR들도 가져오기 (squash merge 대응)
+        console.log(`🌐 GitHub API를 통해 최근 merged PR들 검색...`);
+
+        let sinceDate = null;
+        if (lastTag) {
+            try {
+                // 마지막 태그의 커밋 날짜 가져오기
+                const tagDate = execSync(`git log -1 --format=%ci ${lastTag}`, { encoding: 'utf8' }).trim();
+                sinceDate = new Date(tagDate).toISOString();
+                console.log(`📅 마지막 태그 ${lastTag} 날짜: ${sinceDate}`);
+            } catch (error) {
+                console.log(`⚠️ 태그 날짜 조회 실패: ${error.message}`);
+            }
+        }
+
+        if (!sinceDate) {
+            // 태그 날짜를 가져올 수 없으면 최근 7일로 설정
+            sinceDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+            console.log(`📅 기본값으로 최근 7일 사용: ${sinceDate}`);
+        }
+
+        try {
+            const apiUrl = `${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls?state=closed&sort=updated&direction=desc&per_page=100`;
+            const allPRs = await fetchWithAuth(apiUrl);
+
+            const recentMergedPRs = allPRs.filter(pr => {
+                if (!pr.merged_at) return false;
+
+                const mergedDate = new Date(pr.merged_at);
+                const sinceDateTime = new Date(sinceDate);
+
+                return mergedDate > sinceDateTime;
+            });
+
+            console.log(`🔍 API에서 발견된 최근 merged PR: ${recentMergedPRs.length}개`);
+
+            // 커밋 메시지에서 찾은 PR과 API에서 찾은 PR 합치기
+            for (const pr of recentMergedPRs) {
+                prNumbers.add(pr.number);
+            }
+
+        } catch (error) {
+            console.log(`⚠️ GitHub API PR 검색 실패: ${error.message}`);
+        }
+
         if (prNumbers.size === 0) {
-            console.log(`⚠️ 마지막 태그 이후 커밋에서 PR 번호를 찾을 수 없습니다.`);
+            console.log(`⚠️ 커밋 메시지와 GitHub API에서 PR을 찾을 수 없습니다.`);
             return [];
         }
 
-        console.log(`🔎 발견된 PR 번호: ${Array.from(prNumbers).length}개 [${Array.from(prNumbers).sort((a, b) => b - a).slice(0, 10).join(', ')}${Array.from(prNumbers).length > 10 ? '...' : ''}]`);
+        console.log(`🔎 최종 발견된 PR 번호: ${Array.from(prNumbers).length}개 [${Array.from(prNumbers).sort((a, b) => b - a).slice(0, 10).join(', ')}${Array.from(prNumbers).length > 10 ? '...' : ''}]`);
 
         // 각 PR 정보를 API로 가져오기
         const prInfos = [];
