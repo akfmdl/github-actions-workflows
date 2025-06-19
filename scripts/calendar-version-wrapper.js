@@ -35,8 +35,12 @@ const DEFAULT_LABEL_MAPPINGS = {
 function getLastVersion() {
     try {
         const lastTag = execSync('git describe --tags --abbrev=0', { encoding: 'utf8' }).trim();
-        return lastTag.replace(/^v/, '');
+        const version = lastTag.replace(/^v/, '');
+        console.log(`🔍 Git에서 가져온 마지막 태그: "${lastTag}" -> 버전: "${version}"`);
+        return version;
     } catch (error) {
+        console.log(`⚠️ Git 태그를 찾을 수 없음: ${error.message}`);
+        console.log(`🔧 기본 버전 사용: "2024.01.0.0"`);
         return '2024.01.0.0';
     }
 }
@@ -277,31 +281,18 @@ async function findPRsFromCommitMessages(sinceDate) {
         }
 
         const prNumbers = new Set();
-        const patterns = [
-            /Merge pull request #(\d+)/gi,
-            /\(#(\d+)\)/g,
-            /#(\d+)/g
-        ];
 
         for (const message of commits) {
             console.log(`🔎 커밋 메시지 분석: "${message}"`);
 
-            for (const pattern of patterns) {
-                // matchAll 대신 match를 사용하고 모든 매치 찾기
-                let match;
-                const regex = new RegExp(pattern.source, pattern.flags);
-                const allMatches = message.match(regex);
-
-                if (allMatches) {
-                    // 각 매치에서 PR 번호 추출
-                    const singleMatch = new RegExp(pattern.source, pattern.flags.replace('g', ''));
-                    for (const matchStr of allMatches) {
-                        const result = matchStr.match(singleMatch);
-                        if (result && result[1]) {
-                            const prNum = parseInt(result[1], 10);
-                            console.log(`   🎯 발견된 PR 번호: #${prNum}`);
-                            prNumbers.add(prNum);
-                        }
+            // 모든 #숫자 패턴을 찾아서 PR 번호로 간주
+            const prMatches = message.match(/#(\d+)/g);
+            if (prMatches) {
+                for (const match of prMatches) {
+                    const prNum = parseInt(match.replace('#', ''), 10);
+                    if (prNum && prNum > 0) {
+                        console.log(`   🎯 발견된 PR 번호: #${prNum}`);
+                        prNumbers.add(prNum);
                     }
                 }
             }
@@ -377,19 +368,30 @@ async function getRecentMergedPullRequests() {
         console.log(`📋 ${currentBranch} 브랜치로 직접 merge된 PR 수: ${mergedPRs.length}개`);
 
         // 추가로 커밋 기반으로 참조되는 PR들도 찾기 (중간 단계 PR 포착)
+        console.log(`🔍 간접 참조된 PR들 검색 시작...`);
         const additionalPRs = await findPRsFromCommitMessages(sinceDate);
+        console.log(`📋 간접 참조된 PR 수: ${additionalPRs.length}개`);
 
         // 중복 제거하면서 병합
-        const allPRNumbers = new Set([...mergedPRs.map(pr => pr.number), ...additionalPRs.map(pr => pr.number)]);
+        const directPRNumbers = new Set(mergedPRs.map(pr => pr.number));
         const combinedPRs = [...mergedPRs];
 
+        let addedCount = 0;
         for (const additionalPR of additionalPRs) {
-            if (!mergedPRs.find(pr => pr.number === additionalPR.number)) {
+            if (!directPRNumbers.has(additionalPR.number)) {
+                console.log(`➕ 간접 PR 추가: #${additionalPR.number} - ${additionalPR.title}`);
                 combinedPRs.push(additionalPR);
+                addedCount++;
+            } else {
+                console.log(`⏭️  이미 포함된 PR: #${additionalPR.number}`);
             }
         }
 
-        console.log(`📋 최종 발견된 총 PR 수: ${combinedPRs.length}개 (직접: ${mergedPRs.length}, 간접: ${additionalPRs.length})`);
+        console.log(`📋 최종 발견된 총 PR 수: ${combinedPRs.length}개 (직접: ${mergedPRs.length}, 새로 추가된 간접: ${addedCount})`);
+
+        if (combinedPRs.length === 0) {
+            console.log(`⚠️ 발견된 PR이 하나도 없습니다!`);
+        }
 
         return combinedPRs.map(pr => ({
             number: pr.number,
@@ -468,17 +470,22 @@ function generateCalendarVersion(releaseType) {
     const lastVersion = getLastVersion();
     console.log(`🔍 마지막 버전: ${lastVersion}`);
 
-    const versionParts = lastVersion.split('.');
+    // VERSION_PREFIX 제거 (v 등의 prefix가 있을 수 있음)
+    const cleanVersion = lastVersion.replace(/^[a-zA-Z]+/, '');
+    console.log(`🔍 정리된 버전: "${cleanVersion}"`);
+
+    const versionParts = cleanVersion.split('.');
     console.log(`🔍 버전 파트들: [${versionParts.join(', ')}]`);
 
+    // 정확히 4개의 파트가 있어야 함
     while (versionParts.length < 4) {
         versionParts.push('0');
     }
 
-    // 마지막 버전의 patch 부분을 파싱 (문자열 prefix가 있을 수 있음)
-    let lastYear = parseInt(versionParts[0], 10);
-    let lastMonth = parseInt(versionParts[1], 10);
-    let lastMinor = parseInt(versionParts[2], 10);
+    // 각 파트 파싱
+    let lastYear = parseInt(versionParts[0], 10) || 2024;
+    let lastMonth = parseInt(versionParts[1], 10) || 1;
+    let lastMinor = parseInt(versionParts[2], 10) || 0;
     let lastFixNumber = 0;
 
     console.log(`🔍 파싱된 버전: ${lastYear}.${lastMonth}.${lastMinor}`);
@@ -527,8 +534,12 @@ function generateCalendarVersion(releaseType) {
             console.log(`🔺 Minor 릴리즈: ${lastMinor} -> ${newMinor}`);
         } else if (releaseType === 'patch') {
             newMinor = lastMinor || 0;
-            newFixNumber = lastFixNumber + 1;
+            newFixNumber = (lastFixNumber || 0) + 1;
             console.log(`🔺 Patch 릴리즈: ${lastFixNumber} -> ${newFixNumber}`);
+        } else {
+            console.log(`⚠️ 알 수 없는 릴리즈 타입: ${releaseType}, patch로 처리`);
+            newMinor = lastMinor || 0;
+            newFixNumber = (lastFixNumber || 0) + 1;
         }
     }
 
