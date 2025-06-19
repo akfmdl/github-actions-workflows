@@ -38,10 +38,7 @@ inputs:
     description: 'Default release type when no PR labels are found (patch or minor)'
     required: false
     default: 'patch'
-  patch-version-prefix:
-    description: 'Prefix for patch version numbers (e.g., "rc", "alpha", "beta", "post")'
-    required: false
-    default: ''
+
   include-patch-for-minor:
     description: 'Include patch version for minor releases (true/false)'
     required: false
@@ -115,7 +112,6 @@ runs:
         VERSION_PY_PATH: ${{ inputs.version-py-path }}
         VERSION_PREFIX: ${{ inputs.version-prefix }}
         DEFAULT_RELEASE_TYPE: ${{ inputs.default-release-type }}
-        PATCH_VERSION_PREFIX: ${{ inputs.patch-version-prefix }}
         INCLUDE_PATCH_FOR_MINOR: ${{ inputs.include-patch-for-minor }}
       run: |        
         echo "🚀 Running custom versioning..."
