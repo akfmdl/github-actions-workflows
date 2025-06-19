@@ -274,10 +274,10 @@ async function findPRsFromCommitMessages(sinceDate) {
                 if (prData.merged_at && new Date(prData.merged_at) > new Date(sinceDate)) {
                     prInfos.push({
                         number: prData.number,
-                        title: prData.title,
-                        author: prData.user.login,
-                        labels: prData.labels.map(label => label.name),
-                        url: prData.html_url,
+                        title: prData.title || 'Unknown title',
+                        author: prData.user?.login || 'unknown-user',
+                        labels: (prData.labels || []).map(label => label.name),
+                        url: prData.html_url || '',
                         merged_at: prData.merged_at
                     });
                 }
