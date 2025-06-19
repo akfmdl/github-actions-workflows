@@ -295,127 +295,62 @@ function generateReleaseNotes(prInfos, version) {
     return releaseNotes;
 }
 
-async function getRecentMergedPullRequests() {
-    if (!GITHUB_TOKEN || !GITHUB_REPOSITORY) {
-        console.log('⚠️ GitHub 토큰 또는 리포지토리 정보가 없어서 API를 사용할 수 없습니다.');
-        return [];
-    }
-
-    try {
-        const lastVersion = getLastVersion();
-        const lastTag = `v${lastVersion}`;
-
-        // 마지막 태그의 날짜를 가져옴
-        let sinceDate;
-        try {
-            const tagDate = execSync(`git log -1 --format=%ai ${lastTag}`, { encoding: 'utf8' }).trim();
-            sinceDate = new Date(tagDate).toISOString();
-            console.log(`📅 마지막 태그 ${lastTag}의 날짜: ${sinceDate}`);
-        } catch (error) {
-            // 태그가 없는 경우 1개월 전부터 검색
-            sinceDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-            console.log(`📅 태그를 찾을 수 없어서 1개월 전부터 검색: ${sinceDate}`);
-        }
-
-        const url = `${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls?state=closed&sort=updated&direction=desc&per_page=100`;
-        console.log(`🔍 Merged PR 검색 중...`);
-
-        const pullRequests = await fetchWithAuth(url);
-        const mergedPRs = pullRequests.filter(pr =>
-            pr.merged_at &&
-            new Date(pr.merged_at) > new Date(sinceDate)
-        );
-
-        console.log(`📋 발견된 Merged PR 수: ${mergedPRs.length}개`);
-
-        return mergedPRs.map(pr => ({
-            number: pr.number,
-            title: pr.title,
-            author: pr.user.login,
-            labels: pr.labels.map(label => label.name),
-            url: pr.html_url,
-            merged_at: pr.merged_at
-        }));
-
-    } catch (error) {
-        console.log(`⚠️ GitHub API를 통한 PR 검색 실패: ${error.message}`);
-        console.log('🔄 커밋 기반 분석으로 대체합니다...');
-        return [];
-    }
-}
-
 async function analyzeCommitsForReleaseType() {
-    console.log('🔍 PR 정보를 분석하여 릴리즈 타입을 결정합니다...');
+    console.log('🔍 커밋들을 분석하여 릴리즈 타입을 결정합니다...');
 
-    // 먼저 GitHub API를 통해 merged PR들을 가져옴
-    const apiPRs = await getRecentMergedPullRequests();
-    let prInfos = [];
-    let foundPRs = false;
+    const commits = await getRecentCommits();
+    console.log(`📝 분석할 커밋 수: ${commits.length}개`);
 
-    if (apiPRs.length > 0) {
-        console.log(`🔗 GitHub API를 통해 ${apiPRs.length}개의 Merged PR을 발견했습니다.`);
-        prInfos = apiPRs;
-        foundPRs = true;
-    } else {
-        console.log('🔄 GitHub API 사용 불가, 커밋 기반 분석을 시도합니다...');
-
-        // API 실패 시 기존 커밋 기반 방식 사용
-        const commits = await getRecentCommits();
-        console.log(`📝 분석할 커밋 수: ${commits.length}개`);
-
-        if (commits.length === 0) {
-            console.log('📭 새로운 커밋이 없습니다.');
-            return { releaseType: null, prInfos: [] };
-        }
-
-        for (const commit of commits) {
-            console.log(`🔎 커밋 분석: ${commit.message}`);
-
-            const prNumber = extractPullRequestNumber(commit.message);
-            if (prNumber) {
-                foundPRs = true;
-                const prInfo = await getPullRequestInfo(prNumber);
-                if (prInfo) {
-                    prInfos.push(prInfo);
-                }
-            } else {
-                console.log('⚪ PR 번호를 찾을 수 없는 커밋');
-            }
-        }
-    }
-
-    if (!foundPRs || prInfos.length === 0) {
-        console.log('🚫 PR을 찾을 수 없어서 릴리즈를 건너뜁니다.');
+    if (commits.length === 0) {
+        console.log('📭 새로운 커밋이 없습니다.');
         return { releaseType: null, prInfos: [] };
     }
 
-    // PR 라벨 기반으로 릴리즈 타입 결정
     let globalReleaseType = null;
-    let globalPriority = Infinity;
+    let globalPriority = Infinity; // 어떤 라벨이든 이 값보다 우선순위가 높도록 초기화
+    let foundPRCommits = false;
+    const prInfos = [];
     const releaseTypes = ['major', 'minor', 'patch'];
 
-    for (const prInfo of prInfos) {
-        console.log(`📄 PR #${prInfo.number}: "${prInfo.title}" by @${prInfo.author}`);
-        console.log(`🏷️ PR #${prInfo.number} 라벨: [${prInfo.labels.join(', ')}]`);
+    for (const commit of commits) {
+        console.log(`🔎 커밋 분석: ${commit.message}`);
 
-        const releaseType = determineReleaseTypeFromLabels(prInfo.labels);
+        const prNumber = extractPullRequestNumber(commit.message);
+        if (prNumber) {
+            foundPRCommits = true;
+            const prInfo = await getPullRequestInfo(prNumber);
 
-        if (releaseType) {
-            console.log(`✅ PR #${prInfo.number}: ${releaseType} 릴리즈`);
+            if (prInfo) {
+                prInfos.push(prInfo);
+                const releaseType = determineReleaseTypeFromLabels(prInfo.labels);
 
-            const priority = releaseTypes.indexOf(releaseType);
-            console.log(`🔍 글로벌 우선순위 비교: ${releaseType}(${priority}) vs 현재 최고(${globalPriority})`);
+                if (releaseType) {
+                    console.log(`✅ PR #${prNumber}: ${releaseType} 릴리즈`);
 
-            if (priority < globalPriority) {
-                console.log(`✅ 글로벌 릴리즈 타입 업데이트: ${globalReleaseType || 'none'} -> ${releaseType}`);
-                globalPriority = priority;
-                globalReleaseType = releaseType;
-            } else {
-                console.log(`⏭️  현재 우선순위(${priority})가 글로벌 최고 우선순위(${globalPriority})보다 낮음`);
+                    const priority = releaseTypes.indexOf(releaseType);
+                    console.log(`🔍 글로벌 우선순위 비교: ${releaseType}(${priority}) vs 현재 최고(${globalPriority})`);
+
+                    // 인덱스가 낮을수록(0에 가까울수록) 우선순위가 높음
+                    if (priority < globalPriority) {
+                        console.log(`✅ 글로벌 릴리즈 타입 업데이트: ${globalReleaseType || 'none'} -> ${releaseType}`);
+                        globalPriority = priority;
+                        globalReleaseType = releaseType;
+                    } else {
+                        console.log(`⏭️  현재 우선순위(${priority})가 글로벌 최고 우선순위(${globalPriority})보다 낮음`);
+                    }
+                } else {
+                    console.log(`⚪ PR #${prNumber}: 릴리즈와 관련된 라벨 없음`);
+                }
             }
         } else {
-            console.log(`⚪ PR #${prInfo.number}: 릴리즈와 관련된 라벨 없음`);
+            console.log('⚪ PR 번호를 찾을 수 없는 커밋');
         }
+    }
+
+    // PR 번호를 찾을 수 있는 커밋이 하나도 없으면 릴리즈 하지 않음
+    if (!foundPRCommits) {
+        console.log('🚫 PR 번호를 찾을 수 있는 커밋이 없어서 릴리즈를 건너뜁니다.');
+        return { releaseType: null, prInfos: [] };
     }
 
     if (globalReleaseType) {
