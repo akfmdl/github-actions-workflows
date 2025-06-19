@@ -271,6 +271,18 @@ async function getRecentMergedPullRequests() {
         const prNumbers = new Set();
 
         try {
+            // 현재 HEAD와 마지막 태그의 커밋 해시 확인
+            const currentHead = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
+            const lastTagHash = execSync(`git rev-parse ${lastTag}`, { encoding: 'utf8' }).trim();
+
+            console.log(`🔍 현재 HEAD: ${currentHead}`);
+            console.log(`🔍 마지막 태그 ${lastTag} 해시: ${lastTagHash}`);
+
+            if (currentHead === lastTagHash) {
+                console.log(`⚠️ 현재 HEAD와 마지막 태그가 동일합니다. 새로운 커밋이 없습니다.`);
+                return [];
+            }
+
             // 마지막 태그부터 HEAD까지의 커밋 메시지 가져오기
             const commits = execSync(`git log ${lastTag}..HEAD --pretty=format:"%s"`, { encoding: 'utf8' })
                 .trim()
@@ -279,6 +291,16 @@ async function getRecentMergedPullRequests() {
 
             console.log(`📋 마지막 태그 이후 커밋 수: ${commits.length}개`);
 
+            if (commits.length === 0) {
+                console.log(`⚠️ 마지막 태그 ${lastTag} 이후 새로운 커밋이 없습니다.`);
+                return [];
+            }
+
+            console.log(`📋 커밋 메시지들:`);
+            commits.forEach((commit, index) => {
+                console.log(`   ${index + 1}. ${commit}`);
+            });
+
             for (const message of commits) {
                 // 모든 #숫자 패턴을 찾아서 PR 번호로 간주
                 const prMatches = message.match(/#(\d+)/g);
@@ -286,6 +308,7 @@ async function getRecentMergedPullRequests() {
                     for (const match of prMatches) {
                         const prNum = parseInt(match.replace('#', ''), 10);
                         if (prNum && prNum > 0) {
+                            console.log(`   🎯 발견된 PR 번호: #${prNum} (커밋: "${message}")`);
                             prNumbers.add(prNum);
                         }
                     }
@@ -312,6 +335,11 @@ async function getRecentMergedPullRequests() {
                     }
                 }
             }
+        }
+
+        if (prNumbers.size === 0) {
+            console.log(`⚠️ 마지막 태그 이후 커밋에서 PR 번호를 찾을 수 없습니다.`);
+            return [];
         }
 
         console.log(`🔎 발견된 PR 번호: ${Array.from(prNumbers).length}개 [${Array.from(prNumbers).sort((a, b) => b - a).slice(0, 10).join(', ')}${Array.from(prNumbers).length > 10 ? '...' : ''}]`);
@@ -354,8 +382,15 @@ async function analyzePullRequestsForReleaseType() {
     const prInfos = await getRecentMergedPullRequests();
 
     if (prInfos.length === 0) {
-        console.log('🚫 분석할 PR이 없어서 릴리즈를 건너뜁니다.');
-        return { releaseType: null, prInfos: [] };
+        console.log('🚫 분석할 PR이 없습니다.');
+        console.log('💡 이는 다음 중 하나의 이유일 수 있습니다:');
+        console.log('   1. 마지막 태그 이후 새로운 커밋이 없음');
+        console.log('   2. 새로운 커밋이 있지만 PR 번호가 포함되지 않음');
+        console.log('   3. 발견된 PR이 merged 상태가 아님');
+        console.log('🔧 강제로 기본 릴리즈를 생성하려면 DEFAULT_RELEASE_TYPE을 사용합니다.');
+
+        // 기본 릴리즈 타입으로 빈 릴리즈 생성
+        return { releaseType: DEFAULT_RELEASE_TYPE, prInfos: [] };
     }
 
     console.log(`🔗 ${prInfos.length}개의 PR을 발견했습니다.`);
