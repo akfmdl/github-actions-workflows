@@ -9,13 +9,13 @@ const GITHUB_API_URL = process.env.GITHUB_API_URL || 'https://api.github.com';
 const JIRA_BASE_URL = process.env.JIRA_BASE_URL || 'https://your-jira-instance.atlassian.net';
 const VERSION_PY_PATH = process.env.VERSION_PY_PATH || '';
 const VERSION_PREFIX = process.env.VERSION_PREFIX || '';
-const DEFAULT_RELEASE_TYPE = process.env.DEFAULT_RELEASE_TYPE || 'patch'; // 'patch' 또는 'minor'
-const PATCH_VERSION_PREFIX = process.env.PATCH_VERSION_PREFIX || ''; // patch 버전에 사용할 문자열 prefix (예: 'rc', 'alpha' 등)
+const DEFAULT_RELEASE_TYPE = process.env.DEFAULT_RELEASE_TYPE || 'patch'; // 'patch', 'minor', 또는 'post'
+
 const INCLUDE_PATCH_FOR_MINOR = process.env.INCLUDE_PATCH_FOR_MINOR !== 'false'; // minor 릴리즈일 때 patch 버전 포함 여부 (환경변수가 없으면 기본값: true)
 
 // DEFAULT_RELEASE_TYPE 유효성 검사
-if (!['patch', 'minor'].includes(DEFAULT_RELEASE_TYPE)) {
-    console.error(`❌ 잘못된 DEFAULT_RELEASE_TYPE: ${DEFAULT_RELEASE_TYPE}. 'patch' 또는 'minor'만 사용 가능합니다.`);
+if (!['patch', 'minor', 'post'].includes(DEFAULT_RELEASE_TYPE)) {
+    console.error(`❌ 잘못된 DEFAULT_RELEASE_TYPE: ${DEFAULT_RELEASE_TYPE}. 'patch', 'minor', 또는 'post'만 사용 가능합니다.`);
     process.exit(1);
 }
 
@@ -29,7 +29,8 @@ const DEFAULT_LABEL_MAPPINGS = {
     "fix": "patch",
     "documentation": "patch",
     "docs": "patch",
-    "chore": "patch"
+    "chore": "patch",
+    "post-release": "post"
 };
 
 function getLastVersion() {
@@ -147,7 +148,7 @@ function determineReleaseTypeFromLabels(labels, labelMappings = DEFAULT_LABEL_MA
         return null;
     }
 
-    const releaseTypes = ['major', 'minor', 'patch'];
+    const releaseTypes = ['major', 'minor', 'patch', 'post'];
     let highestReleaseType = null;
     let highestPriority = Infinity;
 
@@ -177,6 +178,7 @@ function generateReleaseNotes(prInfos, version, lastTag = null) {
     const features = [];
     const bugfixes = [];
     const docs = [];
+    const postReleases = [];
     const others = [];
 
     for (const pr of prInfos) {
@@ -189,8 +191,13 @@ function generateReleaseNotes(prInfos, version, lastTag = null) {
         const hasDocsLabel = pr.labels.some(label =>
             ['documentation', 'docs'].includes(label.toLowerCase())
         );
+        const hasPostReleaseLabel = pr.labels.some(label =>
+            label.toLowerCase() === 'post-release'
+        );
 
-        if (hasFeatureLabel) {
+        if (hasPostReleaseLabel) {
+            postReleases.push(pr);
+        } else if (hasFeatureLabel) {
             features.push(pr);
         } else if (hasBugLabel) {
             bugfixes.push(pr);
@@ -202,6 +209,16 @@ function generateReleaseNotes(prInfos, version, lastTag = null) {
     }
 
     let releaseNotes = ``;
+
+    // Post-Release 섹션 (가장 위에 표시)
+    if (postReleases.length > 0) {
+        releaseNotes += `## 🏥 Post-Release Fixes\n\n`;
+        for (const pr of postReleases) {
+            const titleWithJiraLinks = addJiraLinksToText(pr.title);
+            releaseNotes += `- ${titleWithJiraLinks} ([#${pr.number}](${pr.url})) [@${pr.author}](https://github.com/${pr.author})\n`;
+        }
+        releaseNotes += '\n';
+    }
 
     // Features 섹션
     if (features.length > 0) {
@@ -270,8 +287,6 @@ function generateReleaseNotes(prInfos, version, lastTag = null) {
 
     return releaseNotes;
 }
-
-
 
 async function getRecentMergedPullRequests() {
     if (!GITHUB_TOKEN || !GITHUB_REPOSITORY) {
@@ -450,7 +465,7 @@ async function analyzePullRequestsForReleaseType() {
     // PR 라벨 기반으로 릴리즈 타입 결정
     let globalReleaseType = null;
     let globalPriority = Infinity;
-    const releaseTypes = ['major', 'minor', 'patch'];
+    const releaseTypes = ['major', 'minor', 'patch', 'post'];
 
     for (const prInfo of prInfos) {
         console.log(`📄 PR #${prInfo.number}: "${prInfo.title}" by @${prInfo.author}`);
@@ -486,8 +501,39 @@ function generateCalendarVersion(releaseType) {
     const lastVersion = lastVersionInfo.version;
     console.log(`🔍 마지막 버전: ${lastVersion}`);
 
+    // post-release 처리: 기존 버전에 .postN 추가
+    if (releaseType === 'post') {
+        console.log(`🔄 Post-release 버전 생성`);
+
+        // 현재 버전이 이미 post-release 버전인지 확인
+        const postMatch = lastVersion.match(/^(.+)\.post(\d+)$/);
+
+        if (postMatch) {
+            // 이미 post-release 버전인 경우, post 번호만 증가
+            const baseVersion = postMatch[1];
+            const postNumber = parseInt(postMatch[2], 10) + 1;
+            const finalVersion = `${VERSION_PREFIX}${baseVersion}.post${postNumber}`;
+            console.log(`🔺 Post-release 번호 증가: post${postMatch[2]} -> post${postNumber}`);
+            return finalVersion;
+        } else {
+            // 일반 버전에 post1 추가
+            const finalVersion = `${VERSION_PREFIX}${lastVersion}.post1`;
+            console.log(`🔺 첫 번째 Post-release 버전: ${lastVersion} -> ${lastVersion}.post1`);
+            return finalVersion;
+        }
+    }
+
     // 버전 파싱 (이미 getLastVersion에서 prefix 제거됨)
-    const versionParts = lastVersion.split('.');
+    let versionToParse = lastVersion;
+
+    // post-release 버전인 경우 base 버전만 사용
+    const postMatch = lastVersion.match(/^(.+)\.post\d+$/);
+    if (postMatch) {
+        versionToParse = postMatch[1];
+        console.log(`🔍 Post-release 버전에서 base 버전 추출: ${lastVersion} -> ${versionToParse}`);
+    }
+
+    const versionParts = versionToParse.split('.');
 
     // 정확히 4개의 파트가 있어야 함
     while (versionParts.length < 4) {
@@ -498,22 +544,9 @@ function generateCalendarVersion(releaseType) {
     let lastYear = parseInt(versionParts[0], 10) || 2024;
     let lastMonth = parseInt(versionParts[1], 10) || 1;
     let lastMinor = parseInt(versionParts[2], 10) || 0;
-    let lastFixNumber = 0;
+    let lastFixNumber = parseInt(versionParts[3], 10) || 0;
 
     console.log(`🔍 현재 날짜: ${currentYear}.${currentMonth}, 릴리즈 타입: ${releaseType}`);
-
-    // patch 버전에서 숫자 부분만 추출
-    const lastFixPart = versionParts[3];
-
-    if (PATCH_VERSION_PREFIX && lastFixPart.startsWith(PATCH_VERSION_PREFIX)) {
-        lastFixNumber = parseInt(lastFixPart.substring(PATCH_VERSION_PREFIX.length), 10) || 0;
-    } else if (!PATCH_VERSION_PREFIX && /^\d+$/.test(lastFixPart)) {
-        lastFixNumber = parseInt(lastFixPart, 10) || 0;
-    } else if (!PATCH_VERSION_PREFIX && isNaN(parseInt(lastFixPart, 10))) {
-        lastFixNumber = 0;
-    } else {
-        lastFixNumber = parseInt(lastFixPart, 10) || 0;
-    }
 
     let newYear = currentYear;
     let newMonth = currentMonth;
@@ -547,8 +580,7 @@ function generateCalendarVersion(releaseType) {
         finalVersion = `${VERSION_PREFIX}${newYear}.${newMonth.toString().padStart(2, '0')}.${newMinor}`;
         console.log(`🔖 Minor release with patch version omitted: ${finalVersion}`);
     } else {
-        const patchVersion = PATCH_VERSION_PREFIX ? `${PATCH_VERSION_PREFIX}${newFixNumber}` : `${newFixNumber}`;
-        finalVersion = `${VERSION_PREFIX}${newYear}.${newMonth.toString().padStart(2, '0')}.${newMinor}.${patchVersion}`;
+        finalVersion = `${VERSION_PREFIX}${newYear}.${newMonth.toString().padStart(2, '0')}.${newMinor}.${newFixNumber}`;
     }
 
     return finalVersion;

@@ -75,7 +75,6 @@ __VERSION__ = "0.0.0"
           version-py-path: 'src/version.py' # 선택사항: version.py 파일 경로
           version-prefix: 'v'               # 선택사항: 버전 prefix (예: v1.0.0)
           default-release-type: 'minor'     # 선택사항: 기본 릴리즈 타입 (patch/minor)
-          patch-version-prefix: 'rc'        # 선택사항: patch 버전 prefix (예: rc1, alpha1)
           include-patch-for-minor: 'false'  # 선택사항: minor 시 patch 버전 생략 여부
 ```
 
@@ -88,15 +87,6 @@ PR 라벨이 없거나 매핑되지 않은 경우 사용할 기본 릴리즈 타
 
 ```yaml
 default-release-type: 'minor'  # 기본값: 'patch'
-```
-
-**Patch 버전 형식 변경**
-Patch 버전에 문자열 prefix를 추가할 수 있습니다.
-
-```yaml
-patch-version-prefix: 'rc'     # 결과: 2025.01.0.rc1, 2025.01.0.rc2
-patch-version-prefix: 'alpha'  # 결과: 2025.01.0.alpha1, 2025.01.0.alpha2
-patch-version-prefix: 'beta'   # 결과: 2025.01.0.beta1, 2025.01.0.beta2
 ```
 
 **Minor 릴리즈 시 Patch 버전 생략**
@@ -129,7 +119,7 @@ version-prefix: 'v'  # 결과: v2025.01.0.1
   - 파일이 없으면 건너뜁니다
 | `version-prefix` | ❌ | `''` | 버전 앞에 붙일 prefix (예: `v1.0.0`의 `v`) |
 | `default-release-type` | ❌ | `'patch'` | PR 라벨이 없을 때 사용할 기본 릴리즈 타입 (`patch` 또는 `minor`) |
-| `patch-version-prefix` | ❌ | `''` | patch 버전에 사용할 문자열 prefix (예: `rc`, `alpha`, `beta`) |
+
 | `include-patch-for-minor` | ❌ | `'true'` | minor 릴리즈일 때 patch 버전 포함 여부 (`true`: 2025.06.1.0, `false`: 2025.06.1) |
 
 #### 4.2 버전 형식 예시
@@ -138,8 +128,7 @@ version-prefix: 'v'  # 결과: v2025.01.0.1
 |------|-------------|-----------|
 | 기본 설정 | patch | 2025.01.0.1 |
 | 기본 설정 | minor | 2025.01.1.0 |
-| `patch-version-prefix: 'rc'` | patch | 2025.01.0.rc1 |
-| `patch-version-prefix: 'alpha'` | patch | 2025.01.0.alpha1 |
+
 | `include-patch-for-minor: 'false'` | minor | 2025.01.1 |
 | `version-prefix: 'v'` | patch | v2025.01.0.1 |
 | `version-prefix: 'v'` + `include-patch-for-minor: 'false'` | minor | v2025.01.1 |
