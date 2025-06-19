@@ -344,7 +344,7 @@ async function getRecentMergedPullRequests() {
     }
 }
 
-async function analyzeCommitsForReleaseType() {
+async function analyzePullRequestsForReleaseType() {
     console.log('🔍 PR 정보를 분석하여 릴리즈 타입을 결정합니다...');
 
     // 먼저 GitHub API를 통해 merged PR들을 가져옴
@@ -505,7 +505,7 @@ function generateCalendarVersion(releaseType) {
 // calendar versioning 기반 릴리즈 생성
 async function generateCalendarRelease() {
     console.log('🔄 PR 라벨 분석을 통해 릴리즈 타입을 결정합니다...');
-    const analysis = await analyzeCommitsForReleaseType();
+    const analysis = await analyzePullRequestsForReleaseType();
     const releaseType = analysis.releaseType;
     const prInfos = analysis.prInfos;
     const calendarVersion = generateCalendarVersion(releaseType);
@@ -587,4 +587,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { generateCalendarVersion, generateCalendarRelease, analyzeCommitsForReleaseType }; 
+module.exports = { generateCalendarVersion, generateCalendarRelease, analyzePullRequestsForReleaseType }; 
