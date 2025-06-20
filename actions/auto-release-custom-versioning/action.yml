@@ -30,6 +30,18 @@ inputs:
     description: 'Path to version.py file (relative to working directory)'
     required: false
     default: ''
+  version-prefix:
+    description: 'Prefix for version numbers (e.g., "v" for v1.0.0)'
+    required: false
+    default: ''
+  default-release-type:
+    description: 'Default release type when no PR labels are found (patch or minor)'
+    required: false
+    default: 'patch'
+  include-patch-for-minor:
+    description: 'Include patch version for minor releases (true/false)'
+    required: false
+    default: 'true'
 
 outputs:
   new-release-published:
@@ -97,6 +109,9 @@ runs:
         GITHUB_REPOSITORY: ${{ github.repository }}
         JIRA_BASE_URL: ${{ inputs.jira-base-url }}
         VERSION_PY_PATH: ${{ inputs.version-py-path }}
+        VERSION_PREFIX: ${{ inputs.version-prefix }}
+        DEFAULT_RELEASE_TYPE: ${{ inputs.default-release-type }}
+        INCLUDE_PATCH_FOR_MINOR: ${{ inputs.include-patch-for-minor }}
       run: |        
         echo "🚀 Running custom versioning..."
         node /tmp/calendar-version-wrapper.js
@@ -106,7 +121,6 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
-        VERSION_PY_PATH: ${{ inputs.version-py-path }}
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -116,7 +130,7 @@ runs:
         FILES_TO_COMMIT=""
         
         # 관심있는 파일들만 필터링
-        for file in package.json $VERSION_PY_PATH; do
+        for file in package.json ${{ inputs.version-py-path }}; do
           if [ -f "$file" ] && echo "$CHANGED_FILES" | grep -q "^$file$"; then
             FILES_TO_COMMIT="$FILES_TO_COMMIT $file"
           fi
@@ -244,4 +258,4 @@ runs:
 
 branding:
   icon: 'tag'
-  color: 'purple' 
+  color: 'purple'
