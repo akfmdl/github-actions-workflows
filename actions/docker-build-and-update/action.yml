@@ -3,7 +3,10 @@ description: 'Build Docker image, push to registry, and update another repositor
 author: 'GitHub Actions Workflows'
 
 inputs:
-  github-token:
+  github-token-for-build:
+    description: 'GitHub Personal Access Token with repo permissions for build'
+    required: true
+  github-token-for-update:
     description: 'GitHub Personal Access Token with repo permissions for update'
     required: true
   node-version:
@@ -88,7 +91,7 @@ runs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ inputs.github-token-for-build }}
         
     - name: Docker build, push and update repository
       id: docker-build-update
@@ -103,7 +106,7 @@ runs:
         TARGET_REPO: ${{ inputs.target-repo }}
         TARGET_FILE_PATH: ${{ inputs.target-file-path }}
         TARGET_BRANCH: ${{ inputs.target-branch }}
-        GITHUB_TOKEN: ${{ inputs.github-token }}
+        GITHUB_TOKEN: ${{ inputs.github-token-for-update }}
         REGISTRY_USERNAME: ${{ inputs.registry-username }}
         REGISTRY_PASSWORD: ${{ inputs.registry-password }}
         COMMIT_MESSAGE: ${{ inputs.commit-message }}
