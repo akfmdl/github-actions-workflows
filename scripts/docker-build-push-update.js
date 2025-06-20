@@ -19,10 +19,10 @@ const REGISTRY_PASSWORD = process.env.REGISTRY_PASSWORD;
 const COMMIT_MESSAGE = process.env.COMMIT_MESSAGE;
 
 // GitHub API 호출 헬퍼 함수
-async function githubAPI(endpoint, token, options = {}) {
+async function githubAPI(endpoint, options = {}) {
     const url = `https://api.github.com${endpoint}`;
     const defaultHeaders = {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${GITHUB_TOKEN}`,
         'Accept': 'application/vnd.github+json',
         'X-GitHub-Api-Version': '2022-11-28',
         'User-Agent': 'Docker-Build-Push-Update-Workflow'
@@ -208,7 +208,7 @@ async function updateTargetRepositoryFile() {
     try {
         // 1. 레포지토리 접근 권한 확인
         console.log(`🔍 레포지토리 접근 권한 확인: ${owner}/${repo}`);
-        const repoCheck = await githubAPI(`/repos/${owner}/${repo}`, GITHUB_TOKEN);
+        const repoCheck = await githubAPI(`/repos/${owner}/${repo}`);
         console.log(`✅ 레포지토리 접근 가능: ${repoCheck.full_name}`);
 
         // 1.5. 브랜치 확인 (TARGET_BRANCH가 지정된 경우)
@@ -229,7 +229,7 @@ async function updateTargetRepositoryFile() {
 
         // 브랜치 파라미터 추가 - TARGET_BRANCH가 지정되어 있으면 해당 브랜치에서 파일 가져오기
         const contentParams = TARGET_BRANCH ? `?ref=${TARGET_BRANCH}` : '';
-        const fileData = await githubAPI(`/repos/${owner}/${repo}/contents/${TARGET_FILE_PATH}${contentParams}`, GITHUB_TOKEN);
+        const fileData = await githubAPI(`/repos/${owner}/${repo}/contents/${TARGET_FILE_PATH}${contentParams}`);
 
         const originalContent = Buffer.from(fileData.content, 'base64').toString('utf8');
         console.log('✅ 원본 파일 내용을 성공적으로 가져왔습니다.');
@@ -251,7 +251,7 @@ async function updateTargetRepositoryFile() {
         console.log('💾 파일 업데이트 중...');
         const commitMessage = COMMIT_MESSAGE || `Update ${IMAGE_NAME} image to ${IMAGE_TAG}`;
 
-        const commitResult = await githubAPI(`/repos/${owner}/${repo}/contents/${TARGET_FILE_PATH}`, GITHUB_TOKEN, {
+        const commitResult = await githubAPI(`/repos/${owner}/${repo}/contents/${TARGET_FILE_PATH}`, {
             method: 'PUT',
             body: JSON.stringify({
                 message: commitMessage,
