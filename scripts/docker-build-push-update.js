@@ -68,11 +68,6 @@ async function buildAndPushDockerImage() {
     const fullImageName = `${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}`;
 
     try {
-        // 레포지토리 접근 권한 확인
-        console.log(`🔍 레포지토리 접근 권한 확인: ${TARGET_REPO}`);
-        const repoCheck = await githubAPI(`/repos/${TARGET_REPO}`, GITHUB_TOKEN_FOR_BUILD);
-        console.log(`✅ 레포지토리 접근 가능: ${repoCheck.full_name}`);
-
         // Docker 레지스트리 로그인
         if (REGISTRY_USERNAME && REGISTRY_PASSWORD) {
             console.log('🔑 Container Registry 로그인 중...');
