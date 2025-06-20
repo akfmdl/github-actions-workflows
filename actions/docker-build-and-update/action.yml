@@ -106,7 +106,8 @@ runs:
         TARGET_REPO: ${{ inputs.target-repo }}
         TARGET_FILE_PATH: ${{ inputs.target-file-path }}
         TARGET_BRANCH: ${{ inputs.target-branch }}
-        GITHUB_TOKEN: ${{ inputs.github-token-for-update }}
+        GITHUB_TOKEN_FOR_BUILD: ${{ inputs.github-token-for-build }}
+        GITHUB_TOKEN_FOR_UPDATE: ${{ inputs.github-token-for-update }}
         REGISTRY_USERNAME: ${{ inputs.registry-username }}
         REGISTRY_PASSWORD: ${{ inputs.registry-password }}
         COMMIT_MESSAGE: ${{ inputs.commit-message }}
