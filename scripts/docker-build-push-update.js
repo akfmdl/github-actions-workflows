@@ -13,8 +13,7 @@ const BUILD_ARGS = process.env.BUILD_ARGS;
 const TARGET_REPO = process.env.TARGET_REPO;
 const TARGET_FILE_PATH = process.env.TARGET_FILE_PATH;
 const TARGET_BRANCH = process.env.TARGET_BRANCH;
-const GITHUB_TOKEN_FOR_BUILD = process.env.GITHUB_TOKEN_FOR_BUILD;
-const GITHUB_TOKEN_FOR_UPDATE = process.env.GITHUB_TOKEN_FOR_UPDATE;
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const REGISTRY_USERNAME = process.env.REGISTRY_USERNAME;
 const REGISTRY_PASSWORD = process.env.REGISTRY_PASSWORD;
 const COMMIT_MESSAGE = process.env.COMMIT_MESSAGE;
@@ -209,7 +208,7 @@ async function updateTargetRepositoryFile() {
     try {
         // 1. 레포지토리 접근 권한 확인
         console.log(`🔍 레포지토리 접근 권한 확인: ${owner}/${repo}`);
-        const repoCheck = await githubAPI(`/repos/${owner}/${repo}`, GITHUB_TOKEN_FOR_UPDATE);
+        const repoCheck = await githubAPI(`/repos/${owner}/${repo}`, GITHUB_TOKEN);
         console.log(`✅ 레포지토리 접근 가능: ${repoCheck.full_name}`);
 
         // 1.5. 브랜치 확인 (TARGET_BRANCH가 지정된 경우)
@@ -230,7 +229,7 @@ async function updateTargetRepositoryFile() {
 
         // 브랜치 파라미터 추가 - TARGET_BRANCH가 지정되어 있으면 해당 브랜치에서 파일 가져오기
         const contentParams = TARGET_BRANCH ? `?ref=${TARGET_BRANCH}` : '';
-        const fileData = await githubAPI(`/repos/${owner}/${repo}/contents/${TARGET_FILE_PATH}${contentParams}`, GITHUB_TOKEN_FOR_UPDATE);
+        const fileData = await githubAPI(`/repos/${owner}/${repo}/contents/${TARGET_FILE_PATH}${contentParams}`, GITHUB_TOKEN);
 
         const originalContent = Buffer.from(fileData.content, 'base64').toString('utf8');
         console.log('✅ 원본 파일 내용을 성공적으로 가져왔습니다.');
@@ -252,7 +251,7 @@ async function updateTargetRepositoryFile() {
         console.log('💾 파일 업데이트 중...');
         const commitMessage = COMMIT_MESSAGE || `Update ${IMAGE_NAME} image to ${IMAGE_TAG}`;
 
-        const commitResult = await githubAPI(`/repos/${owner}/${repo}/contents/${TARGET_FILE_PATH}`, GITHUB_TOKEN_FOR_UPDATE, {
+        const commitResult = await githubAPI(`/repos/${owner}/${repo}/contents/${TARGET_FILE_PATH}`, GITHUB_TOKEN, {
             method: 'PUT',
             body: JSON.stringify({
                 message: commitMessage,
@@ -290,8 +289,7 @@ async function main() {
     console.log(`- Target Repository: ${TARGET_REPO}`);
     console.log(`- Target File Path: ${TARGET_FILE_PATH}`);
     console.log(`- Target Branch: ${TARGET_BRANCH || 'default branch'}`);
-    console.log(`- GitHub Token (Build): ${GITHUB_TOKEN_FOR_BUILD ? `${GITHUB_TOKEN_FOR_BUILD.substring(0, 8)}...` : 'NOT PROVIDED'}`);
-    console.log(`- GitHub Token (Update): ${GITHUB_TOKEN_FOR_UPDATE ? `${GITHUB_TOKEN_FOR_UPDATE.substring(0, 8)}...` : 'NOT PROVIDED'}`);
+    console.log(`- GitHub Token: ${GITHUB_TOKEN ? `${GITHUB_TOKEN.substring(0, 8)}...` : 'NOT PROVIDED'}`);
 
     // 필수 입력값 검증 (실제 변수값 확인)
     const requiredValues = {
@@ -299,8 +297,7 @@ async function main() {
         'IMAGE_TAG': IMAGE_TAG,
         'TARGET_REPO': TARGET_REPO,
         'TARGET_FILE_PATH': TARGET_FILE_PATH,
-        'GITHUB_TOKEN_FOR_BUILD': GITHUB_TOKEN_FOR_BUILD,
-        'GITHUB_TOKEN_FOR_UPDATE': GITHUB_TOKEN_FOR_UPDATE
+        'GITHUB_TOKEN': GITHUB_TOKEN
     };
 
     const missingFields = Object.entries(requiredValues)
