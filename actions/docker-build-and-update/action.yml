@@ -91,7 +91,7 @@ runs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        token: ${{ inputs.github-token-for-build }}
+        token: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Docker build, push and update repository
       id: docker-build-update
