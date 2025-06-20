@@ -3,10 +3,7 @@ description: 'Build Docker image, push to registry, and update another repositor
 author: 'GitHub Actions Workflows'
 
 inputs:
-  github-token-for-build:
-    description: 'GitHub Personal Access Token with repo permissions for build'
-    required: true
-  github-token-for-update:
+  github-token:
     description: 'GitHub Personal Access Token with repo permissions for update'
     required: true
   node-version:
@@ -105,7 +102,7 @@ runs:
         TARGET_REPO: ${{ inputs.target-repo }}
         TARGET_FILE_PATH: ${{ inputs.target-file-path }}
         TARGET_BRANCH: ${{ inputs.target-branch }}
-        GITHUB_TOKEN: ${{ inputs.github-token-for-update }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
         REGISTRY_USERNAME: ${{ inputs.registry-username }}
         REGISTRY_PASSWORD: ${{ inputs.registry-password }}
         COMMIT_MESSAGE: ${{ inputs.commit-message }}
