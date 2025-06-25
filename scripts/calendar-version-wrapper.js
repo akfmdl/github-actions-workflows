@@ -111,10 +111,27 @@ async function fetchWithAuth(url) {
 
 function addJiraLinksToText(text) {
     // 텍스트에서 Jira 티켓 번호를 찾아서 링크로 변환
-    const jiraPattern = /\[([A-Z]+-\d+)\]/g;
-    return text.replace(jiraPattern, (match, ticketNumber) => {
-        const jiraUrl = `${JIRA_BASE_URL}/browse/${ticketNumber}`;
-        return `[[${ticketNumber}](${jiraUrl})]`;
+    // [ZQZT-502] 또는 [ZQZT-502, ZQZT-493] 같은 형태 모두 처리
+    const bracketPattern = /\[([^\]]+)\]/g;
+
+    return text.replace(bracketPattern, (match, content) => {
+        // 대괄호 안의 내용에서 Jira 티켓 번호들을 찾음 (콤마, 공백, 세미콜론 등으로 구분 가능)
+        const ticketPattern = /([A-Z]+-\d+)/g;
+        const tickets = content.match(ticketPattern);
+
+        if (tickets && tickets.length > 0) {
+            // 각 티켓을 링크로 변환
+            const linkedTickets = tickets.map(ticketNumber => {
+                const jiraUrl = `${JIRA_BASE_URL}/browse/${ticketNumber}`;
+                return `[${ticketNumber}](${jiraUrl})`;
+            });
+
+            // 여러 개인 경우 콤마로 구분하여 결합
+            return `[${linkedTickets.join(', ')}]`;
+        }
+
+        // Jira 티켓이 없으면 원본 그대로 반환
+        return match;
     });
 }
 
