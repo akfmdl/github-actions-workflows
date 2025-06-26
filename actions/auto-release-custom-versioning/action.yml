@@ -42,6 +42,10 @@ inputs:
     description: 'Include patch version for minor releases (true/false)'
     required: false
     default: 'true'
+  label-mappings:
+    description: 'Custom label mappings in JSON format (e.g., {"breaking": "major", "feature": "minor", "bug": "patch"})'
+    required: false
+    default: ''
 
 outputs:
   new-release-published:
@@ -112,6 +116,7 @@ runs:
         VERSION_PREFIX: ${{ inputs.version-prefix }}
         DEFAULT_RELEASE_TYPE: ${{ inputs.default-release-type }}
         INCLUDE_PATCH_FOR_MINOR: ${{ inputs.include-patch-for-minor }}
+        LABEL_MAPPINGS: ${{ inputs.label-mappings }}
       run: |        
         echo "🚀 Running custom versioning..."
         node /tmp/calendar-version-wrapper.js
