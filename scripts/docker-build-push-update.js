@@ -276,7 +276,7 @@ async function updateTargetRepositoryFile() {
 
 // 메인 실행 함수
 async function main() {
-    console.log('🚀 Docker Build & Push + Repository Update Workflow v1.0.0');
+    console.log('🚀 Docker Build & Push + Repository Update Workflow');
     console.log('='.repeat(80));
 
     console.log('📋 설정 확인:');

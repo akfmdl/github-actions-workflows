@@ -11,6 +11,7 @@ const VERSION_PY_PATH = process.env.VERSION_PY_PATH || '';
 const VERSION_PREFIX = process.env.VERSION_PREFIX || '';
 const DEFAULT_RELEASE_TYPE = process.env.DEFAULT_RELEASE_TYPE || 'patch'; // 'patch', 'minor', 또는 'post'
 const INCLUDE_PATCH_FOR_MINOR = process.env.INCLUDE_PATCH_FOR_MINOR !== 'false'; // minor 릴리즈일 때 patch 버전 포함 여부 (환경변수가 없으면 기본값: true)
+const LABEL_MAPPINGS = process.env.LABEL_MAPPINGS || null;
 
 // DEFAULT_RELEASE_TYPE 유효성 검사
 if (!['patch', 'minor', 'post'].includes(DEFAULT_RELEASE_TYPE)) {
@@ -31,6 +32,22 @@ const DEFAULT_LABEL_MAPPINGS = {
     "chore": "patch",
     "post-release": "post"
 };
+
+// 환경변수에서 라벨 매핑 설정 읽기
+function getLabelMappings() {
+    if (LABEL_MAPPINGS) {
+        try {
+            const parsedMappings = JSON.parse(LABEL_MAPPINGS);
+            console.log('🔧 환경변수에서 커스텀 라벨 매핑을 로드했습니다:', parsedMappings);
+            return parsedMappings;
+        } catch (error) {
+            console.error('❌ LABEL_MAPPINGS 환경변수 파싱 실패:', error.message);
+            console.log('🔧 기본 라벨 매핑을 사용합니다.');
+        }
+    }
+
+    return DEFAULT_LABEL_MAPPINGS;
+}
 
 function getLastVersion() {
     try {
@@ -159,7 +176,10 @@ function searchPRNumbersInRecentCommits(prNumbers, days = 30) {
     }
 }
 
-function determineReleaseTypeFromLabels(labels, labelMappings = DEFAULT_LABEL_MAPPINGS) {
+function determineReleaseTypeFromLabels(labels, labelMappings = null) {
+    if (!labelMappings) {
+        labelMappings = getLabelMappings();
+    }
     if (!labels || labels.length === 0) {
         return null;
     }
