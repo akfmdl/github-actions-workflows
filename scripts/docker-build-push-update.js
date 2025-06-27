@@ -124,15 +124,15 @@ async function buildAndPushDockerImage() {
         }
 
         try {
-            // const buildCommand = `docker build -f ${DOCKERFILE_PATH} -t ${fullImageName}${buildArgsString} ${BUILD_CONTEXT}`;
-            // console.log(`📋 Build 명령: ${buildCommand}`);
-            // console.log('📺 Docker 빌드 로그:');
-            // console.log('-'.repeat(60));
+            const buildCommand = `docker build -f ${DOCKERFILE_PATH} -t ${fullImageName}${buildArgsString} ${BUILD_CONTEXT}`;
+            console.log(`📋 Build 명령: ${buildCommand}`);
+            console.log('📺 Docker 빌드 로그:');
+            console.log('-'.repeat(60));
 
-            // execSync(buildCommand, {
-            //     stdio: 'inherit',
-            //     encoding: 'utf8'
-            // });
+            execSync(buildCommand, {
+                stdio: 'inherit',
+                encoding: 'utf8'
+            });
 
             console.log('-'.repeat(60));
             console.log('✅ Docker 이미지 빌드 완료');
