@@ -3,23 +3,37 @@ name: Docker Build, Push and Update Repository
 on:
   push:
     branches:
-      - <TARGET_BRANCH>
+      - test
 
 env:
-  DOCKER_REGISTRY: <DOCKER_REGISTRY>
-  IMAGE_NAME: <IMAGE_NAME>
-  IMAGE_TAG: <IMAGE_TAG>
-  TARGET_REPO: <TARGET_REPO>
-  TARGET_BRANCH: <TARGET_BRANCH>
-  TARGET_FILE_PATH: <TARGET_FILE_PATH>
+  DOCKER_REGISTRY: persolive.azurecr.io
+  IMAGE_NAME: audio-triton-server
+  TARGET_REPO: est-infra/persolive-admin-aks-stg
+  TARGET_BRANCH: test
+  TARGET_FILE_PATH: stg-idc/02-perso-vt/01-perso-vt-audio/02-perso-vt-audio-trtion/perso-vt-audio-triton-stg.yaml
 
 jobs:
   docker-build-and-update:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
     steps:
     - name: Checkout source code
       uses: actions/checkout@v4
+
+    - name: Auto Release
+      id: auto-release
+      uses: akfmdl/github-actions-workflows/actions/auto-release-custom-versioning@test
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        release-branches: '["test"]'
+        jira-base-url: https://estsoft.atlassian.net
+        version-py-path: 'version.py'           # 선택사항: version.py 파일 경로
+        version-prefix: 'v'                     # 선택사항: 버전 prefix (예: v1.0.0)
+        default-release-type: 'minor'           # 선택사항: 기본 릴리즈 타입 (patch/minor)
+        # include-patch-for-minor: 'false'        # 선택사항: minor 시 patch 버전 포함 여부
+        label-mappings: '{"minor": "minor", "patch": "patch"}'  # 선택사항: 커스텀 라벨 매핑
 
     - name: Prepare Teams message templates
       id: prepare-teams-messages
@@ -29,7 +43,7 @@ jobs:
           echo "📋 Teams 시작 메시지 템플릿 읽는 중..."
           
           # 변수 정의
-          IMAGE_INFO="${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
+          IMAGE_INFO="${{ env.IMAGE_NAME }}:${{ steps.auto-release.outputs.new-release-version }}"
           REPO_INFO="${{ env.TARGET_REPO }}"
 
           # JSON 파일 읽기 및 변수 치환
@@ -54,7 +68,7 @@ jobs:
           # 변수 정의
           IMAGE_INFO="${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
           REPO_INFO="${{ env.TARGET_REPO }}"
-          FULL_IMAGE="${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
+          FULL_IMAGE="${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.auto-release.outputs.new-release-version }}"
           TARGET_BRANCH="${{ env.TARGET_BRANCH }}"
           UPDATED_FILE="${{ env.TARGET_FILE_PATH }}"
           GITHUB_REPOSITORY="${{ github.repository }}"
@@ -109,12 +123,13 @@ jobs:
 
     - name: Docker Build, Push and Update Repository
       id: docker-build-update
-      uses: akfmdl/github-actions-workflows/actions/docker-build-and-update@main
+      if: steps.auto-release.outputs.new-release-published == 'true'
+      uses: akfmdl/github-actions-workflows/actions/docker-build-and-update@test
       with:
         docker-registry: ${{ env.DOCKER_REGISTRY }}
         github-token: ${{ secrets.GIT_TOKEN }}
         image-name: ${{ env.IMAGE_NAME }}
-        image-tag: ${{ env.IMAGE_TAG }}
+        image-tag: ${{ steps.auto-release.outputs.new-release-version }}
         dockerfile-path: Dockerfile
         build-context: .
         build-args: |
