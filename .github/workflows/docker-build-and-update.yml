@@ -3,7 +3,7 @@ name: Docker Build, Push and Update Repository
 on:
   push:
     branches:
-      - test
+      - <TARGET_BRANCH>
 
 env:
   DOCKER_REGISTRY: persolive.azurecr.io

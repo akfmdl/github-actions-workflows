@@ -149,7 +149,7 @@ async function buildAndPushDockerImage() {
         // Docker 이미지 푸시
         console.log(`📤 Docker 이미지 푸시 중: ${fullImageName}`);
         try {
-            // const pushCommand = `docker push ${fullImageName}`;
+            const pushCommand = `docker push ${fullImageName}`;
             console.log(`📋 Push 명령: ${pushCommand}`);
             console.log('📺 Docker 푸시 로그:');
             console.log('-'.repeat(60));
