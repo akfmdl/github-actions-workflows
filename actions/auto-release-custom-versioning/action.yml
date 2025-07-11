@@ -121,146 +121,145 @@ runs:
         echo "🚀 Running custom versioning..."
         node /tmp/calendar-version-wrapper.js
 
-    - name: Commit and push version changes
-      shell: bash
-      working-directory: ${{ inputs.working-directory }}
-      env:
-        GITHUB_TOKEN: ${{ inputs.github-token }}
-      run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
+    # - name: Commit and push version changes
+    #   shell: bash
+    #   working-directory: ${{ inputs.working-directory }}
+    #   env:
+    #     GITHUB_TOKEN: ${{ inputs.github-token }}
+    #   run: |
+    #     git config user.name "github-actions[bot]"
+    #     git config user.email "github-actions[bot]@users.noreply.github.com"
         
-        # 변경사항 확인
-        CHANGED_FILES=$(git diff --name-only)
-        FILES_TO_COMMIT=""
+    #     # 변경사항 확인
+    #     CHANGED_FILES=$(git diff --name-only)
+    #     FILES_TO_COMMIT=""
         
-        # 관심있는 파일들만 필터링
-        for file in package.json ${{ inputs.version-py-path }}; do
-          if [ -f "$file" ] && echo "$CHANGED_FILES" | grep -q "^$file$"; then
-            FILES_TO_COMMIT="$FILES_TO_COMMIT $file"
-          fi
-        done
+    #     # 관심있는 파일들만 필터링
+    #     for file in package.json ${{ inputs.version-py-path }}; do
+    #       if [ -f "$file" ] && echo "$CHANGED_FILES" | grep -q "^$file$"; then
+    #         FILES_TO_COMMIT="$FILES_TO_COMMIT $file"
+    #       fi
+    #     done
         
-        if [ -n "$FILES_TO_COMMIT" ]; then
-          echo "📝 변경된 파일들을 커밋합니다:$FILES_TO_COMMIT"
+    #     if [ -n "$FILES_TO_COMMIT" ]; then
+    #       echo "📝 변경된 파일들을 커밋합니다:$FILES_TO_COMMIT"
           
-          # 변경된 파일들을 스테이징
-          git add $FILES_TO_COMMIT
+    #       # 변경된 파일들을 스테이징
+    #       git add $FILES_TO_COMMIT
           
-          # NEW_VERSION 환경변수가 설정되어 있으면 사용, 아니면 기본 메시지
-          if [ -n "$NEW_VERSION" ]; then
-            COMMIT_MESSAGE="chore(release): $NEW_VERSION [skip ci]"
-          else
-            COMMIT_MESSAGE="chore: update version files [skip ci]"
-          fi
+    #       # NEW_VERSION 환경변수가 설정되어 있으면 사용, 아니면 기본 메시지
+    #       if [ -n "$NEW_VERSION" ]; then
+    #         COMMIT_MESSAGE="chore(release): $NEW_VERSION [skip ci]"
+    #       else
+    #         COMMIT_MESSAGE="chore: update version files [skip ci]"
+    #       fi
           
-          git commit -m "$COMMIT_MESSAGE"
-          echo "✅ Git 커밋 완료: $COMMIT_MESSAGE"
+    #       git commit -m "$COMMIT_MESSAGE"
+    #       echo "✅ Git 커밋 완료: $COMMIT_MESSAGE"
           
-          # 푸시 재시도 로직 추가
-          MAX_RETRIES=3
-          RETRY_COUNT=0
+    #       # 푸시 재시도 로직 추가
+    #       MAX_RETRIES=3
+    #       RETRY_COUNT=0
           
-          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            echo "🔄 푸시 시도 $((RETRY_COUNT + 1))/$MAX_RETRIES"
+    #       while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    #         echo "🔄 푸시 시도 $((RETRY_COUNT + 1))/$MAX_RETRIES"
             
-            if git push origin HEAD; then
-              echo "✅ Git 푸시 완료"
-              break
-            else
-              echo "⚠️ 푸시 실패, 원격 변경사항 확인 중..."
-              RETRY_COUNT=$((RETRY_COUNT + 1))
+    #         if git push origin HEAD; then
+    #           echo "✅ Git 푸시 완료"
+    #           break
+    #         else
+    #           echo "⚠️ 푸시 실패, 원격 변경사항 확인 중..."
+    #           RETRY_COUNT=$((RETRY_COUNT + 1))
               
-              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-                echo "🔄 원격 변경사항을 가져와서 rebase 시도..."
-                git fetch origin
+    #           if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+    #             echo "🔄 원격 변경사항을 가져와서 rebase 시도..."
+    #             git fetch origin
                 
-                # 현재 브랜치 이름 가져오기
-                CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+    #             # 현재 브랜치 이름 가져오기
+    #             CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
                 
-                # rebase 시도
-                if git rebase origin/$CURRENT_BRANCH; then
-                  echo "✅ Rebase 성공, 다시 푸시 시도"
-                else
-                  echo "⚠️ Rebase 실패, 충돌 해결 필요"
-                  git rebase --abort
+    #             # rebase 시도
+    #             if git rebase origin/$CURRENT_BRANCH; then
+    #               echo "✅ Rebase 성공, 다시 푸시 시도"
+    #             else
+    #               echo "⚠️ Rebase 실패, 충돌 해결 필요"
+    #               git rebase --abort
                   
-                  # 마지막 시도인 경우 force push 사용 (신중하게)
-                  if [ $RETRY_COUNT -eq $((MAX_RETRIES - 1)) ]; then
-                    echo "⚠️ 마지막 시도: force push 사용 (위험)"
-                    git push origin HEAD --force-with-lease
-                    echo "🚨 Force push 완료 (신중하게 사용됨)"
-                    break
-                  fi
-                fi
-              else
-                echo "❌ 최대 재시도 횟수 초과"
-                exit 1
-              fi
-            fi
-          done
-        else
-          echo "⚪ 커밋할 변경사항이 없습니다."
-        fi
+    #               # 마지막 시도인 경우 force push 사용 (신중하게)
+    #               if [ $RETRY_COUNT -eq $((MAX_RETRIES - 1)) ]; then
+    #                 echo "⚠️ 마지막 시도: force push 사용 (위험)"
+    #                 git push origin HEAD --force-with-lease
+    #                 echo "🚨 Force push 완료 (신중하게 사용됨)"
+    #                 break
+    #               fi
+    #             fi
+    #           else
+    #             echo "❌ 최대 재시도 횟수 초과"
+    #             exit 1
+    #           fi
+    #         fi
+    #       done
+    #     else
+    #       echo "⚪ 커밋할 변경사항이 없습니다."
+    #     fi
 
-    - name: Create new version tag and release
-      shell: bash
-      working-directory: ${{ inputs.working-directory }}
-      env:
-        GITHUB_TOKEN: ${{ inputs.github-token }}
-      run: |
-        if [ -n "$NEW_VERSION" ]; then
-          echo "Creating new version tag: $NEW_VERSION"
-          echo "Release notes: $RELEASE_NOTES"
+    # - name: Create new version tag and release
+    #   shell: bash
+    #   working-directory: ${{ inputs.working-directory }}
+    #   env:
+    #     GITHUB_TOKEN: ${{ inputs.github-token }}
+    #   run: |
+    #     if [ -n "$NEW_VERSION" ]; then
+    #       echo "Creating new version tag: $NEW_VERSION"
           
-        #   git tag "$NEW_VERSION"
+    #       git tag "$NEW_VERSION"
           
-        #   # 태그 푸시 재시도 로직
-        #   MAX_TAG_RETRIES=3
-        #   TAG_RETRY_COUNT=0
+    #       # 태그 푸시 재시도 로직
+    #       MAX_TAG_RETRIES=3
+    #       TAG_RETRY_COUNT=0
           
-        #   while [ $TAG_RETRY_COUNT -lt $MAX_TAG_RETRIES ]; do
-        #     echo "🏷️ 태그 푸시 시도 $((TAG_RETRY_COUNT + 1))/$MAX_TAG_RETRIES"
+    #       while [ $TAG_RETRY_COUNT -lt $MAX_TAG_RETRIES ]; do
+    #         echo "🏷️ 태그 푸시 시도 $((TAG_RETRY_COUNT + 1))/$MAX_TAG_RETRIES"
             
-        #     if git push origin "$NEW_VERSION"; then
-        #       echo "✅ 태그 푸시 완료: $NEW_VERSION"
-        #       break
-        #     else
-        #       echo "⚠️ 태그 푸시 실패"
-        #       TAG_RETRY_COUNT=$((TAG_RETRY_COUNT + 1))
+    #         if git push origin "$NEW_VERSION"; then
+    #           echo "✅ 태그 푸시 완료: $NEW_VERSION"
+    #           break
+    #         else
+    #           echo "⚠️ 태그 푸시 실패"
+    #           TAG_RETRY_COUNT=$((TAG_RETRY_COUNT + 1))
               
-        #       if [ $TAG_RETRY_COUNT -lt $MAX_TAG_RETRIES ]; then
-        #         echo "🔄 잠깐 대기 후 재시도..."
-        #         sleep 2
-        #       else
-        #         echo "❌ 태그 푸시 최대 재시도 횟수 초과"
-        #         # 태그 푸시 실패해도 릴리즈는 계속 진행
-        #         echo "⚠️ 태그 푸시는 실패했지만 릴리즈 생성은 계속 진행합니다."
-        #       fi
-        #     fi
-        #   done
+    #           if [ $TAG_RETRY_COUNT -lt $MAX_TAG_RETRIES ]; then
+    #             echo "🔄 잠깐 대기 후 재시도..."
+    #             sleep 2
+    #           else
+    #             echo "❌ 태그 푸시 최대 재시도 횟수 초과"
+    #             # 태그 푸시 실패해도 릴리즈는 계속 진행
+    #             echo "⚠️ 태그 푸시는 실패했지만 릴리즈 생성은 계속 진행합니다."
+    #           fi
+    #         fi
+    #       done
           
-        #   if ! command -v gh &> /dev/null; then
-        #     echo "Installing GitHub CLI..."
-        #     curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
-        #     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
-        #     sudo apt update
-        #     sudo apt install gh -y
-        #   fi
+    #       if ! command -v gh &> /dev/null; then
+    #         echo "Installing GitHub CLI..."
+    #         curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+    #         echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+    #         sudo apt update
+    #         sudo apt install gh -y
+    #       fi
           
-        #   echo "Creating GitHub release with new version..."
+    #       echo "Creating GitHub release with new version..."
           
-        #   # Release notes 파일이 있으면 사용, 없으면 기본 메시지 사용
-        #   if [ -f "RELEASE_NOTES.md" ]; then
-        #     echo "Using generated release notes from RELEASE_NOTES.md"
-        #     gh release create "$NEW_VERSION" --title "$NEW_VERSION" --notes-file "RELEASE_NOTES.md" --latest
-        #   else
-        #     echo "Using default release notes"
-        #     RELEASE_NOTES="New Version Release $NEW_VERSION"
-        #     gh release create "$NEW_VERSION" --title "$NEW_VERSION" --notes "$RELEASE_NOTES" --latest
-        #   fi
-        #   echo "GitHub release created: $NEW_VERSION"
-        # fi
+    #       # Release notes 파일이 있으면 사용, 없으면 기본 메시지 사용
+    #       if [ -f "RELEASE_NOTES.md" ]; then
+    #         echo "Using generated release notes from RELEASE_NOTES.md"
+    #         gh release create "$NEW_VERSION" --title "$NEW_VERSION" --notes-file "RELEASE_NOTES.md" --latest
+    #       else
+    #         echo "Using default release notes"
+    #         RELEASE_NOTES="New Version Release $NEW_VERSION"
+    #         gh release create "$NEW_VERSION" --title "$NEW_VERSION" --notes "$RELEASE_NOTES" --latest
+    #       fi
+    #       echo "GitHub release created: $NEW_VERSION"
+    #     fi
 
 branding:
   icon: 'tag'

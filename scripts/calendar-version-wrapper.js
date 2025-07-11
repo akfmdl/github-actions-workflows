@@ -662,6 +662,7 @@ async function generateCalendarRelease() {
     // Release notes를 파일로 저장
     fs.writeFileSync('RELEASE_NOTES.md', releaseNotes);
     console.log(`📄 Release notes saved to RELEASE_NOTES.md`);
+    console.log(`📄 Release notes: ${releaseNotes}`);
 
     // 환경 변수로 calendar version 설정
     process.env.NEW_VERSION = calendarVersion;
