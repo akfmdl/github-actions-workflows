@@ -331,7 +331,8 @@ async function getRecentMergedPullRequests() {
     }
 
     try {
-        const lastVersionInfo = getLastVersion();
+        // const lastVersionInfo = getLastVersion();
+        const lastVersionInfo = { version: '2025.07.0.0', tag: '2025.07.0.0' };
         const lastTag = lastVersionInfo.tag;
 
         // 마지막 태그 이후의 커밋들에서 PR 번호 추출
@@ -634,7 +635,8 @@ async function generateCalendarRelease() {
     console.log(`🏷️ Release type: ${releaseType}`);
 
     // Release notes 생성 (lastTag 정보 재사용)
-    const lastVersionInfo = getLastVersion();
+    // const lastVersionInfo = getLastVersion();
+    const lastVersionInfo = { version: '2025.07.0.0', tag: '2025.07.0.0' };
     const releaseNotes = generateReleaseNotes(prInfos, calendarVersion, lastVersionInfo.tag);
     console.log(`📝 Release notes generated`);
 

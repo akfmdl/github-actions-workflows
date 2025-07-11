@@ -211,55 +211,56 @@ runs:
       run: |
         if [ -n "$NEW_VERSION" ]; then
           echo "Creating new version tag: $NEW_VERSION"
+          echo "Release notes: $RELEASE_NOTES"
           
-          git tag "$NEW_VERSION"
+        #   git tag "$NEW_VERSION"
           
-          # 태그 푸시 재시도 로직
-          MAX_TAG_RETRIES=3
-          TAG_RETRY_COUNT=0
+        #   # 태그 푸시 재시도 로직
+        #   MAX_TAG_RETRIES=3
+        #   TAG_RETRY_COUNT=0
           
-          while [ $TAG_RETRY_COUNT -lt $MAX_TAG_RETRIES ]; do
-            echo "🏷️ 태그 푸시 시도 $((TAG_RETRY_COUNT + 1))/$MAX_TAG_RETRIES"
+        #   while [ $TAG_RETRY_COUNT -lt $MAX_TAG_RETRIES ]; do
+        #     echo "🏷️ 태그 푸시 시도 $((TAG_RETRY_COUNT + 1))/$MAX_TAG_RETRIES"
             
-            if git push origin "$NEW_VERSION"; then
-              echo "✅ 태그 푸시 완료: $NEW_VERSION"
-              break
-            else
-              echo "⚠️ 태그 푸시 실패"
-              TAG_RETRY_COUNT=$((TAG_RETRY_COUNT + 1))
+        #     if git push origin "$NEW_VERSION"; then
+        #       echo "✅ 태그 푸시 완료: $NEW_VERSION"
+        #       break
+        #     else
+        #       echo "⚠️ 태그 푸시 실패"
+        #       TAG_RETRY_COUNT=$((TAG_RETRY_COUNT + 1))
               
-              if [ $TAG_RETRY_COUNT -lt $MAX_TAG_RETRIES ]; then
-                echo "🔄 잠깐 대기 후 재시도..."
-                sleep 2
-              else
-                echo "❌ 태그 푸시 최대 재시도 횟수 초과"
-                # 태그 푸시 실패해도 릴리즈는 계속 진행
-                echo "⚠️ 태그 푸시는 실패했지만 릴리즈 생성은 계속 진행합니다."
-              fi
-            fi
-          done
+        #       if [ $TAG_RETRY_COUNT -lt $MAX_TAG_RETRIES ]; then
+        #         echo "🔄 잠깐 대기 후 재시도..."
+        #         sleep 2
+        #       else
+        #         echo "❌ 태그 푸시 최대 재시도 횟수 초과"
+        #         # 태그 푸시 실패해도 릴리즈는 계속 진행
+        #         echo "⚠️ 태그 푸시는 실패했지만 릴리즈 생성은 계속 진행합니다."
+        #       fi
+        #     fi
+        #   done
           
-          if ! command -v gh &> /dev/null; then
-            echo "Installing GitHub CLI..."
-            curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
-            echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
-            sudo apt update
-            sudo apt install gh -y
-          fi
+        #   if ! command -v gh &> /dev/null; then
+        #     echo "Installing GitHub CLI..."
+        #     curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+        #     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+        #     sudo apt update
+        #     sudo apt install gh -y
+        #   fi
           
-          echo "Creating GitHub release with new version..."
+        #   echo "Creating GitHub release with new version..."
           
-          # Release notes 파일이 있으면 사용, 없으면 기본 메시지 사용
-          if [ -f "RELEASE_NOTES.md" ]; then
-            echo "Using generated release notes from RELEASE_NOTES.md"
-            gh release create "$NEW_VERSION" --title "$NEW_VERSION" --notes-file "RELEASE_NOTES.md" --latest
-          else
-            echo "Using default release notes"
-            RELEASE_NOTES="New Version Release $NEW_VERSION"
-            gh release create "$NEW_VERSION" --title "$NEW_VERSION" --notes "$RELEASE_NOTES" --latest
-          fi
-          echo "GitHub release created: $NEW_VERSION"
-        fi
+        #   # Release notes 파일이 있으면 사용, 없으면 기본 메시지 사용
+        #   if [ -f "RELEASE_NOTES.md" ]; then
+        #     echo "Using generated release notes from RELEASE_NOTES.md"
+        #     gh release create "$NEW_VERSION" --title "$NEW_VERSION" --notes-file "RELEASE_NOTES.md" --latest
+        #   else
+        #     echo "Using default release notes"
+        #     RELEASE_NOTES="New Version Release $NEW_VERSION"
+        #     gh release create "$NEW_VERSION" --title "$NEW_VERSION" --notes "$RELEASE_NOTES" --latest
+        #   fi
+        #   echo "GitHub release created: $NEW_VERSION"
+        # fi
 
 branding:
   icon: 'tag'
