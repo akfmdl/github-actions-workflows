@@ -1,0 +1,142 @@
+name: Auto Release by Pull Request
+
+on:
+  push:
+    branches:
+      - test
+
+env:
+  DOCKER_REGISTRY: persolive.azurecr.io
+  IMAGE_NAME: persolive-admin
+  TARGET_REPO: est-infra/persolive-admin-aks-prd
+  TARGET_BRANCH: test
+  TARGET_FILE_PATHS: |
+    prod/persolive-admin-api-prod/persolive-admin/persolive-admin.yaml,
+    prod/persolive-admin-api-prod/persolive-celery/persolive-celery.yaml,
+    prod/persolive-admin-api-prod/persolive-celerybeat/persolive-celerybeat.yaml,
+    prod/persolive-admin-api-prod-pre/persolive-admin/persolive-admin.yaml,
+    prod/persolive-admin-api-prod-pre/persolive-celery/persolive-celery.yaml,
+    prod/persolive-admin-api-prod-pre/persolive-celerybeat/persolive-celerybeat.yaml
+  TEAMS_WORKFLOWS_URL: https://prod-29.koreacentral.logic.azure.com:443/workflows/349eefc58f9c41f8bd88fb5252bfe9c1/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=YtUh3bh4RnGEUfzixwCFNlYHefFxe4y15LLUO2QrKII
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Generate GitHub App Token for est-infra
+      id: app-token-est-infra
+      uses: actions/create-github-app-token@v2
+      with:
+        app-id: ${{ secrets.APP_ID }}
+        private-key: ${{ secrets.APP_PRIVATE_KEY }}
+        owner: est-infra
+
+    - name: Checkout source code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Auto Release
+      id: auto-release
+      uses: akfmdl/github-actions-workflows/actions/auto-release-custom-versioning@test
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        release-branches: '["test"]'
+        jira-base-url: https://estsoft.atlassian.net
+        version-prefix: 'v'           
+        default-release-type: 'patch'
+        include-patch-for-minor: 'false'
+        label-mappings: '{"post": "post"}'
+
+    - name: Post-release notification
+      if: steps.auto-release.outputs.new-release-published == 'true'
+      run: |
+        echo "🎉 새로운 릴리즈가 생성되었습니다!"
+        echo "버전: ${{ steps.auto-release.outputs.new-release-version }}"
+        echo "태그: ${{ steps.auto-release.outputs.new-release-git-tag }}"
+        echo "SHA: ${{ steps.auto-release.outputs.new-release-git-head }}"
+
+    - name: Login to Azure Container Registry
+      uses: azure/docker-login@v2
+      with:
+        login-server: ${{ env.DOCKER_REGISTRY }}
+        username: ${{ secrets.REGISTRY_USERNAME }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+
+    - name: Setup Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v6
+      with:
+        context: ./
+        file: ./container/Dockerfile
+        push: true
+        tags: ${{ env.DOCKER_REGISTRY }}/${{ github.event.repository.name }}:${{ steps.auto-release.outputs.new-release-version }}
+        builder: ${{ steps.buildx.outputs.name }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Update repository files
+      id: update-files
+      uses: akfmdl/github-actions-workflows/actions/update-repository-files@test
+      with:
+        github-token: ${{ steps.app-token-est-infra.outputs.token }}
+        docker-registry: ${{ env.DOCKER_REGISTRY }}
+        image-name: ${{ env.IMAGE_NAME }}
+        image-tag: ${{ steps.auto-release.outputs.new-release-version }}
+        target-repo: ${{ env.TARGET_REPO }}
+        target-file-paths: ${{ env.TARGET_FILE_PATHS }}
+        target-branch: ${{ env.TARGET_BRANCH }}
+        commit-message: "bump admin to ${${{ steps.auto-release.outputs.new-release-version }}}"
+
+    - name: Prepare Teams message templates
+      if: steps.auto-release.outputs.new-release-published == 'true'
+      id: prepare-teams-messages
+      run: |
+        # Teams 시작 메시지 준비
+        if [ -f "scripts/teams_message.json" ]; then
+          echo "📋 Teams 시작 메시지 템플릿 읽는 중..."
+          
+          # 변수 정의
+          IMAGE_INFO="${{ env.IMAGE_NAME }}:${{ steps.auto-release.outputs.new-release-version }}"
+          REPO_INFO="${{ env.TARGET_REPO }}"
+
+          # JSON 파일 읽기 및 변수 치환
+          TEAMS_MESSAGE_JSON=$(cat scripts/teams_message.json | \
+            sed "s|\${IMAGE_INFO}|${IMAGE_INFO}|g" | \
+            sed "s|\${REPO_INFO}|${REPO_INFO}|g")
+          
+          # 멀티라인 출력 처리
+          echo "TEAMS_MESSAGE_JSON<<EOF" >> $GITHUB_OUTPUT
+          echo "$TEAMS_MESSAGE_JSON" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "✅ Teams 시작 메시지 준비 완료"
+        else
+          echo "TEAMS_MESSAGE_JSON=" >> $GITHUB_OUTPUT
+          echo "⚠️ Teams 시작 메시지 파일이 없습니다."
+        fi
+
+    - name: Send Teams notification
+      if: steps.prepare-teams-messages.outputs.TEAMS_MESSAGE_JSON != ''
+      shell: bash
+      run: |
+        if [ -z "${{ env.TEAMS_WORKFLOWS_URL }}" ]; then
+          echo "⚠️ TEAMS_WORKFLOWS_URL이 설정되지 않았습니다. Teams 알림을 건너뜁니다."
+          exit 0
+        fi
+        
+        echo "📢 Teams 알림 전송 중: 배포 시작"
+        
+        # 사용자 제공 JSON을 그대로 사용
+        echo '${{ steps.prepare-teams-messages.outputs.TEAMS_MESSAGE_JSON }}' > teams_message.json
+        
+        # Teams Webhook으로 메시지 전송
+        curl -H "Content-Type: application/json" \
+             -d @teams_message_start.json \
+             "${{ env.TEAMS_WORKFLOWS_URL }}"
+        
+        echo "✅ Teams 배포 시작 알림 전송 완료"
