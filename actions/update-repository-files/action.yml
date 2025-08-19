@@ -1,0 +1,95 @@
+name: 'Update Repository Files'
+description: 'Update multiple files in another repository with new Docker image tags'
+author: 'GitHub Actions Workflows'
+
+inputs:
+  github-token:
+    description: 'GitHub Personal Access Token with repo permissions'
+    required: true
+  node-version:
+    description: 'Node.js version to use'
+    required: false
+    default: '18'
+  docker-registry:
+    description: 'Docker registry URL'
+    required: true
+  image-name:
+    description: 'Docker 이미지 이름'
+    required: true
+  image-tag:
+    description: 'Docker 이미지 태그 (예: v1.0.0, 2025.01.15.1430)'
+    required: true
+  target-repo:
+    description: '대상 레포지토리 (예: owner/k8s-manifests)'
+    required: true
+  target-file-paths:
+    description: '업데이트할 파일 경로들 (콤마로 구분, 예: deployment/app.yaml,k8s/configmap.yaml)'
+    required: true
+  target-branch:
+    description: '대상 브랜치 (미지정시 기본 브랜치 사용)'
+    required: false
+    default: ''
+  commit-message:
+    description: '커밋 메시지'
+    required: false
+    default: ''
+
+outputs:
+  image-tag:
+    description: '업데이트된 이미지 태그'
+    value: ${{ steps.update-files.outputs.image-tag }}
+  updated-files:
+    description: '성공적으로 업데이트된 파일들 (콤마로 구분)'
+    value: ${{ steps.update-files.outputs.updated-files }}
+  failed-files:
+    description: '업데이트에 실패한 파일들 (콤마로 구분)'
+    value: ${{ steps.update-files.outputs.failed-files }}
+  success-count:
+    description: '성공한 파일 수'
+    value: ${{ steps.update-files.outputs.success-count }}
+  fail-count:
+    description: '실패한 파일 수'
+    value: ${{ steps.update-files.outputs.fail-count }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Download repository files update script
+      shell: bash
+      run: |
+        echo "📥 Downloading repository files update script..."
+        curl -fsSL -o /tmp/update-repository-files.js https://raw.githubusercontent.com/akfmdl/github-actions-workflows/test/scripts/update-repository-files.js
+        chmod +x /tmp/update-repository-files.js
+        
+    - name: Update repository files
+      id: update-files
+      shell: bash
+      env:
+        DOCKER_REGISTRY: ${{ inputs.docker-registry }}
+        IMAGE_NAME: ${{ inputs.image-name }}
+        IMAGE_TAG: ${{ inputs.image-tag }}
+        TARGET_REPO: ${{ inputs.target-repo }}
+        TARGET_FILE_PATHS: ${{ inputs.target-file-paths }}
+        TARGET_BRANCH: ${{ inputs.target-branch }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        COMMIT_MESSAGE: ${{ inputs.commit-message }}
+        SOURCE_REPOSITORY: ${{ github.repository }}
+      run: |
+        echo "🚀 레포지토리 파일들 업데이트를 시작합니다..."
+        echo "📋 대상 파일들: ${{ inputs.target-file-paths }}"
+        node /tmp/update-repository-files.js
+
+    - name: Workflow Complete
+      shell: bash
+      run: |
+        echo "✅ Repository Files Update workflow completed successfully!"
+        echo "📊 Summary has been generated with detailed links and information."
+
+branding:
+  icon: 'edit'
+  color: 'green' 
