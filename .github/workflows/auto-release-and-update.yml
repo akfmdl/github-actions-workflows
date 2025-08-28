@@ -98,7 +98,7 @@ jobs:
       id: prepare-teams-messages
       run: |
         # Teams 시작 메시지 준비
-        if [ -f "scripts/teams_message.json" ]; then
+        if [ -f "scripts/teams_message_start.json" ]; then
           echo "📋 Teams 시작 메시지 템플릿 읽는 중..."
           
           # 변수 정의
@@ -106,7 +106,7 @@ jobs:
           REPO_INFO="${{ env.TARGET_REPO }}"
 
           # JSON 파일 읽기 및 변수 치환
-          TEAMS_MESSAGE_JSON=$(cat scripts/teams_message.json | \
+          TEAMS_MESSAGE_JSON=$(cat scripts/teams_message_start.json | \
             sed "s|\${IMAGE_INFO}|${IMAGE_INFO}|g" | \
             sed "s|\${REPO_INFO}|${REPO_INFO}|g")
           
