@@ -49,7 +49,7 @@ jobs:
           GH_TOKEN: ${{ steps.app-token-est-perso-platform.outputs.token }}
         run: |
           gh release create ${{ env.RELEASE_VERSION }} \
-            --title "${{ env.RELEASE_VERSION }}" \
+            --title ${{ env.RELEASE_VERSION }} \
             --generate-notes
       # - run: "echo '## Docker Image Tag\n`${{ env.VERSION }}`\n\n## Release Version\n`${{ env.RELEASE_VERSION }}`' >> $GITHUB_STEP_SUMMARY"
       - run: "echo '## Release Version\n`${{ env.RELEASE_VERSION }}`' >> $GITHUB_STEP_SUMMARY"
