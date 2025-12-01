@@ -10,25 +10,33 @@ jobs:
     runs-on: ubuntu-latest
     env:
       RELEASE_VERSION: v1.0.0-test
+      TARGET_BRANCH: test
     steps:
-      - name: Generate GitHub App Token for est-perso-platform
-        id: app-token-est-perso-platform
+      # - name: Generate GitHub App Token for est-perso-platform
+      #   id: app-token-est-perso-platform
+      #   uses: actions/create-github-app-token@v2
+      #   with:
+      #     app-id: ${{ secrets.APP_ID }}
+      #     private-key: ${{ secrets.APP_PRIVATE_KEY }}
+      #     # owner: est-perso-platform
+      #     owner: akfmdl
+      - name: Generate GitHub App Token for est-infra
+        id: app-token-est-infra
         uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          # owner: est-perso-platform
-          owner: akfmdl
+          owner: est-infra
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           fetch-tags: true
-      # - uses: actions/setup-python@v5
-      #   with:
-      #     python-version: 3.12
-      # - run: |
-      #     pip install dunamai==1.21.2
-      #     echo "VERSION=$(dunamai from any | sed 's/+/-/')" >> $GITHUB_ENV
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+      - run: |
+          pip install dunamai==1.21.2
+          echo "VERSION=$(dunamai from any | sed 's/+/-/')" >> $GITHUB_ENV
       # - uses: azure/docker-login@v2
       #   with:
       #     login-server: persolive.azurecr.io
@@ -44,45 +52,72 @@ jobs:
       #     builder: ${{ steps.buildx.outputs.name }}
       #     cache-from: type=gha
       #     cache-to: type=gha,mode=max
-      - name: Create GitHub Release
-        env:
-          GH_TOKEN: ${{ steps.app-token-est-perso-platform.outputs.token }}
-        run: |
-          gh release create ${{ env.RELEASE_VERSION }} \
-            --title ${{ env.RELEASE_VERSION }} \
-            --generate-notes
-      - name: Get Release Notes
-        id: release-notes
-        env:
-          GH_TOKEN: ${{ steps.app-token-est-perso-platform.outputs.token }}
-        run: |
-          NOTES=$(gh release view ${{ env.RELEASE_VERSION }} --json body --jq .body)
-          echo "notes<<EOF" >> $GITHUB_OUTPUT
-          echo "$NOTES" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+      # - name: Create GitHub Release
+      #   env:
+      #     GH_TOKEN: ${{ steps.app-token-est-perso-platform.outputs.token }}
+      #   run: |
+      #     gh release create ${{ env.RELEASE_VERSION }} \
+      #       --title ${{ env.RELEASE_VERSION }} \
+      #       --generate-notes
+      # - name: Get Release Notes
+      #   id: release-notes
+      #   env:
+      #     GH_TOKEN: ${{ steps.app-token-est-perso-platform.outputs.token }}
+      #   run: |
+      #     NOTES=$(gh release view ${{ env.RELEASE_VERSION }} --json body --jq .body)
+      #     echo "notes<<EOF" >> $GITHUB_OUTPUT
+      #     echo "$NOTES" >> $GITHUB_OUTPUT
+      #     echo "EOF" >> $GITHUB_OUTPUT
           
-          # Convert markdown to HTML using GitHub API
-          HTML=$(gh api \
-            --method POST \
-            -H "Accept: application/vnd.github+json" \
-            /markdown \
-            -f text="$NOTES" \
-            -f mode="gfm")
+      #     # Convert markdown to HTML using GitHub API
+      #     HTML=$(gh api \
+      #       --method POST \
+      #       -H "Accept: application/vnd.github+json" \
+      #       /markdown \
+      #       -f text="$NOTES" \
+      #       -f mode="gfm")
           
-          echo "html<<EOF" >> $GITHUB_OUTPUT
-          echo "$HTML" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-      - name: Send Email
-        uses: hilarion5/send-mail@v1
+      #     echo "html<<EOF" >> $GITHUB_OUTPUT
+      #     echo "$HTML" >> $GITHUB_OUTPUT
+      #     echo "EOF" >> $GITHUB_OUTPUT
+      - name: Checkout target repository
+        uses: actions/checkout@v4
         with:
-          smtp-server: smtp-mail.outlook.com
-          smtp-port: 587
-          smtp-secure: false
-          from-email: noreply@estsoft.com
-          to-email: 766fa636.estsoft.com@kr.teams.ms
-          username: noreply@estsoft.com
-          password: ${{ secrets.SMTP_SERVER_PASSWORD }}
-          subject: ${{ env.RELEASE_VERSION }}
-          html: ${{ steps.release-notes.outputs.html }}
-      # - run: "echo '## Docker Image Tag\n`${{ env.VERSION }}`\n\n## Release Version\n`${{ env.RELEASE_VERSION }}`' >> $GITHUB_STEP_SUMMARY"
-      - run: "echo '## Release Version\n`${{ env.RELEASE_VERSION }}`' >> $GITHUB_STEP_SUMMARY"
+          repository: est-infra/persolive-admin-aks-prd
+          ref: ${{ env.TARGET_BRANCH }}
+          token: ${{ steps.app-token-est-infra.outputs.token }}
+      - name: Update image tags in target repository
+        run: |
+          # Update files in prod/persolive-admin-api-prod
+          echo "Updating files in prod/persolive-admin-api-prod..."
+          find prod/persolive-admin-api-prod -type f -exec sed -i 's|persolive\.azurecr\.io/perso-platform:[^[:space:]]*|persolive.azurecr.io/perso-platform:${{ env.VERSION }}|g' {} +
+          
+          # Update files in prod/persolive-admin-api-prod-pre
+          echo "Updating files in prod/persolive-admin-api-prod-pre..."
+          find prod/persolive-admin-api-prod-pre -type f -exec sed -i 's|persolive\.azurecr\.io/perso-platform:[^[:space:]]*|persolive.azurecr.io/perso-platform:${{ env.VERSION }}|g' {} +
+          
+          # Check if there are changes
+          if git diff --quiet; then
+            echo "No changes detected"
+            exit 0
+          fi
+          
+          # Commit and push
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add prod/persolive-admin-api-prod prod/persolive-admin-api-prod-pre
+          git commit -m "bump to ${{ env.VERSION }}"
+          git push origin ${{ env.TARGET_BRANCH }}
+      # - name: Send Email
+      #   uses: hilarion5/send-mail@v1
+      #   with:
+      #     smtp-server: smtp-mail.outlook.com
+      #     smtp-port: 587
+      #     smtp-secure: false
+      #     from-email: noreply@estsoft.com
+      #     to-email: 766fa636.estsoft.com@kr.teams.ms
+      #     username: noreply@estsoft.com
+      #     password: ${{ secrets.SMTP_SERVER_PASSWORD }}
+      #     subject: ${{ env.RELEASE_VERSION }}
+      #     html: ${{ steps.release-notes.outputs.html }}
+      - run: "echo '## Image Tag\n`${{ env.VERSION }}`\n\n## Release Version\n`${{ env.RELEASE_VERSION }}`\n\n## Target Branch\n`${{ env.TARGET_BRANCH }}`' >> $GITHUB_STEP_SUMMARY"
