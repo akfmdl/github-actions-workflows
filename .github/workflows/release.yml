@@ -132,4 +132,16 @@ jobs:
       #     password: ${{ secrets.SMTP_SERVER_PASSWORD }}
       #     subject: ${{ env.RELEASE_VERSION }}
       #     html: ${{ steps.release-notes.outputs.html }}
-      - run: "echo '## Image Tag\n`${{ env.VERSION }}`\n\n## Release Version\n`${{ env.RELEASE_VERSION }}`\n\n## Target Branch\n`${{ env.TARGET_BRANCH }}`\n\n## Commit URL\n${{ env.COMMIT_URL }}' >> $GITHUB_STEP_SUMMARY"
+      - name: Update job summary
+        run: |
+          echo "## Image Tag" >> $GITHUB_STEP_SUMMARY
+          echo "\`${{ env.VERSION }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Release Version" >> $GITHUB_STEP_SUMMARY
+          echo "\`${{ env.RELEASE_VERSION }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Target Branch" >> $GITHUB_STEP_SUMMARY
+          echo "\`${{ env.TARGET_BRANCH }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Commit URL" >> $GITHUB_STEP_SUMMARY
+          echo "${{ env.COMMIT_URL }}" >> $GITHUB_STEP_SUMMARY
