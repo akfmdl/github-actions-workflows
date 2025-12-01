@@ -88,17 +88,18 @@ jobs:
           token: ${{ steps.app-token-est-infra.outputs.token }}
       - name: Update image tags in target repository
         run: |
-          # Update files in prod/persolive-admin-api-prod
-          echo "Updating files in prod/persolive-admin-api-prod..."
-          find prod/persolive-admin-api-prod -type f -exec sed -i 's|persolive\.azurecr\.io/perso-platform:[^[:space:]]*|persolive.azurecr.io/perso-platform:${{ env.VERSION }}|g' {} +
+          # Define target directories
+          DIRS=(
+            "prod/persolive-admin-api-prod"
+            "prod/persolive-admin-api-prod-pre"
+            "ces-westus/persolive-admin-api-prod"
+          )
           
-          # Update files in prod/persolive-admin-api-prod-pre
-          echo "Updating files in prod/persolive-admin-api-prod-pre..."
-          find prod/persolive-admin-api-prod-pre -type f -exec sed -i 's|persolive\.azurecr\.io/perso-platform:[^[:space:]]*|persolive.azurecr.io/perso-platform:${{ env.VERSION }}|g' {} +
-
-          # Update files in ces-westus/persolive-admin-api-prod
-          echo "Updating files in ces-westus/persolive-admin-api-prod..."
-          find ces-westus/persolive-admin-api-prod -type f -exec sed -i 's|persolive\.azurecr\.io/perso-platform:[^[:space:]]*|persolive.azurecr.io/perso-platform:${{ env.VERSION }}|g' {} +
+          # Update image tags in each directory
+          for DIR in "${DIRS[@]}"; do
+            echo "Updating files in $DIR..."
+            find "$DIR" -type f -exec sed -i 's|persolive\.azurecr\.io/perso-platform:[^[:space:]]*|persolive.azurecr.io/perso-platform:${{ env.VERSION }}|g' {} +
+          done
           
           # Check if there are changes
           if git diff --quiet; then
@@ -110,7 +111,7 @@ jobs:
           # Commit and push
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add prod/persolive-admin-api-prod prod/persolive-admin-api-prod-pre ces-westus/persolive-admin-api-prod
+          git add "${DIRS[@]}"
           git commit -m "bump admin to ${{ env.VERSION }}"
           git push origin ${{ env.TARGET_BRANCH }}
           
