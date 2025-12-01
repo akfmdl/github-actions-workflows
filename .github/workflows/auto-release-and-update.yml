@@ -3,7 +3,7 @@ name: Auto Release by Pull Request
 on:
   push:
     branches:
-      - test
+      - <TARGET_BRANCH>
 
 env:
   DOCKER_REGISTRY: persolive.azurecr.io

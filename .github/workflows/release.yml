@@ -1,16 +1,15 @@
 name: Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      release_version:
-        description: 'Release version (e.g., v1.0.0)'
-        required: true
-        type: string
+  push:
+    branches:
+      - test
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      RELEASE_VERSION: v1.0.0-test
     steps:
       - name: Generate GitHub App Token for est-perso-platform
         id: app-token-est-perso-platform
@@ -24,33 +23,33 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
-      - uses: actions/setup-python@v5
-        with:
-          python-version: 3.12
-          cache: 'pip'
-      - run: |
-          pip install dunamai==1.21.2
-          echo "VERSION=$(dunamai from any | sed 's/+/-/')" >> $GITHUB_ENV
-      - uses: azure/docker-login@v2
-        with:
-          login-server: persolive.azurecr.io/moonsikpark
-          username: persolive
-          password: ${{ secrets.REGISTRY_SERVER_PASSWORD }}
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
-        with:
-          context: ./
-          file: ./container/Dockerfile
-          push: true
-          tags: persolive.azurecr.io/moonsikpark/${{ github.event.repository.name }}:${{ env.VERSION }}
-          builder: ${{ steps.buildx.outputs.name }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      # - uses: actions/setup-python@v5
+      #   with:
+      #     python-version: 3.12
+      # - run: |
+      #     pip install dunamai==1.21.2
+      #     echo "VERSION=$(dunamai from any | sed 's/+/-/')" >> $GITHUB_ENV
+      # - uses: azure/docker-login@v2
+      #   with:
+      #     login-server: persolive.azurecr.io
+      #     username: persolive
+      #     password: ${{ secrets.REGISTRY_SERVER_PASSWORD }}
+      # - uses: docker/setup-buildx-action@v3
+      # - uses: docker/build-push-action@v6
+      #   with:
+      #     context: ./
+      #     file: ./container/Dockerfile
+      #     push: true
+      #     tags: persolive.azurecr.io/${{ github.event.repository.name }}:${{ env.VERSION }}
+      #     builder: ${{ steps.buildx.outputs.name }}
+      #     cache-from: type=gha
+      #     cache-to: type=gha,mode=max
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ steps.app-token-est-perso-platform.outputs.token }}
         run: |
-          gh release create ${{ inputs.release_version }} \
-            --title "Release ${{ inputs.release_version }}" \
+          gh release create ${{ env.RELEASE_VERSION }} \
+            --title "${{ env.RELEASE_VERSION }}" \
             --generate-notes
-      - run: "echo '## Docker Image Tag\n`${{ env.VERSION }}`\n\n## Release Version\n`${{ inputs.release_version }}`' >> $GITHUB_STEP_SUMMARY"
+      # - run: "echo '## Docker Image Tag\n`${{ env.VERSION }}`\n\n## Release Version\n`${{ env.RELEASE_VERSION }}`' >> $GITHUB_STEP_SUMMARY"
+      - run: "echo '## Release Version\n`${{ env.RELEASE_VERSION }}`' >> $GITHUB_STEP_SUMMARY"
