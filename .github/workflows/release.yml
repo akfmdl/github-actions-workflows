@@ -66,7 +66,8 @@ jobs:
           smtp-server: smtp-mail.outlook.com
           smtp-port: 587
           smtp-secure: false
-          to-email: 김고은 Teams Bot Test 채널 - AI Dubbing Project - 서비스개발 <766fa636.estsoft.com@kr.teams.ms>
+          from-email: noreply@estsoft.com
+          to-email: 766fa636.estsoft.com@kr.teams.ms
           username: noreply@estsoft.com
           password: ${{ secrets.SMTP_SERVER_PASSWORD }}
           subject: ${{ env.RELEASE_VERSION }}
