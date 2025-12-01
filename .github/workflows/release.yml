@@ -60,6 +60,18 @@ jobs:
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           echo "$NOTES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+          
+          # Convert markdown to HTML using GitHub API
+          HTML=$(gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /markdown \
+            -f text="$NOTES" \
+            -f mode="gfm")
+          
+          echo "html<<EOF" >> $GITHUB_OUTPUT
+          echo "$HTML" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
       - name: Send Email
         uses: hilarion5/send-mail@v1
         with:
@@ -71,6 +83,6 @@ jobs:
           username: noreply@estsoft.com
           password: ${{ secrets.SMTP_SERVER_PASSWORD }}
           subject: ${{ env.RELEASE_VERSION }}
-          body: ${{ steps.release-notes.outputs.notes }}
+          html: ${{ steps.release-notes.outputs.html }}
       # - run: "echo '## Docker Image Tag\n`${{ env.VERSION }}`\n\n## Release Version\n`${{ env.RELEASE_VERSION }}`' >> $GITHUB_STEP_SUMMARY"
       - run: "echo '## Release Version\n`${{ env.RELEASE_VERSION }}`' >> $GITHUB_STEP_SUMMARY"
