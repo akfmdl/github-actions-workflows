@@ -95,19 +95,30 @@ jobs:
           # Update files in prod/persolive-admin-api-prod-pre
           echo "Updating files in prod/persolive-admin-api-prod-pre..."
           find prod/persolive-admin-api-prod-pre -type f -exec sed -i 's|persolive\.azurecr\.io/perso-platform:[^[:space:]]*|persolive.azurecr.io/perso-platform:${{ env.VERSION }}|g' {} +
+
+          # Update files in ces-westus/persolive-admin-api-prod
+          echo "Updating files in ces-westus/persolive-admin-api-prod..."
+          find ces-westus/persolive-admin-api-prod -type f -exec sed -i 's|persolive\.azurecr\.io/perso-platform:[^[:space:]]*|persolive.azurecr.io/perso-platform:${{ env.VERSION }}|g' {} +
           
           # Check if there are changes
           if git diff --quiet; then
             echo "No changes detected"
+            echo "COMMIT_URL=No changes" >> $GITHUB_ENV
             exit 0
           fi
           
           # Commit and push
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add prod/persolive-admin-api-prod prod/persolive-admin-api-prod-pre
-          git commit -m "bump to ${{ env.VERSION }}"
+          git add prod/persolive-admin-api-prod prod/persolive-admin-api-prod-pre ces-westus/persolive-admin-api-prod
+          git commit -m "bump admin to ${{ env.VERSION }}"
           git push origin ${{ env.TARGET_BRANCH }}
+          
+          # Get commit SHA and create URL
+          COMMIT_SHA=$(git rev-parse HEAD)
+          COMMIT_URL="https://github.com/est-infra/persolive-admin-aks-prd/commit/$COMMIT_SHA"
+          echo "COMMIT_URL=$COMMIT_URL" >> $GITHUB_ENV
+          echo "Commit URL: $COMMIT_URL"
       # - name: Send Email
       #   uses: hilarion5/send-mail@v1
       #   with:
@@ -120,4 +131,4 @@ jobs:
       #     password: ${{ secrets.SMTP_SERVER_PASSWORD }}
       #     subject: ${{ env.RELEASE_VERSION }}
       #     html: ${{ steps.release-notes.outputs.html }}
-      - run: "echo '## Image Tag\n`${{ env.VERSION }}`\n\n## Release Version\n`${{ env.RELEASE_VERSION }}`\n\n## Target Branch\n`${{ env.TARGET_BRANCH }}`' >> $GITHUB_STEP_SUMMARY"
+      - run: "echo '## Image Tag\n`${{ env.VERSION }}`\n\n## Release Version\n`${{ env.RELEASE_VERSION }}`\n\n## Target Branch\n`${{ env.TARGET_BRANCH }}`\n\n## Commit URL\n${{ env.COMMIT_URL }}' >> $GITHUB_STEP_SUMMARY"
