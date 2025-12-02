@@ -12,14 +12,15 @@ jobs:
       RELEASE_VERSION: v1.0.0-test
       TARGET_BRANCH: test
     steps:
-      # - name: Generate GitHub App Token for est-perso-platform
-      #   id: app-token-est-perso-platform
-      #   uses: actions/create-github-app-token@v2
-      #   with:
-      #     app-id: ${{ secrets.APP_ID }}
-      #     private-key: ${{ secrets.APP_PRIVATE_KEY }}
-      #     # owner: est-perso-platform
-      #     owner: akfmdl
+      - name: Generate GitHub App Token for est-perso-platform
+        id: app-token-est-perso-platform
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          # owner: est-perso-platform
+          owner: akfmdl
+
       - name: Generate GitHub App Token for est-infra
         id: app-token-est-infra
         uses: actions/create-github-app-token@v2
@@ -27,65 +28,52 @@ jobs:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           owner: est-infra
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           fetch-tags: true
+
       - uses: actions/setup-python@v5
         with:
           python-version: 3.12
       - run: |
           pip install dunamai==1.21.2
           echo "VERSION=$(dunamai from any | sed 's/+/-/')" >> $GITHUB_ENV
-      # - uses: azure/docker-login@v2
-      #   with:
-      #     login-server: persolive.azurecr.io
-      #     username: persolive
-      #     password: ${{ secrets.REGISTRY_SERVER_PASSWORD }}
-      # - uses: docker/setup-buildx-action@v3
-      # - uses: docker/build-push-action@v6
-      #   with:
-      #     context: ./
-      #     file: ./container/Dockerfile
-      #     push: true
-      #     tags: persolive.azurecr.io/${{ github.event.repository.name }}:${{ env.VERSION }}
-      #     builder: ${{ steps.buildx.outputs.name }}
-      #     cache-from: type=gha
-      #     cache-to: type=gha,mode=max
-      # - name: Create GitHub Release
-      #   env:
-      #     GH_TOKEN: ${{ steps.app-token-est-perso-platform.outputs.token }}
-      #   run: |
-      #     gh release create ${{ env.RELEASE_VERSION }} \
-      #       --title ${{ env.RELEASE_VERSION }} \
-      #       --generate-notes
-      # - name: Get Release Notes
-      #   id: release-notes
-      #   env:
-      #     GH_TOKEN: ${{ steps.app-token-est-perso-platform.outputs.token }}
-      #   run: |
-      #     NOTES=$(gh release view ${{ env.RELEASE_VERSION }} --json body --jq .body)
-      #     echo "notes<<EOF" >> $GITHUB_OUTPUT
-      #     echo "$NOTES" >> $GITHUB_OUTPUT
-      #     echo "EOF" >> $GITHUB_OUTPUT
-          
-      #     # Convert markdown to HTML using GitHub API
-      #     HTML=$(gh api \
-      #       --method POST \
-      #       -H "Accept: application/vnd.github+json" \
-      #       /markdown \
-      #       -f text="$NOTES" \
-      #       -f mode="gfm")
-          
-      #     echo "html<<EOF" >> $GITHUB_OUTPUT
-      #     echo "$HTML" >> $GITHUB_OUTPUT
-      #     echo "EOF" >> $GITHUB_OUTPUT
+
+      - uses: azure/docker-login@v2
+        with:
+          login-server: persolive.azurecr.io
+          username: persolive
+          password: ${{ secrets.REGISTRY_SERVER_PASSWORD }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./
+          file: ./container/Dockerfile
+          push: true
+          tags: persolive.azurecr.io/${{ github.event.repository.name }}:${{ env.VERSION }}
+          builder: ${{ steps.buildx.outputs.name }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ steps.app-token-est-perso-platform.outputs.token }}
+        run: |
+          gh release create ${{ env.RELEASE_VERSION }} \
+            --title ${{ env.RELEASE_VERSION }} \
+            --generate-notes
+
       - name: Checkout target repository
         uses: actions/checkout@v4
         with:
           repository: est-infra/persolive-admin-aks-prd
           ref: ${{ env.TARGET_BRANCH }}
           token: ${{ steps.app-token-est-infra.outputs.token }}
+
       - name: Update image tags in target repository
         run: |
           # Define target directories
@@ -120,18 +108,48 @@ jobs:
           COMMIT_URL="https://github.com/est-infra/persolive-admin-aks-prd/commit/$COMMIT_SHA"
           echo "COMMIT_URL=$COMMIT_URL" >> $GITHUB_ENV
           echo "Commit URL: $COMMIT_URL"
-      # - name: Send Email
-      #   uses: hilarion5/send-mail@v1
-      #   with:
-      #     smtp-server: smtp-mail.outlook.com
-      #     smtp-port: 587
-      #     smtp-secure: false
-      #     from-email: noreply@estsoft.com
-      #     to-email: 766fa636.estsoft.com@kr.teams.ms
-      #     username: noreply@estsoft.com
-      #     password: ${{ secrets.SMTP_SERVER_PASSWORD }}
-      #     subject: ${{ env.RELEASE_VERSION }}
-      #     html: ${{ steps.release-notes.outputs.html }}
+
+      - name: Prepare email content
+        id: email-content
+        env:
+          GH_TOKEN: ${{ steps.app-token-est-perso-platform.outputs.token }}
+        run: |
+          # Get release notes
+          NOTES=$(gh release view ${{ env.RELEASE_VERSION }} --json body --jq .body)
+          
+          # Convert markdown to HTML using GitHub API
+          HTML=$(gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /markdown \
+            -f text="$NOTES" \
+            -f mode="gfm")
+          
+          # Add AKS update commit URL
+          EMAIL_HTML=$(cat <<EOF
+          $HTML
+          <hr>
+          <p>aks update commit: <a href="${{ env.COMMIT_URL }}">${{ env.COMMIT_URL }}</a></p>
+          EOF
+          )
+          
+          echo "html<<EOFMARKER" >> $GITHUB_OUTPUT
+          echo "$EMAIL_HTML" >> $GITHUB_OUTPUT
+          echo "EOFMARKER" >> $GITHUB_OUTPUT
+
+      - name: Send Email
+        uses: hilarion5/send-mail@v1
+        with:
+          smtp-server: smtp-mail.outlook.com
+          smtp-port: 587
+          smtp-secure: false
+          from-email: noreply@estsoft.com
+          to-email: 766fa636.estsoft.com@kr.teams.ms
+          username: noreply@estsoft.com
+          password: ${{ secrets.SMTP_SERVER_PASSWORD }}
+          subject: ${{ env.RELEASE_VERSION }}
+          html: ${{ steps.email-content.outputs.html }}
+
       - name: Update job summary
         run: |
           echo "## Image Tag" >> $GITHUB_STEP_SUMMARY
