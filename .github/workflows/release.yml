@@ -114,8 +114,8 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token-est-perso-platform.outputs.token }}
         run: |
-          # Get release notes
-          NOTES=$(gh release view ${{ env.RELEASE_VERSION }} --json body --jq .body)
+          # Get release notes from the source repository
+          NOTES=$(gh release view ${{ env.RELEASE_VERSION }} --repo ${{ github.repository }} --json body --jq .body)
           
           # Convert markdown to HTML using GitHub API
           HTML=$(gh api \
